@@ -2,11 +2,18 @@
 #define _ECPOLICY_HH_
 
 #include "ECBase.hh"
+
 #include "RSCONV.hh"
-#include "AzureLRCFlat.hh"
-#include "AzureLRCTradeoff.hh"
-#include "AzureLRCOptR1022.hh"
-#include "AzureLRCOptM1022.hh"
+#include "HHXORPlus.hh"
+#include "HTEC.hh"
+#include "WASLRC.hh"
+#include "ETRSConv.hh"
+#include "ETHHXORPlus.hh"
+#include "ETHTEC.hh"
+#include "ETAzureLRC.hh"
+#include "BUTTERFLY.hh"
+#include "Clay.hh"
+#include "XXXCode.hh"
 
 #include "../inc/include.hh"
 

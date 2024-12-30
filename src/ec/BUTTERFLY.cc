@@ -787,10 +787,7 @@ void BUTTERFLY::Place(vector<vector<int>>& group) {
 
 vector<vector<int>> BUTTERFLY::GetLayout() {
     int symbol_id = 0;
-    vector<vector<int>> layout;
-    for (int i = 0; i < _w; i++) {
-        layout.push_back(vector<int>());
-    }
+    vector<vector<int>> layout(_w, vector<int>());
 
     for (int i = 0; i < _n; i++) {
         for (int j = 0; j < _w; j++) {

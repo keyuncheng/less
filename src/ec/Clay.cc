@@ -1031,10 +1031,26 @@ int Clay::get_short_from_real(int idx) {
         return _real2short[idx];
 }
 
+vector<vector<int>> Clay::GetLayout() {
+    int symbol_id = 0;
+    vector<vector<int>> layout(_w, vector<int>());
+
+    for (int i = 0; i < _n; i++) {
+        for (int j = 0; j < _w; j++) {
+            layout[j].push_back(symbol_id++);
+        }
+    }
+
+    return layout;
+}
+
 vector<int> Clay::GetNodeSymbols(int nodeid) {
-    vector<int> toret;                                                                                                                                                                                                                                                            
-    for (int i=0; i<_w; i++) {                                                                                                                                                                                                                                                    
-        toret.push_back(nodeid*_w + i);                                                                                                                                                                                                                                           
-    }                                                                                                                                                                                                                                                                             
-    return toret;
+    vector<vector<int>> layout = GetLayout();
+
+    vector<int> symbols;
+    for (int i = 0; i < _w; i++) {
+        symbols.push_back(layout[i][nodeid]);
+    }
+
+    return symbols;
 }
