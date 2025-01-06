@@ -1,16 +1,15 @@
-#ifndef __XXXCODE_HH__
-#define __XXXCODE_HH__
+#ifndef __STACKCode_HH__
+#define __STACKCode_HH__
 
 #include "ECBase.hh"
 
-class XXXCode : public ECBase {
+class STACKCode : public ECBase {
 public:
 
-    XXXCode(int n, int k, int w, int opt, vector<string> param);
+    STACKCode(int n, int k, int w, int opt, vector<string> param);
     ECDAG* Encode();
     ECDAG* Decode(vector<int> from, vector<int> to);
     void Place(vector<vector<int>>& group);
-
 
 private:
 
@@ -28,4 +27,4 @@ private:
 
 };
 
-#endif // __XXXCODE_HH_
+#endif // __STACKCode_HH_

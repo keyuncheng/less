@@ -20,6 +20,24 @@ public:
   virtual ECDAG *Encode() = 0;
   virtual ECDAG *Decode(vector<int> from, vector<int> to) = 0;
   virtual void Place(vector<vector<int>> &group) = 0;
+
+  /**
+     * @brief Get all sub-packets
+     * 
+     * 0 2 4 6 8 ...
+     * 1 3 5 7 9 ... 
+     * 
+     * @return vector<vector<int>> 
+     */
+    virtual vector<vector<int>> GetSubPackets();
+
+    /**
+     * @brief Get sub-packets in nodeid
+     * 
+     * @param nodeid 
+     * @return vector<int> 
+     */
+    virtual vector<int> getNodeSubPackets(int nodeid);
 };
 
 #endif

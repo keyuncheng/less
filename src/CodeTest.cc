@@ -11,7 +11,8 @@
 #include "ec/Clay.hh"
 #include "ec/ETRSConv.hh"
 #include "ec/ETHTEC.hh"
-#include "ec/XXXCode.hh"
+#include "ec/ETHHXORPlus.hh"
+#include "ec/STACKCode.hh"
 
 #include <utility>
 
