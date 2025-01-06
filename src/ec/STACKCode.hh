@@ -14,6 +14,8 @@ public:
 private:
 
     int _m; // m = n - k
+    int _e; // primitive element
+    int _num_groups; // number of groups
     int *_encodeMatrix; // encoding matrix
     int *_pcMatrix; // parity check matrix
 
@@ -24,7 +26,7 @@ private:
     void repairSingle(vector<int> &availNodes, int failedNode);
     void repairMultiple(vector<int> &availNodes, vector<int> &failedNodes);
 
-
+    int getAvailPrimElements(int n, int k, int w); // get available primitive elements for w=8
 };
 
 #endif // __STACKCode_HH_
