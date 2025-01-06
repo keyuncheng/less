@@ -213,7 +213,7 @@ ETHHXORPlus::ETHHXORPlus(int n, int k, int w, int opt, vector<string> param)
     }
 
     for (auto &instance : _instances) {
-        vector<vector<int>> layout_instance = instance->GetLayout();
+        vector<vector<int>> layout_instance = instance->GetSubPackets();
         printf("instance layout: \n");
         for (int i = 0; i < _base_w; i++) {
             for (int j = 0; j < _n; j++) {
@@ -471,7 +471,7 @@ void ETHHXORPlus::Place(vector<vector<int>>& group) {
     return;
 }
 
-vector<int> ETHHXORPlus::GetNodeSymbols(int nodeid) {
+vector<int> ETHHXORPlus::getNodeSubPackets(int nodeid) {
     vector<int> symbols;
     for (int i = 0; i < _layout.size(); i++) {
         symbols.push_back(_layout[i][nodeid]);
@@ -481,6 +481,6 @@ vector<int> ETHHXORPlus::GetNodeSymbols(int nodeid) {
 }
 
 
-vector<vector<int>> ETHHXORPlus::GetLayout() {
+vector<vector<int>> ETHHXORPlus::GetSubPackets() {
     return _layout;
 }

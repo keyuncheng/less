@@ -823,7 +823,7 @@ void HHNonXOR::DecodeMultiple(vector<int> from, vector<int> to, ECDAG *ecdag) {
     }
 }
 
-vector<int> HHNonXOR::GetNodeSymbols(int nodeid) {
+vector<int> HHNonXOR::getNodeSubPackets(int nodeid) {
     vector<int> symbols;
     for (int i = 0; i < _w; i++) {
         symbols.push_back(_layout[i][nodeid]);
@@ -832,7 +832,7 @@ vector<int> HHNonXOR::GetNodeSymbols(int nodeid) {
     return symbols;
 }
 
-vector<vector<int>> HHNonXOR::GetLayout() {
+vector<vector<int>> HHNonXOR::GetSubPackets() {
     return _layout;
 }
 

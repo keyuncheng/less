@@ -211,7 +211,7 @@ ETAzureLRC::ETAzureLRC(int n, int k, int w, int opt, vector<string> param) {
     }
 
     for (auto &instance : _instances) {
-        vector<vector<int>> layout_instance = instance->GetLayout();
+        vector<vector<int>> layout_instance = instance->GetSubPackets();
         printf("instance layout: \n");
         for (int i = 0; i < _base_w; i++) {
             for (int j = 0; j < _n; j++) {
@@ -445,7 +445,7 @@ ECDAG *ETAzureLRC::DecodeMultiple(vector<int> from, vector<int> to) {
 void ETAzureLRC::Place(vector<vector<int>>& group) {
 }
 
-vector<int> ETAzureLRC::GetNodeSymbols(int nodeid) {
+vector<int> ETAzureLRC::getNodeSubPackets(int nodeid) {
     vector<int> symbols;
     for (int i = 0; i < _layout.size(); i++) {
         symbols.push_back(_layout[i][nodeid]);
@@ -454,6 +454,6 @@ vector<int> ETAzureLRC::GetNodeSymbols(int nodeid) {
     return symbols;
 }
 
-vector<vector<int>> ETAzureLRC::GetLayout() {
+vector<vector<int>> ETAzureLRC::GetSubPackets() {
     return _layout;
 }

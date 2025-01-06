@@ -86,22 +86,22 @@ public:
 //        void Shorten(unordered_map<int, int>& shortening);
 
     /**
-     * @brief Get code layout
+     * @brief Get all sub-packets
      * 
      * 0 2 4 6 8 ...
      * 1 3 5 7 9 ... 
      * 
      * @return vector<vector<int>> 
      */
-    vector<vector<int>> GetLayout();
+    vector<vector<int>> GetSubPackets();
 
     /**
-     * @brief Get symbols in nodeid
+     * @brief Get sub-packets in nodeid
      * 
      * @param nodeid 
      * @return vector<int> 
      */
-    vector<int> GetNodeSymbols(int nodeid);
+    vector<int> getNodeSubPackets(int nodeid);
 };
 
 #endif

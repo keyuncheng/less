@@ -207,7 +207,7 @@ ECDAG* RSMultiIns::Decode(vector<int> from, vector<int> to) {
 void RSMultiIns::Place(vector<vector<int>>& group) {
 }
 
-vector<int> RSMultiIns::GetNodeSymbols(int nodeid) {
+vector<int> RSMultiIns::getNodeSubPackets(int nodeid) {
     vector<int> symbols;
     for (int i = 0; i < _layout.size(); i++) {
         symbols.push_back(_layout[i][nodeid]);
@@ -216,7 +216,7 @@ vector<int> RSMultiIns::GetNodeSymbols(int nodeid) {
     return symbols;
 }
 
-vector<vector<int>> RSMultiIns::GetLayout() {
+vector<vector<int>> RSMultiIns::GetSubPackets() {
     return _layout;
 }
 

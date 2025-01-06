@@ -417,7 +417,7 @@ ETRSConv::ETRSConv(int n, int k, int w, int opt, vector<string> param) {
     }
 
     for (auto &instance : _instances) {
-        vector<vector<int>> layout_instance = instance->GetLayout();
+        vector<vector<int>> layout_instance = instance->GetSubPackets();
         printf("instance layout: \n");
         for (int i = 0; i < _n; i++) {
             printf("%d ", layout_instance[0][i]);
@@ -873,7 +873,7 @@ ECDAG *ETRSConv::DecodeMultiple(vector<int> from, vector<int> to) {
 void ETRSConv::Place(vector<vector<int>>& group) {
 }
 
-vector<int> ETRSConv::GetNodeSymbols(int nodeid) {
+vector<int> ETRSConv::getNodeSubPackets(int nodeid) {
     vector<int> symbols;
     for (int i = 0; i < _layout.size(); i++) {
         symbols.push_back(_layout[i][nodeid]);
@@ -882,6 +882,6 @@ vector<int> ETRSConv::GetNodeSymbols(int nodeid) {
     return symbols;
 }
 
-vector<vector<int>> ETRSConv::GetLayout() {
+vector<vector<int>> ETRSConv::GetSubPackets() {
     return _layout;
 }

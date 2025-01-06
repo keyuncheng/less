@@ -823,7 +823,7 @@ void HHXORPlus::DecodeMultiple(vector<int> from, vector<int> to, ECDAG *ecdag) {
     }
 }
 
-vector<int> HHXORPlus::GetNodeSymbols(int nodeid) {
+vector<int> HHXORPlus::getNodeSubPackets(int nodeid) {
     vector<int> symbols;
     for (int i = 0; i < _w; i++) {
         symbols.push_back(_layout[i][nodeid]);
@@ -832,7 +832,7 @@ vector<int> HHXORPlus::GetNodeSymbols(int nodeid) {
     return symbols;
 }
 
-vector<vector<int>> HHXORPlus::GetLayout() {
+vector<vector<int>> HHXORPlus::GetSubPackets() {
     return _layout;
 }
 

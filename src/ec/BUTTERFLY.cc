@@ -785,7 +785,7 @@ vector<vector<int>> BUTTERFLY::butterfly_func(vector<vector<int>> mat, int m_row
 void BUTTERFLY::Place(vector<vector<int>>& group) {
 }
 
-vector<vector<int>> BUTTERFLY::GetLayout() {
+vector<vector<int>> BUTTERFLY::GetSubPackets() {
     int symbol_id = 0;
     vector<vector<int>> layout(_w, vector<int>());
 
@@ -798,8 +798,8 @@ vector<vector<int>> BUTTERFLY::GetLayout() {
     return layout;
 }
 
-vector<int> BUTTERFLY::GetNodeSymbols(int nodeid) {
-    vector<vector<int>> layout = GetLayout();
+vector<int> BUTTERFLY::getNodeSubPackets(int nodeid) {
+    vector<vector<int>> layout = GetSubPackets();
 
     vector<int> symbols;
     for (int i = 0; i < _w; i++) {

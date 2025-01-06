@@ -1031,7 +1031,7 @@ int Clay::get_short_from_real(int idx) {
         return _real2short[idx];
 }
 
-vector<vector<int>> Clay::GetLayout() {
+vector<vector<int>> Clay::GetSubPackets() {
     int symbol_id = 0;
     vector<vector<int>> layout(_w, vector<int>());
 
@@ -1044,8 +1044,8 @@ vector<vector<int>> Clay::GetLayout() {
     return layout;
 }
 
-vector<int> Clay::GetNodeSymbols(int nodeid) {
-    vector<vector<int>> layout = GetLayout();
+vector<int> Clay::getNodeSubPackets(int nodeid) {
+    vector<vector<int>> layout = GetSubPackets();
 
     vector<int> symbols;
     for (int i = 0; i < _w; i++) {

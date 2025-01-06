@@ -1,390 +1,401 @@
-#include "common/Config.hh"
+#include "common/Config.hh" 
 #include "ec/ECDAG.hh"
 #include "ec/ECPolicy.hh"
 #include "ec/ECBase.hh"
 #include "ec/ECTask.hh"
-#include "ec/NativeRS.hh"
-#include "inc/include.hh"
+
+#include "ec/RSCONV.hh"
+#include "ec/HHXORPlus.hh"
+#include "ec/HTEC.hh"
+#include "ec/BUTTERFLY.hh"
+#include "ec/Clay.hh"
+#include "ec/ETRSConv.hh"
+#include "ec/ETHTEC.hh"
+#include "ec/XXXCode.hh"
+
+#include <utility>
 
 using namespace std;
 
 void usage() {
-  cout << "Usage: ./CodeTest " << endl;
-  cout << "	1, systype (native/openec)" << endl;
-  cout << "	2, n" << endl;
-  cout << "	3, k" << endl;
-  cout << "	4, blocksizeB" << endl;
-  cout << "	5, pktsizeB" << endl;
+    // printf("usage: ./CodeTest code_name n k w pktbytes disk_seek_time_ms disk_bdwt_MBps failed_ids\n");
+    printf("usage: ./CodeTest code_name n k w pktbytes <failed_ids>\n");
 }
 
 double getCurrentTime() {
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-  return (double)tv.tv_sec * 1e+6 + (double)tv.tv_usec;
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (double)tv.tv_sec * 1e+6 + (double)tv.tv_usec;
 }
 
 int main(int argc, char** argv) {
-  if (argc < 6) {
-    usage();
-    return 0;
-  }
 
-  string systype = string(argv[1]);
-  int n = atoi(argv[2]);
-  int k = atoi(argv[3]);
-  int blocksizeB = atoi(argv[4]);
-  int pktsizeB = atoi(argv[5]);
+    if (argc < 7) {
+        usage();
+        return 0;
+    }
 
-  string confpath = "conf/sysSetting.xml";
-  Config* conf = new Config(confpath);
-  int stripenum = blocksizeB/pktsizeB;
-  string ecid = "rs_"+to_string(n)+"_"+to_string(k);
+    string ecid = string(argv[1]) + string(argv[2]) + "_" + string(argv[3]) + "_" + string(argv[4]);
 
-  // we need to prepare the original data
-  // prepare data buffer and code buffer
-  uint8_t** databuffers = (uint8_t**)calloc(k, sizeof(uint8_t*));
-  for (int i=0; i<k; i++) {
-    databuffers[i] = (uint8_t*)calloc(pktsizeB, sizeof(uint8_t));
-  }
-  uint8_t** codebuffers = (uint8_t**)calloc((n-k), sizeof(uint8_t*));
-  for (int i=0; i<(n-k); i++) {
-    codebuffers[i] = (uint8_t*)calloc(pktsizeB, sizeof(uint8_t));
-  }
-  uint8_t* oribuffer = (uint8_t*)calloc(pktsizeB, sizeof(uint8_t));
+    int pktsizeB = atoi(argv[5]);
 
-  NativeRS* rscode = nullptr;
-  ECPolicy* ecpolicy = nullptr;
-  ECBase* ec = nullptr;
+    // double disk_seek_time_ms = stod(argv[5]);
+    // double disk_bdwt_MBps = stod(argv[6]);
 
-  double initEncodeTime=0;
-  initEncodeTime -= getCurrentTime();
+    vector<int> failed_ids;
+    for (int i = 6; i < argc; i++) {
+        int failed_id = atoi(argv[i]);
+        failed_ids.push_back(failed_id);
+    }
+    
+    string confpath = "conf/sysSetting.xml";
+    Config* conf = new Config(confpath);
 
-  // prepare for encode
-  ECDAG* encdag = nullptr;
-  vector<ECTask*> encodetasks;
-  unordered_map<int, char*> encodeBufMap;
-  if (systype == "native") {
-    rscode = new NativeRS();
-    rscode->initialize(n, k);
-  } else {
-    ecpolicy = conf->_ecPolicyMap[ecid];
-    ec = ecpolicy->createECClass();
-    encdag = ec->Encode();
+    ECPolicy* ecpolicy = conf->_ecPolicyMap[ecid];
+    ECBase* ec = ecpolicy->createECClass();
+
+    int n = ec->_n;
+    int k = ec->_k;
+    int w = ec->_w;
+
+    int n_data_symbols = k * w;
+    int n_code_symbols = (n - k) * w;
+
+    // 0. prepare data buffers
+    char **databuffers = (char **)calloc(n_data_symbols, sizeof(char *));
+    for (int i = 0; i < n_data_symbols; i++) {
+        databuffers[i] = (char *)calloc(pktsizeB, sizeof(char));
+        char v = i;
+        memset(databuffers[i], v, pktsizeB);
+    }
+
+    // 1. prepare code buffers
+    char **codebuffers = (char **)calloc(n_code_symbols, sizeof(char *));
+    for (int i = 0; i < n_code_symbols; i++) {
+        codebuffers[i] = (char *)calloc(pktsizeB, sizeof(char));
+        memset(codebuffers[i], 0, pktsizeB);
+    }
+
+    double initEncodeTime=0, initDecodeTime=0;
+    double encodeTime = 0, decodeTime=0;
+    initEncodeTime -= getCurrentTime();
+
+    ECDAG* encdag = ec->Encode();
+    vector<ECTask*> encodetasks;
+    unordered_map<int, char*> encodeBufMap;
     vector<int> toposeq = encdag->toposort();
     for (int i=0; i<toposeq.size(); i++) {
-      ECNode* curnode = encdag->getNode(toposeq[i]);
-      curnode->parseForClient(encodetasks);
+        ECNode* curnode = encdag->getNode(toposeq[i]);
+        curnode->parseForClient(encodetasks);
     }
-    for (int i=0; i<k; i++) encodeBufMap.insert(make_pair(i, (char*)databuffers[i]));
-    for (int i=0; i<(n-k); i++) encodeBufMap.insert(make_pair(k+i, (char*)codebuffers[i]));
-  }
-  initEncodeTime += getCurrentTime();
+    for (int i=0; i<n_data_symbols; i++) encodeBufMap.insert(make_pair(i, databuffers[i]));
+    for (int i=0; i<n_code_symbols; i++) encodeBufMap.insert(make_pair(n_data_symbols+i, codebuffers[i]));
+    initEncodeTime += getCurrentTime();
 
-  // prepare for decode
-  double initDecodeTime=0;
-  initDecodeTime -= getCurrentTime();
-  int fidx=0;
-  ECDAG* decdag = nullptr;
-  vector<ECTask*> decodetasks;
-  unordered_map<int, char*> decodeBufMap;
-  vector<int> availidx;
-  vector<int> torecidx;
-
-  if (systype == "native") {
-    rscode->check(fidx);
-  } else {
-    for(int i=0; i<n; i++) {
-      if (i == fidx) torecidx.push_back(i);
-      else availidx.push_back(i);
-    }
-    decdag = ec->Decode(availidx, torecidx);
-    vector<int> toposeq = decdag->toposort();
-    for (int i=0; i<toposeq.size(); i++) {
-      ECNode* curnode = decdag->getNode(toposeq[i]);
-      curnode->parseForClient(decodetasks);
-    }
-  }
-  initDecodeTime += getCurrentTime();
-
-
-  // test
-  double encodeTime = 0, decodeTime = 0;
-  srand((unsigned)1234);
-  for (int stripei=0; stripei<stripenum; stripei++) {
-    // clean codebuffers
-    for (int i=0;i<(n-k); i++) {
-      memset(codebuffers[i], 0, pktsizeB);
-    }
-    // initialize databuffers
-    for (int i=0; i<k; i++) {
-      for (int j=0; j<pktsizeB; j++) databuffers[i][j] = rand();
-    }
-    // encode test
     encodeTime -= getCurrentTime();
-    if (systype == "native") rscode->construct(databuffers, codebuffers, pktsizeB);
-    else {
-      for (int taskid = 0; taskid < encodetasks.size(); taskid++) {
+    for (int taskid = 0; taskid < encodetasks.size(); taskid++) {
         ECTask* compute = encodetasks[taskid];
-	vector<int> children = compute->getChildren();
-	unordered_map<int, vector<int>> coefMap = compute->getCoefMap();
-	int col = children.size();
-	int row = coefMap.size();
-	vector<int> targets;
-	int* matrix = (int*)calloc(row*col, sizeof(int));
+        compute->dump();
+
+        vector<int> children = compute->getChildren();
+        unordered_map<int, vector<int>> coefMap = compute->getCoefMap();
+        int col = children.size();
+        int row = coefMap.size();
+
+        vector<int> targets;
+        int* matrix = (int*)calloc(row*col, sizeof(int));
         char** data = (char**)calloc(col, sizeof(char*));
-	char** code = (char**)calloc(row, sizeof(char*));
-	for (int bufIdx=0; bufIdx<children.size(); bufIdx++) {
-          int child = children[bufIdx];
-	  data[bufIdx] = encodeBufMap[child];
-	}
-	int codeBufIdx = 0;
-	for (auto it: coefMap) {
-          int target = it.first;
-	  char* codebuf;
-	  if (encodeBufMap.find(target) == encodeBufMap.end()) {
-            codebuf = (char*)calloc(pktsizeB, sizeof(char));
-	    encodeBufMap.insert(make_pair(target, codebuf));
-	  } else {
-            codebuf = encodeBufMap[target];
-	  }
-	  code[codeBufIdx] = codebuf;
-	  targets.push_back(target);
-	  vector<int> curcoef = it.second;
-	  for (int j=0; j<col; j++) {
-            matrix[codeBufIdx * col + j] = curcoef[j];
-	  }
-	  codeBufIdx++;
-	}
-	Computation::Multi(code, data, matrix, row, col, pktsizeB, "Isal");
-	free(matrix);
-	free(data);
-	free(code);
-      }
+        char** code = (char**)calloc(row, sizeof(char*));
+        for (int bufIdx=0; bufIdx<children.size(); bufIdx++) {
+            int child = children[bufIdx];
+            data[bufIdx] = encodeBufMap[child];
+        }
+        int codeBufIdx = 0;
+        for (auto it: coefMap) {
+            int target = it.first;
+            char* codebuf; 
+            if (encodeBufMap.find(target) == encodeBufMap.end()) {
+                codebuf = (char *)calloc(pktsizeB, sizeof(char));
+                encodeBufMap.insert(make_pair(target, codebuf));
+            } else {
+                codebuf = encodeBufMap[target];
+            }
+            code[codeBufIdx] = codebuf;
+            targets.push_back(target);
+            vector<int> curcoef = it.second;
+            for (int j = 0; j < col; j++) {
+                matrix[codeBufIdx * col + j] = curcoef[j];
+            }
+            codeBufIdx++;
+        }
+        Computation::Multi(code, data, matrix, row, col, pktsizeB, "Isal");
+
+        free(matrix);
+        free(data);
+        free(code);
     }
+
     encodeTime += getCurrentTime();
 
-    // take out fidx buffer
-    uint8_t* cpybuf;
-    if (fidx < k) cpybuf = databuffers[fidx];
-    else cpybuf = codebuffers[fidx-k];
-    memcpy(oribuffer, cpybuf, pktsizeB);
+    // debug encode
+    for (int i=0; i<n_data_symbols; i++) {
+        char* curbuf = (char*)databuffers[i];
+        cout << "dataidx = " << i << ", value = " << (int)curbuf[0] << endl;
+    }
+    for (int i=0; i<n_code_symbols; i++) {
+        char* curbuf = (char*)codebuffers[i];
+        cout << "codeidx = " << n_data_symbols+i << ", value = " << (int)curbuf[0] << endl;
+    }
 
-    // prepare avail buffer and torec buffer
-    // and decodeBufMap
-    decodeBufMap.clear();
-    uint8_t* availbuffers[k];
-    int aidx=0;
-    for (int i=0; i<k && aidx<k; i++) {
-      if (i == fidx) continue;
-      availbuffers[aidx++] = databuffers[i];
-      decodeBufMap.insert(make_pair(i, (char*)databuffers[i]));
-    }
-    for (int i=0; i<(n-k) && aidx<k; i++) {
-      if (i+k == fidx) continue;
-      availbuffers[aidx++] = codebuffers[i];
-      decodeBufMap.insert(make_pair(i+k, (char*)codebuffers[i]));
-    }
-    uint8_t* toretbuffers[1];
-    uint8_t repairbuf[pktsizeB];
-    toretbuffers[0] = repairbuf;
-    decodeBufMap.insert(make_pair(0, (char*)repairbuf));
+    cout << "========================" << endl;
 
     // decode
-    decodeTime -= getCurrentTime();
-    if (systype == "native")    {
-      rscode->decode(availbuffers, k, toretbuffers, 1, pktsizeB);
-    } else {
-      for (int taskid=0; taskid<decodetasks.size(); taskid++) {
-        ECTask* compute = decodetasks[taskid];
-	vector<int> children = compute->getChildren();
-	unordered_map<int, vector<int>> coefMap = compute->getCoefMap();
-	int col = children.size();
-	int row = coefMap.size();
-	vector<int> targets;
-	int* matrix = (int*)calloc(row*col, sizeof(int));
-	char** data = (char**)calloc(col, sizeof(char*));
-	char** code = (char**)calloc(row, sizeof(char*));
-	for (int bufIdx=0; bufIdx<children.size(); bufIdx++) {
-          int child = children[bufIdx];
-	  data[bufIdx] = decodeBufMap[child];
-	}
-	int codeBufIdx = 0;
-	for (auto it: coefMap) {
-          int target = it.first;
-	  char* codebuf;
-	  if (decodeBufMap.find(target) == decodeBufMap.end()) {
-            codebuf = (char*)calloc(pktsizeB, sizeof(char));
-	    decodeBufMap.insert(make_pair(target, codebuf));
-	  } else {
-            codebuf = decodeBufMap[target];
-	  }
-	  code[codeBufIdx] = codebuf;
-	  targets.push_back(target);
-	  vector<int> coef = it.second;
-	  for (int j=0; j<col; j++) {
-            matrix[codeBufIdx * col + j] = coef[j];
-	  }
-	  codeBufIdx++;
+    initDecodeTime -= getCurrentTime();
+
+    ECPolicy* ecpolicy1 = conf->_ecPolicyMap[ecid];
+    ECBase* ec1 = ecpolicy->createECClass();
+
+    vector<int> failsymbols;
+    unordered_map<int, char*> repairbuf;
+
+    cout<< "failed node ";
+    for (auto failnode : failed_ids) {
+        cout << failnode << " ";
+        vector<int> failed_symbols_node = ec1->getNodeSubPackets(failnode);
+        for (auto symbol : failed_symbols_node) {
+            failsymbols.push_back(symbol);
         }
-	Computation::Multi(code, data, matrix, row, col, pktsizeB, "Isal");
-	free(matrix);
-	free(data);
-	free(code);
-      }
     }
+    cout << endl;
+
+    for(int i=0; i<failsymbols.size(); i++) {
+        char* tmpbuf = (char*)calloc(pktsizeB, sizeof(char));
+        repairbuf[failsymbols[i]] = tmpbuf;
+    }
+
+    vector<int> availsymbols;
+    for (int i=0; i<n*w; i++) {
+        if (find(failsymbols.begin(), failsymbols.end(), i) == failsymbols.end())
+            availsymbols.push_back(i);
+    }
+
+    cout << "fail symbols: ";
+    for (int i=0; i<failsymbols.size(); i++) {
+        cout << failsymbols[i] << " ";
+    }
+    cout << endl;
+
+    cout << "avail symbols:";
+    for(int i=0; i<availsymbols.size(); i++) {
+        cout << availsymbols[i] << " ";
+    }
+    cout << endl;
+
+    ECDAG* decdag = ec1->Decode(availsymbols, failsymbols);
+    vector<ECTask*> decodetasks;
+    unordered_map<int, char*> decodeBufMap;
+    vector<int> dectoposeq = decdag->toposort();
+    for (int i=0; i<dectoposeq.size(); i++) { 
+        ECNode* curnode = decdag->getNode(dectoposeq[i]);
+        curnode->parseForClient(decodetasks);
+    }
+    for (int i=0; i<n_data_symbols; i++) {
+        if (find(failsymbols.begin(), failsymbols.end(), i) == failsymbols.end())
+            decodeBufMap.insert(make_pair(i, databuffers[i]));
+        else
+            decodeBufMap.insert(make_pair(i, repairbuf[i]));
+    }
+    for (int i=0; i<n_code_symbols; i++) 
+        if (find(failsymbols.begin(), failsymbols.end(), n_data_symbols+i) == failsymbols.end())
+            decodeBufMap.insert(make_pair(n_data_symbols+i, codebuffers[i]));
+        else
+            decodeBufMap.insert(make_pair(i, repairbuf[n_data_symbols+i]));
+        
+    initDecodeTime += getCurrentTime();
+
+    decodeTime -= getCurrentTime();
+
+    /**
+     * @brief record number of disk seeks and number of sub-packets to read for every node
+     * @disk_read_pkts_map <node> sub-packets read in each node
+     * @disk_read_info_map <node_id, <num_disk_seeks, num_pkts_read>>
+     * 
+     */
+    map<int, vector<int>> disk_read_pkts_map;
+    map<int, pair<int, int>> disk_read_info_map;
+
+    int sum_packets_read = 0;
+    double norm_repair_bandwidth = 0;
+
+    // init the map
+    for (int node_id = 0; node_id < n; node_id++) {
+        disk_read_pkts_map[node_id].clear();
+        disk_read_info_map[node_id] = make_pair(0, 0);
+    }
+
+    for (int taskid = 0; taskid < decodetasks.size(); taskid++) {
+        ECTask* compute = decodetasks[taskid];
+        compute->dump();
+
+        vector<int> children = compute->getChildren();
+        unordered_map<int, vector<int>> coefMap = compute->getCoefMap();
+        int col = children.size();
+        int row = coefMap.size();
+
+        vector<int> targets;
+        int* matrix = (int*)calloc(row*col, sizeof(int));
+        char** data = (char**)calloc(col, sizeof(char*));
+        char** code = (char**)calloc(row, sizeof(char*));
+        for (int bufIdx=0; bufIdx<children.size(); bufIdx++) {
+            int child = children[bufIdx];
+
+            if (child < n * w) {
+                int node_id = child / w;
+                vector<int> &read_pkts = disk_read_pkts_map[node_id];
+                if (find(read_pkts.begin(), read_pkts.end(), child) == read_pkts.end()) {
+                    read_pkts.push_back(child);
+                }
+            }
+
+            data[bufIdx] = decodeBufMap[child];
+        }
+        int codeBufIdx = 0;
+        for (auto it: coefMap) {
+            int target = it.first;
+            char* codebuf; 
+            if (decodeBufMap.find(target) == decodeBufMap.end()) {
+                codebuf = (char*)calloc(pktsizeB, sizeof(char));
+                decodeBufMap.insert(make_pair(target, codebuf));
+            } else {
+                codebuf = decodeBufMap[target];
+            }
+            code[codeBufIdx] = codebuf;
+            targets.push_back(target);
+            vector<int> curcoef = it.second;
+            for (int j=0; j<col; j++) {
+                matrix[codeBufIdx * col + j] = curcoef[j];
+            }
+            codeBufIdx++;
+        }
+        Computation::Multi(code, data, matrix, row, col, pktsizeB, "Isal");
+        free(matrix);
+        free(data);
+        free(code);
+    }
+
     decodeTime += getCurrentTime();
 
-    // check correcness
-    bool success = true;
-    for(int i=0; i<pktsizeB; i++) {
-      if (oribuffer[i] != repairbuf[i]) {
-        success = false;
-	break;
-      }
+    /**
+     * @brief record the disk_read_info_map
+     */
+    for (auto item : disk_read_pkts_map) {
+        vector<int> &read_pkts = item.second;
+        sort(read_pkts.begin(), read_pkts.end());
     }
-    if (!success) {
-      cout << "repair error!" << endl;
-      break;
+
+    for (int node_id = 0; node_id < n; node_id++) {
+        vector<int> &list = disk_read_pkts_map[node_id];
+
+        // we first transfer items in list %w
+        vector<int> offset_list;
+        for (int i = 0; i < list.size(); i++) {
+            offset_list.push_back(list[i]%w); 
+        }
+        sort(offset_list.begin(), offset_list.end()); // sort in ascending order
+        reverse(offset_list.begin(), offset_list.end());
+        
+        // create consecutive read list
+        int num_of_cons_reads = 0;
+        vector<int> cons_list;
+        vector<vector<int>> cons_read_list; // consecutive read list
+        while (offset_list.empty() == false) { 
+            int offset = offset_list.back();
+            offset_list.pop_back();
+
+            if (cons_list.empty() == true) {
+                cons_list.push_back(offset);
+            } else {
+                // it's consecutive
+                if (cons_list.back() + 1 == offset) {
+                    cons_list.push_back(offset); // at to the back of prev cons_list
+                } else {
+                    cons_read_list.push_back(cons_list); // commits prev cons_list
+                    cons_list.clear();
+                    cons_list.push_back(offset); // at to the back of new cons_list
+                }
+            }
+        }
+        if (cons_list.empty() == false) {
+            cons_read_list.push_back(cons_list);
+        }
+
+        printf("node id: %d, cons_read_list:\n", node_id);
+        for (auto cons_list : cons_read_list) {
+            for (auto offset : cons_list) {
+            printf("%d ", offset);
+            }
+            printf("\n");
+        }
+
+        // update disk_read_info_map
+        disk_read_info_map[node_id].first = cons_read_list.size();
+        disk_read_info_map[node_id].second = disk_read_pkts_map[node_id].size();
+
+        // update stats
+        sum_packets_read += disk_read_pkts_map[node_id].size();
     }
-  }
-  cout << "============================================" << endl;
-  cout << "InitEncodeTime: " << initEncodeTime/1000 << " ms" << endl;
-  cout << "PureEncodeTime: " << encodeTime/1000 << " ms" << endl;
-  cout << "PureEncodeThroughput: " << blocksizeB*k/1.048576/encodeTime << endl;
-  cout << "InitDecodeTime: " << initDecodeTime/1000 << " ms" << endl;
-  cout << "PureDecodeTime: " << decodeTime/1000 << " ms" << endl;
-  cout << "PureDecodeThroughput: " << blocksizeB/1.048576/decodeTime << endl;
 
+    // calculate norm repair bandwidth (against RS code)
+    norm_repair_bandwidth = sum_packets_read * 1.0 / (k * w);
 
-//  // take out original data
-//  uint8_t* oribuf = (uint8_t*)calloc(pktsizeB, sizeof(uint8_t));
-//  if (fidx<k) memcpy(oribuf, databuffers[fidx], pktsizeB);
-//  else memcpy(oribuf, codebuffers[fidx-k], pktsizeB);
-//
-//  // prepare avail buffer and torec buffer
-//  uint8_t** availbuffers = (uint8_t**)calloc(k, sizeof(uint8_t*));
-//  uint8_t** toretbuffers = (uint8_t**)calloc(1, sizeof(uint8_t*));
-//  int aidx=0;
-//  for (int i=0; i<k && aidx<k; i++) {
-//    if (i == fidx) continue;
-//    availbuffers[aidx] = (uint8_t*)calloc(pktsizeB, sizeof(uint8_t));
-//    memcpy(availbuffers[aidx], databuffers[i], pktsizeB);
-//    aidx++;
-//  }
-//  for (int i=0; i<(n-k) && aidx<k; i++) {
-//    if (i+k == fidx) continue;
-//    availbuffers[aidx] = (uint8_t*)calloc(pktsizeB, sizeof(uint8_t));
-//    memcpy(availbuffers[aidx], codebuffers[i], pktsizeB);
-//    aidx++;
-//  }
-//  toretbuffers[0] = (uint8_t*)calloc(pktsizeB, sizeof(uint8_t));
-//  memset(toretbuffers[0], 0, pktsizeB);
+    printf("disk read info:\n");
+    for (int node_id = 0; node_id < n; node_id++) {
+        printf("node_id: %d, num_disk_seeks: %d, num_pkts_read: %d, pkts: ", node_id, disk_read_info_map[node_id].first, disk_read_info_map[node_id].second);
+        // printf("%d, %d\n", disk_read_info_map[node_id].first, disk_read_info_map[node_id].second);
+        for (auto pkt : disk_read_pkts_map[node_id]) {
+            printf("%d ", pkt);
+        }
+        printf("\n");
+    }
+    printf("packets read: %d / %d, norm repair bandwidth: %f\n", sum_packets_read, k * w, norm_repair_bandwidth);
 
-//  if (systype == "native") {
-//    rscode->check(fidx);
-//  } else {
-//    for(int i=0; i<n; i++) {
-//      if (i == fidx) torecidx.push_back(i);
-//      else availidx.push_back(i);
-//    }
-//    for (int i=0; i<k; i++) {
-//      int idx = availidx[i];
-//      decodeBufMap.insert(make_pair(idx, (char*)availbuffers[i]));
-//    }
-//    decodeBufMap.insert(make_pair(fidx, (char*)toretbuffers[0]));
-//    decdag = ec->Decode(availidx, torecidx);
-//    vector<int> toposeq = decdag->toposort();
-//    for (int i=0; i<toposeq.size(); i++) {
-//      ECNode* curnode = decdag->getNode(toposeq[i]);
-//      curnode->parseForClient(decodetasks);
-//    }
-//  }
-//  initDecodeTime += getCurrentTime();
+    // // calculate straggler info
+    // int straggler_node_id = -1;
+    // double straggler_disk_io_time_s = 0;
 
-//  // perform decode
-//  double decodeTime = 0;
-//  decodeTime -= getCurrentTime();
-//  for (int i=0; i<stripenum; i++) {
-//    if (systype == "native")    {
-//      rscode->decode(availbuffers, k, toretbuffers, 1, pktsizeB);
-//      //rscode->decode2(availbuffers, k, toretbuffers, 1, pktsizeB, mat);
-//    } else {
-//      for (int taskid=0; taskid<decodetasks.size(); taskid++) {
-//        ECTask* compute = decodetasks[taskid];
-//	vector<int> children = compute->getChildren();
-//	unordered_map<int, vector<int>> coefMap = compute->getCoefMap();
-//	int col = children.size();
-//	int row = coefMap.size();
-//	vector<int> targets;
-//	int* matrix = (int*)calloc(row*col, sizeof(int));
-//	char** data = (char**)calloc(col, sizeof(char*));
-//	char** code = (char**)calloc(row, sizeof(char*));
-//	for (int bufIdx=0; bufIdx<children.size(); bufIdx++) {
-//          int child = children[bufIdx];
-//	  data[bufIdx] = decodeBufMap[child];
-//	}
-//	int codeBufIdx = 0;
-//	for (auto it: coefMap) {
-//          int target = it.first;
-//	  char* codebuf;
-//	  if (decodeBufMap.find(target) == decodeBufMap.end()) {
-//            codebuf = (char*)calloc(pktsizeB, sizeof(char));
-//	    decodeBufMap.insert(make_pair(target, codebuf));
-//	  } else {
-//            codebuf = decodeBufMap[target];
-//	  }
-//	  code[codeBufIdx] = codebuf;
-//	  targets.push_back(target);
-//	  vector<int> coef = it.second;
-//	  for (int j=0; j<col; j++) {
-//            matrix[codeBufIdx * col + j] = coef[j];
-//	  }
-//	  codeBufIdx++;
-//        }
-//	Computation::Multi(code, data, matrix, row, col, pktsizeB, "Isal");
-//	free(matrix);
-//	free(data);
-//	free(code);
-//      }
-//    }
-//  }
-//  decodeTime += getCurrentTime();
-//  overallDecodeTime += getCurrentTime();
-//  cout << "--------------------------------------------" << endl;
-//  cout << "OverallDecodeTime: " << overallDecodeTime/1000 << " ms" << endl;
-//  cout << "InitDecodeTime: " << initDecodeTime/1000 << " ms" << endl;
-//  cout << "PureDecodeTIme: " << decodeTime/1000 << " ms" << endl;
-//  cout << "OverallDecodeThroughput: " << blocksizeB/1.048576/overallDecodeTime << endl;
-//  cout << "PureDecodeThroughput: " << blocksizeB/1.048576/decodeTime << endl;
-//
-//  char* repairedbuf = (char*)toretbuffers[0];
-//  bool repaired=true;
-//  for (int i=0; i<pktsizeB; i++) {
-//    if (oribuf[i] != repairedbuf[i]) {
-//      repaired = false;
-//      break;
-//    }
-//  }
-//  if (repaired) {
-//    cout << "repaired!" << endl;
-//  } else {
-//    cout << "repair error!" << endl;
-//  }
-//
-//  // free data buffers
-//  for (int i=0; i<k; i++) free(databuffers[i]);
-//  free(databuffers);
-//  for (int i=0; i<(n-k); i++) free(codebuffers[i]);
-//  free(codebuffers);
-//
-//  free(oribuf);
-//  for (int i=0; i<k; i++) free(availbuffers[i]);
-//  free(availbuffers);
-//  free(toretbuffers[0]);
-//
-//  if (rscode) delete rscode;
-//  if (ec) delete ec;
-//  if (encdag) delete encdag;
-//  for (auto task: encodetasks) delete task;
-//  encodeBufMap.clear();
+    // for (int node_id = 0; node_id < n; node_id++) {
+    //     double node_disk_io_time_s = 1.0 * disk_read_info_map[node_id].first * disk_seek_time_ms / 1000 + 
+    //         1.0 * disk_read_info_map[node_id].second * conf->_pktSize / 1048576 / w / disk_bdwt_MBps;
+
+    //     printf("%f\n", node_disk_io_time_s);
+    //     if (node_disk_io_time_s > straggler_disk_io_time_s) {
+    //         straggler_disk_io_time_s = node_disk_io_time_s;
+    //         straggler_node_id = node_id;
+    //     }
+    // }
+
+    // printf("straggler node_id: %d, num_seeks: %d, num_sub_pkts_read: %d, disk_io_time_s: %f\n",
+        //  straggler_node_id, disk_read_info_map[straggler_node_id].first, disk_read_info_map[straggler_node_id].second, straggler_disk_io_time_s);
+
+    // debug decode
+    for (int i=0; i<failsymbols.size(); i++) {
+        int failidx = failsymbols[i];
+        char* curbuf  = decodeBufMap[failidx];
+        cout << "failidx = " << failidx << ", value = " << (int)curbuf[0] << endl;
+
+        int failed_node = failidx / w;
+
+        int diff = 0;
+
+        if (failed_node < k) {
+            diff = memcmp(decodeBufMap[failidx], databuffers[failidx], pktsizeB * sizeof(char));
+        } else {
+            diff = memcmp(decodeBufMap[failidx], codebuffers[failidx - n_data_symbols], pktsizeB * sizeof(char));
+        }
+        if (diff != 0) {
+            printf("failed to decode data of symbol %d!!!!\n", i);
+        } else {
+            printf("Decoded data of symbol %d.\n", i);
+        }
+    }
 }
