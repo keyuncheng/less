@@ -30,14 +30,27 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
     _order = (1 << _fw) - 1;
     getPrimElementsPower(_order, _e, _fw);
     genEncodingMatrix();
+
+    // TODO: handle layouts
 }
 
 ECDAG* STACKCode::Encode() {
-
+    ECDAG *ecdag = new ECDAG();
+    vector<int> data;
+    vector<int> code;
+    for (int alpha = 0; alpha < _w; alpha++) {
+        for (int i = 0; i < _k; i++) {
+            data.push_back(i * _w + alpha);
+        }
+    }
 }
 
 ECDAG* STACKCode::Decode(vector<int> from, vector<int> to) {
-
+    if (to.size() == 1) {
+        return DecodeSingle(from, to);
+    } else {
+        return DecodeMultiple(from, to);
+    }
 }
 
 void STACKCode::Place(vector<vector<int>>& group) {
@@ -92,79 +105,85 @@ void STACKCode::convertPCMatrix2EncMatrix(int n, int k, int w) {
 
 bool STACKCode::convertPCMatrix2GenMatrix(int n, int k, int fw, const int* pcMatrix, int *genMatrix, const int* from, const int* to) {
     int m = n - k;
-    int numFailedNodes = 0;
-    int numHelperNodes = 0;
+    int numFailedSymbols = 0;
+    int numAvailSymbols = 0;
     for (int i = 0; i < n; i++)
     {
         if (to[i])
         {
-            numFailedNodes++;
+            numFailedSymbols++;
         }
         if (from[i])
         {
-            numHelperNodes++;
+            numAvailSymbols++;
         }
         if (to[i] == 1 && from[i] == 1)
         {
-            cout << "STACKCode::convertPCMatrix2GenMatrix() numFailedNodes node " << i << " cannot be used for decoding" << endl;
+            cout << "STACKCode::convertPCMatrix2GenMatrix() numFailedSymbols node " << i << " cannot be used for decoding" << endl;
             return false;
         }
     }
-    if (numFailedNodes > m)
+    if (numFailedSymbols > m)
     {
-        cout << "STACKCode::convertPCMatrix2GenMatrix() Too many nodes for decoding: " << numFailedNodes << endl;
+        cout << "STACKCode::convertPCMatrix2GenMatrix() Too many failed symbols to decode: " << numFailedSymbols << ", max allowed: " << m << endl;
         return false;
     }
-    if (numHelperNodes != k)
+    if (numAvailSymbols != k)
     {
-        cout << "STACKCode::convertPCMatrix2GenMatrix() The number of numHelperNodes nodes should be k" << std::endl;
+        cout << "STACKCode::convertPCMatrix2GenMatrix() Invalid number of available symbols: " << numAvailSymbols << ", k: " << k << std::endl;
         return false;
     }
-    // TODO
 
-    const int *H = pcmat;
-    int *H1 = new int[r * r]; // numFailedNodes
-    int *H2 = new int[r * k]; // numHelperNodes
-    int *H1_inverse = new int[r * r];
+    int *H1 = new int[m * m]; // number of failed nodes
+    int *H2 = new int[m * k]; // number of helper nodes
+    int *H1_inverse = new int[m * m];
 
+    // copy the matrix to corresponding sub-matrix
     for (int j = 0, j1 = 0, j2 = 0; j < n; j++)
     {
-        if (!from[j]){
-            for(int i = 0; i < r; i++){
-                H1[i * r + j1] = H[i * n + j];
+        if (!from[j]) {
+            for(int i = 0; i < m; i++){
+                H1[i * m + j1] = pcMatrix[i * n + j];
             }
             j1++;
-        }else{
-            for(int i = 0; i < r; i++){
-                H2[i * k + j2] = H[i * n + j];
+        } else{
+            for (int i = 0; i < m; i++) {
+                H2[i * k + j2] = pcMatrix[i * n + j];
             }
             j2++;
         }
     }
 
-    jerasure_invert_matrix(H1, H1_inverse, r, w);
-    int *bigmat = jerasure_matrix_multiply(H1_inverse, H2, r, r, r, k, w);
+    // inverse H1
+    jerasure_invert_matrix(H1, H1_inverse, m, fw);
+
+    // multiply H1_inverse and H2
+    int *tmpMatrix = jerasure_matrix_multiply(H1_inverse, H2, m, m, m, k, fw);
     delete[] H1;
     delete[] H2;
     delete[] H1_inverse;
-    if (numFailedNodes == r)
-    {
-        return bigmat;
-    }
-    int *result = (int*)malloc(sizeof(int)*(numFailedNodes  * k));
 
-    for(int x = 0, y = 0, z = 0; x < n; x++){
-        if(!from[x]){
-            if(to[x]){
-                memcpy(result + z * k, bigmat + y * k, sizeof(int)*k);
+    // tmpMatrix has exactly m rows
+    if (numFailedSymbols == m)
+    {
+        return tmpMatrix;
+    }
+
+    // only needs numFailedSymbols < m rows
+    int *retMatrix = (int*) malloc(numFailedSymbols * k * sizeof(int));
+
+    for (int x = 0, y = 0, z = 0; x < n; x++) {
+        if (!from[x]) {
+            if (to[x]) {
+                memcpy(retMatrix + z * k, tmpMatrix + y * k, k * sizeof(int));
                 z++;
             }
             y++;
         }
     }
 
-    free(bigmat);
-    return result;
+    free(tmpMatrix);
+    return true;
 }
 
 void STACKCode::genDecodingMatrix(vector<int> &availNodes, vector<int> &failedNodes) {
