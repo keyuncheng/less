@@ -15,9 +15,10 @@ public:
 private:
 
     int _m; // m = n - k
+    int _fw; // field width
     int _e; // primitive element
-    int _order; // the number of nonzero elements in GF(2^w)
-    vector<int> _primElementPower; // primitive elements power in GF(2^w)
+    int _order; // the number of nonzero elements in GF(2^fw)
+    vector<int> _primElementPower; // primitive elements power in GF(2^fw)
 
     int _num_groups; // number of groups
     int *_encodeMatrix; // encoding matrix
@@ -25,15 +26,30 @@ private:
 
     void genParityCheckMatrix();
     void genEncodingMatrix();
-    void convertPCMatrix2EncMatrix();
     void genDecodingMatrix(vector<int> &availNodes, vector<int> &failedNodes);
     void repairSingle(vector<int> &availNodes, int failedNode);
     void repairMultiple(vector<int> &availNodes, vector<int> &failedNodes);
 
-    void getPrimElementsPower(int order, int e, int w); // get primitive elements power
-    int getAvailPrimElements(int n, int k, int w); // get available primitive elements for w=8
-    int findRoot(int f, int w); // find root with primitive polynomial f
-    int polynomialAssignment(int x, int f, int w); // polynomial assignment
+    void getPrimElementsPower(int order, int e, int fw); // get primitive elements power
+    int getAvailPrimElements(int n, int k, int fw); // get available primitive elements for GF(2^fw)
+    int findRoot(int f, int fw); // find root with primitive polynomial f
+    int polynomialAssignment(int x, int f, int fw); // polynomial assignment
+    void convertPCMatrix2EncMatrix(int n, int k, int w); // convert parity check matrix to encoding matrix
+    /**
+     * @brief convert parity check matrix to generator matrix, based on the
+     * avialable ndoes and failed nodes
+     * 
+     * @param n 
+     * @param k 
+     * @param fw field width
+     * @param pcMatrix a matrix in size of (n - k)*w * n*w
+     * @param genMatrix a matrix in size of k*w * n*w
+     * @param from length of n * w vector, consisting of 0 and 1s. 0 means
+     * failed symbol id, 1 means available symbol id
+     * @param to length of n * w vector, consisting of 0 and 1s. 0 means
+     * failed symbol id, 1 means available symbol id
+     */
+    bool convertPCMatrix2GenMatrix(int n, int k, int fw, const int* pcMatrix, int *genMatrix, const int* from, const int* to);
 };
 
 #endif // __STACKCode_HH_
