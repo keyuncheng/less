@@ -6,15 +6,23 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
     _w = w;
     _opt = opt;
     _m = n - k;
+    _num_groups = _w + 1;
 
     if (_w != 8) {
-        cout << "STACKCode currently only supports w=8" << endl;
+        cout << "STACKCode::STACKCode() Currently only supports w=8" << endl;
         exit(1);
     }
-
-    _num_groups = _w + 1;
-    // TBD
+    
     _e = getAvailPrimElements(_n, _k, _w);
+
+    if (_e == 0)
+    {
+        cout << "STACKCode::STACKCode() failed to find available primitive elements in GF(2^" << w << ")" << endl;
+        exit(-1);
+    }
+
+    _order = (1 << w) - 1;
+    getPrimElementsPower(_order, _e, _w);
 }
 
 ECDAG* STACKCode::Encode() {
@@ -53,6 +61,16 @@ void STACKCode::repairMultiple(vector<int> &availNodes, vector<int> &failedNodes
 
 }
 
+void STACKCode::getPrimElementsPower(int order, int e, int w)
+{
+    _primElementPower.resize(order);
+    _primElementPower[0] = 1;
+    for (int i = 1; i < order; i++)
+    {
+        _primElementPower[i] = galois_single_multiply(_primElementPower[i - 1], e, w);
+    }
+}
+
 int STACKCode::getAvailPrimElements(int n, int k, int w) {
     // invalid cases
     if (k <= 0 || n - k < 2) {
@@ -77,7 +95,7 @@ int STACKCode::getAvailPrimElements(int n, int k, int w) {
         return 2;
     }
 
-    uint8_t f = 0;
+    int f = 0;
 
     int flag = n * 10000 + k * 100 + w;
 
@@ -179,5 +197,30 @@ int STACKCode::getAvailPrimElements(int n, int k, int w) {
         f = 0;
     }
 
-    return find_root_w8(f);
+    return findRoot(f, w);
+}
+
+int STACKCode::findRoot(int f, int w)
+{
+    for (int root = 1;; root++)
+    {
+        if (root == 0)
+            return 0;
+        if (polynomialAssignment(root, f, w) != 0)
+            continue;
+        return root;
+    }
+}
+
+int STACKCode::polynomialAssignment(int x, int f, int w)
+{
+    int fx = 1;
+    for (int i = w - 1; i >= 0; i--)
+    {
+        fx = galois_single_multiply(fx, x, w);
+        // fx *= x;
+        // fx = gf_mult(fx, x, w);
+        fx ^= ((f >> i) & (1));
+    }
+    return fx;
 }
