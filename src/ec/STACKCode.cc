@@ -31,16 +31,19 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
     getPrimElementsPower(_order, _e, _fw);
     genEncodingMatrix();
 
-    // TODO: handle layouts
+    initLayout();
 }
 
 ECDAG* STACKCode::Encode() {
     ECDAG *ecdag = new ECDAG();
     vector<int> data;
     vector<int> code;
+    // TODO: resume here
     for (int alpha = 0; alpha < _w; alpha++) {
-        for (int i = 0; i < _k; i++) {
-            data.push_back(i * _w + alpha);
+        vector<int> &data(_layout[alpha].begin(), _layout[alpha].begin() + _k);
+        for (int symId = 0; symId < _m * _w; symId++) {
+            int code = _layout[alpha][nodeId];
+            vector<int> coef(_encodeMatrix[alpha * ])
         }
     }
 }
@@ -184,6 +187,16 @@ bool STACKCode::convertPCMatrix2GenMatrix(int n, int k, int fw, const int* pcMat
 
     free(tmpMatrix);
     return true;
+}
+
+void STACKCode::initLayout() {
+    int symbolId = 0;
+    _layout.resize(_n, vector<int>(_w, 0));
+    for (int nodeId = 0; nodeId < _n; nodeId++) {
+        for (int alpha = 0; alpha < _w; alpha++) {
+            _layout[alpha][nodeId] = symbolId++;
+        }
+    }
 }
 
 void STACKCode::genDecodingMatrix(vector<int> &availNodes, vector<int> &failedNodes) {
@@ -362,4 +375,17 @@ int STACKCode::polynomialAssignment(int x, int f, int fw)
         fx ^= ((f >> i) & (1));
     }
     return fx;
+}
+
+vector<int> STACKCode::getNodeSubPackets(int nodeid) {
+    vector<int> symbols;
+    for (int i = 0; i < _w; i++) {
+        symbols.push_back(_layout[i][nodeid]);
+    }
+
+    return symbols;
+}
+
+vector<vector<int>> STACKCode::GetSubPackets() {
+    return _layout;
 }

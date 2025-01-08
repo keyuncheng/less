@@ -5,13 +5,6 @@
 #include "Computation.hh"
 
 class STACKCode : public ECBase {
-public:
-
-    STACKCode(int n, int k, int w, int opt, vector<string> param);
-    ECDAG* Encode();
-    ECDAG* Decode(vector<int> from, vector<int> to);
-    void Place(vector<vector<int>>& group);
-
 private:
 
     int _m; // m = n - k
@@ -19,6 +12,10 @@ private:
     int _e; // primitive element
     int _order; // the number of nonzero elements in GF(2^fw)
     vector<int> _primElementPower; // primitive elements power in GF(2^fw)
+
+    int _num_virtual_symbols; // total number of virtual symbols
+    vector<int> _virtual_symbols; // virtual symbols
+    vector<vector<int>> _layout; // layout (w * n)
 
     int _num_groups; // number of groups
     int *_encodeMatrix; // encoding matrix
@@ -50,6 +47,33 @@ private:
      * failed symbol id, 1 means available symbol id
      */
     bool convertPCMatrix2GenMatrix(int n, int k, int fw, const int* pcMatrix, int *genMatrix, const int* from, const int* to);
+
+    void initLayout(); // init code layout
+
+public:
+
+    STACKCode(int n, int k, int w, int opt, vector<string> param);
+    ECDAG* Encode();
+    ECDAG* Decode(vector<int> from, vector<int> to);
+    void Place(vector<vector<int>>& group);
+
+    /**
+     * @brief Get sub-packets in nodeid
+     * 
+     * @param nodeid 
+     * @return vector<int> 
+     */
+    vector<int> getNodeSubPackets(int nodeid);
+
+    /**
+     * @brief Get all sub-packets
+     * N1 N2 ... Nn
+     * 0 2 4 6 8 ...
+     * 1 3 5 7 9 ... 
+     * 
+     * @return vector<vector<int>> 
+     */
+    vector<vector<int>> GetSubPackets();
 };
 
 #endif // __STACKCode_HH_
