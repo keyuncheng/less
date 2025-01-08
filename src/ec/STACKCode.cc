@@ -37,15 +37,33 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
 ECDAG* STACKCode::Encode() {
     ECDAG *ecdag = new ECDAG();
     vector<int> data;
-    vector<int> code;
-    // TODO: resume here
-    for (int alpha = 0; alpha < _w; alpha++) {
-        vector<int> &data(_layout[alpha].begin(), _layout[alpha].begin() + _k);
-        for (int symId = 0; symId < _m * _w; symId++) {
-            int code = _layout[alpha][nodeId];
-            vector<int> coef(_encodeMatrix[alpha * ])
+    vector<int> codes;
+
+    // data: (k * w)
+    for (int nodeId = _k; nodeId < _n; nodeId++) {
+        for (int alpha = 0; alpha < _w; alpha++) {
+            data.push_back(_layout[nodeId][alpha]);
         }
     }
+
+    // parity: (m * w)
+    for (int nodeId = _k; nodeId < _n; nodeId++) {
+        for (int alpha = 0; alpha < _w; alpha++) {
+            int parityId = nodeId - _k;
+            int code = _layout[alpha][nodeId];
+            vector<int> coef(_encodeMatrix[parityId * _k * _w], _encodeMatrix[parityId * _k * _w] + _k * _w);
+            ecdag->Join(code, data, coef);
+            codes.push_back(code);
+        }
+    }
+
+    if (_m * _w > 1) {
+        int vidx = ecdag->BindX(codes);
+        ecdag->BindY(vidx, data[0]);
+
+    }
+
+    return ecdag;
 }
 
 ECDAG* STACKCode::Decode(vector<int> from, vector<int> to) {
