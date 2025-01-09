@@ -222,11 +222,156 @@ void STACKCode::genDecodingMatrix(vector<int> &availNodes, vector<int> &failedNo
 }
 
 void STACKCode::repairSingle(vector<int> &availNodes, int failedNode) {
+    int groupId = failedNode % _numGroups;
+    int repairBW = getRepairBandwidth(failedNode);
+    vector<int> helperNodeIds = getHelperNodes(failedNode);
 
+    // TODO: resume here
+
+    memset(from, 0, sizeof(int) * (n * alpha));
+    memset(to, 0, sizeof(int) * (n * alpha));
+    for (int j = 0; j < alpha; j++)
+    {
+        to[failedNode * alpha + j] = 1;
+    }
+    for (int i = 0; i < n; i++)
+    {
+        if (helperNodeIds[i])
+        {
+            if (i % g == b)
+            {
+                for (int j = 0; j < alpha; j++)
+                {
+                    from[i * alpha + j] = 1;
+                }
+            }
+            else if (b < alpha)
+            {
+                from[i * alpha + b] = 1;
+            }
+            else
+            {
+                from[i * alpha + (i % g)] = 1;
+            }
+        }
+    }
+
+    int rows = r;
+    // int cols = r + beta;
+    int cols1 = r;
+    int cols2 = beta;
+
+    int before = 0;
+    for (int j = 0; j < n; j++)
+    {
+        if (j >= failedNode)
+            break;
+        if (!helperNodeIds[j])
+        {
+            before += (((j % g) == b) ? (alpha) : (1));
+        }
+    }
+
+    int *R1 = new int[rows * cols1];
+    int *R2 = new int[rows * cols2];
+
+    /**
+     * get R1 and R2
+     */
+    int start_col1 = 0;
+    int start_col2 = 0;
+    for (int a = 0; a < n; a++)
+    {
+        if (helperNodeIds[a])
+        {
+            if (a % g == b)
+            {
+                for (int j = 0; j < alpha; j++)
+                {
+                    for (int t = 0; t < r; t++)
+                    {
+                        R2[t * cols2 + start_col2 + j] = primitive_element_power[((a * alpha + j) * t) % order];
+                    }
+                }
+                start_col2 += alpha;
+            }
+            else if (b == alpha)
+            {
+                for (int t = 0; t < r; t++)
+                {
+                    R2[t * cols2 + start_col2] = primitive_element_power[((a * alpha + a % g) * t) % order];
+                }
+                start_col2 += 1;
+            }
+            else
+            {
+                for (int t = 0; t < r; t++)
+                {
+                    R2[t * cols2 + start_col2] = primitive_element_power[((a * alpha + b) * t) % order];
+                }
+                start_col2 += 1;
+            }
+        }
+        else
+        {
+            if (a % g == b)
+            {
+                for (int j = 0; j < alpha; j++)
+                {
+                    for (int t = 0; t < r; t++)
+                    {
+                        R1[t * cols1 + start_col1 + j] = primitive_element_power[((a * alpha + j) * t) % order];
+                    }
+                }
+                start_col1 += alpha;
+            }
+            else if (b == alpha)
+            {
+                for (int t = 0; t < r; t++)
+                {
+                    R1[t * cols1 + start_col1] = primitive_element_power[((a * alpha + a % g) * t) % order];
+                }
+                start_col1 += 1;
+            }
+            else
+            {
+                for (int t = 0; t < r; t++)
+                {
+                    R1[t * cols1 + start_col1] = primitive_element_power[((a * alpha + b) * t) % order];
+                }
+                start_col1 += 1;
+            }
+        }
+    }
+
+    // print_mat(R1, rows, cols1);
+    // print_mat(R2, rows, cols2);
+
+    int *R1_inverse = new int[rows * cols1];
+    jerasure_invert_matrix(R1, R1_inverse, rows, w);
+    int *temp = jerasure_matrix_multiply(R1_inverse, R2, rows, cols1, rows, cols2, w);
+    // print_mat(temp, rows, cols2);
+    delete[] R1;
+    delete[] R2;
+    delete[] R1_inverse;
+    if (cols1 == alpha)
+    {
+        return temp;
+    }
+    else
+    {
+        int *R = (int *)malloc(sizeof(int) * alpha * cols2);
+        for (int i = 0; i < alpha; i++)
+        {
+            memcpy(R + i * cols2, temp + (i + before) * cols2, sizeof(int) * cols2);
+        }
+        free(temp);
+        return R;
+    }
 }
 
 void STACKCode::repairMultiple(vector<int> &availNodes, vector<int> &failedNodes) {
-
+    // TBD
 }
 
 void STACKCode::getPrimElementsPower(int order, int e, int fw)
@@ -406,4 +551,51 @@ vector<int> STACKCode::getNodeSubPackets(int nodeid) {
 
 vector<vector<int>> STACKCode::GetSubPackets() {
     return _layout;
+}
+
+int STACKCode::getRepairBandwidth(int failedNode)
+{
+    int groupId = failedNode % _numGroups;
+    if (groupId < _n % _numGroups)
+    {
+        return (_n / _numGroups + 1) * (_w - 1) + _k;
+    }
+    else
+    {
+        return (_n / _numGroups) * (_w - 1) + _k;
+    }
+}
+
+vector<int> STACKCode::getHelperNodes(int failedNode)
+{
+    int groupId = failedNode % _numGroups;
+    vector<int> helperNodeIds(_n, 1);
+    for (int i = 0; i < _n; i++)
+
+    helperNodeIds[failedNode] = 0;
+    if (_w < _m)
+    {
+        int count = _m - _w;
+        int single = (groupId < (_n % _numGroups)) ? (_n - _n / _numGroups - 1) : (_n - _n / _numGroups);
+
+        for (int i = 0; (i < _n) && (single < count); i++)
+        {
+            if (i % _numGroups == groupId)
+            {
+                helperNodeIds[i] = 0;
+                count -= _w;
+            }
+        }
+
+        for (int i = 0; (i < _n) && (count > 0); i++)
+        {
+            if (i % _numGroups != groupId)
+            {
+                helperNodeIds[i] = 0;
+                count -= 1;
+            }
+        }
+    }
+    
+    return helperNodeIds;
 }

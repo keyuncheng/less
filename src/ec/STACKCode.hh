@@ -13,11 +13,11 @@ private:
     int _order; // the number of nonzero elements in GF(2^fw)
     vector<int> _primElementPower; // primitive elements power in GF(2^fw)
 
-    int _num_virtual_symbols; // total number of virtual symbols
-    vector<int> _virtual_symbols; // virtual symbols
+    int _numVirtualSymbols; // total number of virtual symbols
+    vector<int> _virtualSymbols; // virtual symbols
     vector<vector<int>> _layout; // layout (w * n)
 
-    int _num_groups; // number of groups
+    int _numGroups; // number of groups
     int *_encodeMatrix; // encoding matrix
     int *_pcMatrix; // parity check matrix
 
@@ -49,6 +49,8 @@ private:
     bool convertPCMatrix2GenMatrix(int n, int k, int fw, const int* pcMatrix, int *genMatrix, const int* from, const int* to);
 
     void initLayout(); // init code layout
+    int STACKCode::getRepairBandwidth(int failedNode); // get repair bandwidth
+    vector<int> getHelperNodes(int failedNode); // get helper nodes
 
 public:
 
