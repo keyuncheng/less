@@ -24,8 +24,8 @@ private:
     void genParityCheckMatrix();
     void genEncodingMatrix();
     void genDecodingMatrix(vector<int> &availNodes, vector<int> &failedNodes);
-    void repairSingle(vector<int> &availNodes, int failedNode);
-    void repairMultiple(vector<int> &availNodes, vector<int> &failedNodes);
+    void decodeSingle(vector<int> &availNodes, int failedNode);
+    void decodeMultiple(vector<int> &availNodes, vector<int> &failedNodes);
 
     void getPrimElementsPower(int order, int e, int fw); // get primitive elements power
     int getAvailPrimElements(int n, int k, int fw); // get available primitive elements for GF(2^fw)
@@ -51,6 +51,7 @@ private:
     void initLayout(); // init code layout
     int STACKCode::getRepairBandwidth(int failedNode); // get repair bandwidth
     vector<int> getHelperNodes(int failedNode); // get helper nodes
+    int *getRepairMatrix(int failedNode); // get repair matrix for single node failure
 
 public:
 
