@@ -24,8 +24,8 @@ private:
     void genParityCheckMatrix();
     void genEncodingMatrix();
     void genDecodingMatrix(vector<int> &availNodes, vector<int> &failedNodes);
-    void decodeSingle(vector<int> &availNodes, int failedNode);
-    void decodeMultiple(vector<int> &availNodes, vector<int> &failedNodes);
+    ECDAG *decodeSingle(vector<int> &availNodes, int failedNode);
+    ECDAG *decodeMultiple(vector<int> &availNodes, vector<int> &failedNodes);
 
     void getPrimElementsPower(int order, int e, int fw); // get primitive elements power
     int getAvailPrimElements(int n, int k, int fw); // get available primitive elements for GF(2^fw)
@@ -49,7 +49,7 @@ private:
     bool convertPCMatrix2GenMatrix(int n, int k, int fw, const int* pcMatrix, int *genMatrix, const int* from, const int* to);
 
     void initLayout(); // init code layout
-    int STACKCode::getRepairBandwidth(int failedNode); // get repair bandwidth
+    int getRepairBandwidth(int failedNode); // get repair bandwidth
     vector<int> getHelperNodes(int failedNode); // get helper nodes
     int *getRepairMatrix(int failedNode); // get repair matrix for single node failure
 

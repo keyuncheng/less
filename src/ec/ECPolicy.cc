@@ -21,25 +21,50 @@ ECBase *ECPolicy::createECClass()
     //    toret = new RSCONV(_n, _k, _w, _locality, _opt, _param);
     toret = new RSCONV(_n, _k, _w, _opt, _param);
   }
-  else if (_classname == "AzureLRCFlat")
+  else if (_classname == "HHXORPlus")
   {
-    //    toret = new AzureLRCFlat(_n, _k, _w, _locality, _opt, _param);
-    toret = new AzureLRCFlat(_n, _k, _w, _opt, _param);
+    //    toret = new HHXORPlus(_n, _k, _w, _locality, _opt, _param);
+    toret = new HHXORPlus(_n, _k, _w, _opt, _param);
   }
-  else if (_classname == "AzureLRCTradeoff")
+  else if (_classname == "HTEC")
   {
-    //    toret = new AzureLRCTradeoff(_n, _k, _w, _locality, _opt, _param);
-    toret = new AzureLRCTradeoff(_n, _k, _w, _opt, _param);
+    //    toret = new HTEC(_n, _k, _w, _locality, _opt, _param);
+    toret = new HTEC(_n, _k, _w, _opt, _param);
   }
-  else if (_classname == "AzureLRCOptR1022")
+  else if (_classname == "WASLRC")
   {
-    //    toret = new AzureLRCOptR1022(_n, _k, _w, _locality, _opt, _param);
-    toret = new AzureLRCOptR1022(_n, _k, _w, _opt, _param);
+    //    toret = new WASLRC(_n, _k, _w, _locality, _opt, _param);
+    toret = new WASLRC(_n, _k, _w, _opt, _param);
   }
-  else if (_classname == "AzureLRCOptM1022")
+  else if (_classname == "ETRSConv")
   {
-    //    toret = new AzureLRCOptM1022(_n, _k, _w, _locality, _opt, _param);
-    toret = new AzureLRCOptM1022(_n, _k, _w, _opt, _param);
+    //    toret = new ETRSConv(_n, _k, _w, _locality, _opt, _param);
+    toret = new ETRSConv(_n, _k, _w, _opt, _param);
+  }
+  else if (_classname == "ETHHXORPlus")
+  {
+    //    toret = new ETHHXORPlus(_n, _k, _w, _locality, _opt, _param);
+    toret = new ETHHXORPlus(_n, _k, _w, _opt, _param);
+  }
+  else if (_classname == "ETHTEC")
+  {
+    //    toret = new ETHTEC(_n, _k, _w, _locality, _opt, _param);
+    toret = new ETHTEC(_n, _k, _w, _opt, _param);
+  }
+  else if (_classname == "BUTTERFLY")
+  {
+    //    toret = new BUTTERFLY(_n, _k, _w, _locality, _opt, _param);
+    toret = new BUTTERFLY(_n, _k, _w, _opt, _param);
+  }
+  else if (_classname == "Clay")
+  {
+    //    toret = new Clay(_n, _k, _w, _locality, _opt, _param);
+    toret = new Clay(_n, _k, _w, _opt, _param);
+  }
+  else if (_classname == "STACKCode")
+  {
+    //    toret = new STACKCode(_n, _k, _w, _locality, _opt, _param);
+    toret = new STACKCode(_n, _k, _w, _opt, _param);
   }
   else
   {

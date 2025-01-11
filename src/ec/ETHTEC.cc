@@ -213,7 +213,7 @@ void ETHTEC::CouplePairsInParities() {
 }
 
 void ETHTEC::ConstructDecodingMap() {
-    bool done[_m * _w] = { false };
+    vector<bool> done(_m * _w, false);
 
     for (int i = 0; i < _m * _w; i++) {
         // skip the packet if its decoding equation has been found when decoding other packets
@@ -226,7 +226,10 @@ void ETHTEC::ConstructDecodingMap() {
 
         map<int, int> packetColumnIndex; // packet -> column mapping of the decoding matrix
         int nextColumnIndex = 0;
-        int decodeMatrix[_m * _m] = { 0 }, invertedMatrix[_m *_m] = { 0 };
+        int *decodeMatrix = (int *) malloc(_m * _m * sizeof(int));
+        int *invertedMatrix = (int *) malloc(_m * _m * sizeof(int));
+        memset(decodeMatrix, 0, _m * _m * sizeof(int));
+        memset(invertedMatrix, 0, _m * _m * sizeof(int));
 
         // copy the coefficients to the decoding matrix
         for (int mi = 0; mi < numMapped; mi++) {
@@ -273,6 +276,9 @@ void ETHTEC::ConstructDecodingMap() {
             //cout << endl;
             done[pkt] = true;
         }
+
+        free(decodeMatrix);
+        free(invertedMatrix);
     }
 }
 
@@ -482,7 +488,11 @@ ECDAG* ETHTEC::ConstructDecodeECDAGWithET(vector<int> from, vector<int> to) cons
                 vector<int> dsrc;
 
                 // construct the decoding matrix
-                int decodeMatrix[_m * _m] = { 0 }, invertedMatrix[_m * _m] = { 0 };
+                int *decodeMatrix = (int *) malloc(_m * _m * sizeof(int));
+                int *invertedMatrix = (int *) malloc(_m * _m * sizeof(int));
+                memset(decodeMatrix, 0, _m * _m * sizeof(int));
+                memset(invertedMatrix, 0, _m * _m * sizeof(int));
+
                 for (int si = 0; si < numRsrc; si++) {
                     int spkt = GlobalToLocal(rsrc->at(si));
                     // for the line corresponding to the packet to repair, put the original parity packet repaired with all data packets in the sub-stripe
@@ -566,6 +576,9 @@ ECDAG* ETHTEC::ConstructDecodeECDAGWithET(vector<int> from, vector<int> to) cons
                 // add the transformed parity equation
                 ecdag->Join(t, *tsrc, *tcs);
                 //ecdag->BindY(t, tsrc->at(0));
+
+                free(decodeMatrix);
+                free(invertedMatrix);
             }
         }
 
@@ -628,4 +641,28 @@ int ETHTEC::ParityToVirtualNode(int n, int k, int w, int parityIndex) {
     if (parityIndex > n * w) { return -1; }
     // assign a one-to-one index beyond all data and parity packets
     return parityIndex + (n - k) * w;
+}
+
+vector<int> ETHTEC::getNodeSubPackets(int nodeid) {
+    vector<vector<int>> layout = GetSubPackets();
+
+    vector<int> symbols;
+    for (int i = 0; i < _w; i++) {
+        symbols.push_back(layout[i][nodeid]);
+    }
+
+    return symbols;
+}
+
+vector<vector<int>> ETHTEC::GetSubPackets() {
+    int symbol_id = 0;
+    vector<vector<int>> layout(_w, vector<int>());
+
+    for (int i = 0; i < _n; i++) {
+        for (int j = 0; j < _w; j++) {
+            layout[j].push_back(symbol_id++);
+        }
+    }
+
+    return layout;
 }

@@ -138,6 +138,24 @@ public:
      * @return the virtual node index if input index is within the range of parity packets [k * w, n * w); the input index if the input index refers to a data packet; -1 otherwise
      **/
     static int ParityToVirtualNode(int n, int k, int w, int parityIndex); 
+
+    /**
+     * @brief Get sub-packets in nodeid
+     * 
+     * @param nodeid 
+     * @return vector<int> 
+     */
+    vector<int> getNodeSubPackets(int nodeid);
+
+    /**
+     * @brief Get all sub-packets
+     * N1 N2 ... Nn
+     * 0 2 4 6 8 ...
+     * 1 3 5 7 9 ... 
+     * 
+     * @return vector<vector<int>> 
+     */
+    vector<vector<int>> GetSubPackets();
 };
 
 #endif // define _ETHTEC_CC_

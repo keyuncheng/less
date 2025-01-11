@@ -6,7 +6,7 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
     _w = w; // sub-packetization
     _opt = opt;
     _m = n - k;
-    _num_groups = _w + 1; // num_groups = sub-packetization + 1
+    _numGroups = _w + 1; // num_groups = sub-packetization + 1
 
     // field width (default: 8)
     _fw = 8;
@@ -68,7 +68,7 @@ ECDAG* STACKCode::Encode() {
 
 ECDAG* STACKCode::Decode(vector<int> from, vector<int> to) {
     if (to.size() == 1) {
-        return decodeSingle(from, to);
+        return decodeSingle(from, to[0]);
     } else {
         return decodeMultiple(from, to);
     }
@@ -90,13 +90,13 @@ void STACKCode::genParityCheckMatrix() {
         for (int y = 0; y < cols; y++)
         {
             // int a = y / _w / g;
-            int b = y / _w % _num_groups; // group id
+            int b = y / _w % _numGroups; // group id
             int j = y % _w; // the j-th sub-mtx in col
             int i = x / _m; // the i-th sub-mtx in row
             int t = x % _m;
             if (i == j || i == b)
             { // diagonal or 
-                _pcMatrix[x * cols + y] = primitive_element_power[(y * t) % _order];
+                _pcMatrix[x * cols + y] = _primElementPower[(y * t) % _order];
             }
         }
     }
@@ -120,8 +120,9 @@ void STACKCode::convertPCMatrix2EncMatrix(int n, int k, int w) {
 
     _encodeMatrix = new int[k * w * n * w];
     convertPCMatrix2GenMatrix(n * w, k * w, w, _pcMatrix, _encodeMatrix, from, to);
-    delete from;
-    delete to;
+
+    delete [] from;
+    delete [] to;
 }
 
 bool STACKCode::convertPCMatrix2GenMatrix(int n, int k, int fw, const int* pcMatrix, int *genMatrix, const int* from, const int* to) {
@@ -221,12 +222,13 @@ void STACKCode::genDecodingMatrix(vector<int> &availNodes, vector<int> &failedNo
 
 }
 
-void STACKCode::decodeSingle(vector<int> &availNodes, int failedNode) {
+ECDAG *STACKCode::decodeSingle(vector<int> &availNodes, int failedNode) {
     ECDAG *ecdag = new ECDAG();
 
     // symbols to repair
     int groupId = failedNode % _numGroups;
     int repairBW = getRepairBandwidth(failedNode);
+    vector<int> helperNodeIds = getHelperNodes(failedNode);
     vector<int> availSymbols;
     vector<int> failedSymbols;
     for (int alpha = 0; alpha < _w; alpha++)
@@ -252,7 +254,7 @@ void STACKCode::decodeSingle(vector<int> &availNodes, int failedNode) {
             }
             else
             {
-                availSymbols.push_back(_layout[nodeId % _numGroups][nodeId])
+                availSymbols.push_back(_layout[nodeId % _numGroups][nodeId]);
             }
         }
     }
@@ -309,7 +311,7 @@ int *STACKCode::getRepairMatrix(int failedNode) {
                 {
                     for (int t = 0; t < _m; t++)
                     {
-                        R2[t * numCols2 + start_col2 + alpha] = primitive_element_power[((a * _w + alpha) * t) % _order];
+                        R2[t * numCols2 + start_col2 + alpha] = _primElementPower[((a * _w + alpha) * t) % _order];
                     }
                 }
                 start_col2 += _w;
@@ -318,15 +320,15 @@ int *STACKCode::getRepairMatrix(int failedNode) {
             {
                 for (int t = 0; t < _m; t++)
                 {
-                    R2[t * numCols2 + start_col2] = primitive_element_power[((a * _w + a % _numGroups) * t) % _order];
+                    R2[t * numCols2 + start_col2] = _primElementPower[((a * _w + a % _numGroups) * t) % _order];
                 }
                 start_col2 += 1;
             }
             else
             {
-                for (int t = 0; t < r; t++)
+                for (int t = 0; t < _m; t++)
                 {
-                    R2[t * numCols2 + start_col2] = primitive_element_power[((a * _w + _numGroups) * t) % _order];
+                    R2[t * numCols2 + start_col2] = _primElementPower[((a * _w + _numGroups) * t) % _order];
                 }
                 start_col2 += 1;
             }
@@ -339,7 +341,7 @@ int *STACKCode::getRepairMatrix(int failedNode) {
                 {
                     for (int t = 0; t < _m; t++)
                     {
-                        R1[t * numCols1 + start_col1 + alpha] = primitive_element_power[((a * _w + alpha) * t) % _order];
+                        R1[t * numCols1 + start_col1 + alpha] = _primElementPower[((a * _w + alpha) * t) % _order];
                     }
                 }
                 start_col1 += _w;
@@ -348,7 +350,7 @@ int *STACKCode::getRepairMatrix(int failedNode) {
             {
                 for (int t = 0; t < _m; t++)
                 {
-                    R1[t * numCols1 + start_col1] = primitive_element_power[((a * _w + a % groupId) * t) % _order];
+                    R1[t * numCols1 + start_col1] = _primElementPower[((a * _w + a % groupId) * t) % _order];
                 }
                 start_col1 += 1;
             }
@@ -356,7 +358,7 @@ int *STACKCode::getRepairMatrix(int failedNode) {
             {
                 for (int t = 0; t < _m; t++)
                 {
-                    R1[t * numCols1 + start_col1] = primitive_element_power[((a * _w + groupId) * t) % _order];
+                    R1[t * numCols1 + start_col1] = _primElementPower[((a * _w + groupId) * t) % _order];
                 }
                 start_col1 += 1;
             }
@@ -389,8 +391,11 @@ int *STACKCode::getRepairMatrix(int failedNode) {
     }
 }
 
-void STACKCode::decodeMultiple(vector<int> &availNodes, vector<int> &failedNodes) {
+ECDAG *STACKCode::decodeMultiple(vector<int> &availNodes, vector<int> &failedNodes) {
     // TBD
+    ECDAG *ecdag = new ECDAG();
+
+    return ecdag;
 }
 
 void STACKCode::getPrimElementsPower(int order, int e, int fw)

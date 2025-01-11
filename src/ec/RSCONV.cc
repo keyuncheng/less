@@ -108,3 +108,27 @@ void RSCONV::generate_matrix(int* matrix, int rows, int cols, int w) {
     }
   }
 }
+
+vector<vector<int>> RSCONV::GetSubPackets() {
+    int symbol_id = 0;
+    vector<vector<int>> layout(_w, vector<int>());
+
+    for (int i = 0; i < _n; i++) {
+        for (int j = 0; j < _w; j++) {
+            layout[j].push_back(symbol_id++);
+        }
+    }
+
+    return layout;
+}
+
+vector<int> RSCONV::getNodeSubPackets(int nodeid) {
+    vector<vector<int>> layout = GetSubPackets();
+
+    vector<int> symbols;
+    for (int i = 0; i < _w; i++) {
+        symbols.push_back(layout[i][nodeid]);
+    }
+
+    return symbols;
+}

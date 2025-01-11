@@ -236,7 +236,10 @@ void HTEC::InitPartitionSearchMaps() {
             rst = st;
             do {
                 vector<int> subset;
-                bool packetsSelected[_w] = { false };
+
+                bool *packetsSelected = (bool *) malloc(_w * sizeof(bool));
+                memset(packetsSelected, 0, _w * sizeof(bool));
+
                 int numSelected = 0;
                 int numSubsets = useMoreSubsets? _m : (_w + _portion - 1) / _portion;
 
@@ -285,6 +288,8 @@ void HTEC::InitPartitionSearchMaps() {
                 // try a new 'random' step for next search
                 rst = (rst + 1) % _w;
 
+                free(packetsSelected);
+
             } while (p.Empty() && rst != st); // a partition is not found and not search for all 'random' steps
 
             // no partition can be found...
@@ -312,7 +317,8 @@ void HTEC::InitPartitionSearchMaps() {
         int retry = 0;
         do {
             set<int> subset;
-            bool packetsSelected[_w] = { false };
+            bool *packetsSelected = (bool *) malloc(_w * sizeof(bool));
+            memset(packetsSelected, 0, _w * sizeof(bool));
             int numSelected = 0;
             int numSubsets = useMoreSubsets? _m : (_w + _portion - 1) / _portion;
             for (ss = 0; ss < numSubsets; ss++) {
@@ -343,6 +349,8 @@ void HTEC::InitPartitionSearchMaps() {
                 // add the subset
                 p.AppendSubset(vector<int>(subset.begin(), subset.end()));
                 subset.clear();
+
+                free(packetsSelected);
             }
 
             // check for same partition, discard the result and search again if it overlaps with any others
@@ -581,8 +589,11 @@ ECDAG* HTEC::ConstructEncodeECDAG(ECDAG *myecdag, int (*convertId)(int, int, int
 
 void HTEC::AddConvSingleDecode(int failedNode, int failedPacket, int parityIndex, ECDAG *ecdag, set<int> &repaired, set<int> *allSources, int (*convertId)(int, int, int, int), set<int> *parities) const {
 
-    int decodeMatrix[_k * _k] = { 0 };
-    int invertedMatrix[_k * _k] = { 0 };
+    int *decodeMatrix = (int *) malloc(_k * _k * sizeof(int));
+    int *invertedMatrix = (int *) malloc(_k * _k * sizeof(int));
+    memset(decodeMatrix, 0, _k * _k * sizeof(int));
+    memset(invertedMatrix, 0, _k * _k * sizeof(int));
+
     int node = 0, ri = 0;   // node index and row index
     int pkt = failedPacket;
     int bindPkt = -1;
@@ -649,6 +660,9 @@ void HTEC::AddConvSingleDecode(int failedNode, int failedPacket, int parityIndex
     ecdag->Join(target, sources, coefficients);
     //ecdag->BindY(target, bindPkt);
     repaired.emplace(target);
+
+    free(decodeMatrix);
+    free(invertedMatrix);
 }
 
 void HTEC::AddIncrSingleDecode(int failedNode, int selectedPacket, ECDAG *ecdag, set<int> &repaired, set<int> *allSources, int (*convertId)(int, int, int, int), set<int> *parities) const {
@@ -671,7 +685,11 @@ void HTEC::AddIncrSingleDecode(int failedNode, int selectedPacket, ECDAG *ecdag,
         }
 
         vector<int> sources, coefficients;
-        int decodeMatrix[_n * _n] = { 0 }, invertedMatrix[_n * _n] = { 0 };
+
+        int *decodeMatrix = (int *) malloc(_n * _n * sizeof(int));
+        int *invertedMatrix = (int *) malloc(_n * _n * sizeof(int));
+        memset(decodeMatrix, 0, _n * _n * sizeof(int));
+        memset(invertedMatrix, 0, _n * _n * sizeof(int));
 
         const vector<int>* sourcePackets = _paritySourcePacketsD[pi][spkt];
         int numPackets = sourcePackets->size();
@@ -724,6 +742,9 @@ void HTEC::AddIncrSingleDecode(int failedNode, int selectedPacket, ECDAG *ecdag,
         ecdag->Join(rpkt, sources, coefficients);
         //ecdag->BindY(rpkt, bindPkt);
         repaired.emplace(rpkt);
+
+        free(decodeMatrix);
+        free(invertedMatrix);
     }
 }
 
@@ -956,4 +977,28 @@ void HTEC::Partition::Print() const {
         }
         cout << endl;
     }
+}
+
+vector<int> HTEC::getNodeSubPackets(int nodeid) {
+    vector<vector<int>> layout = GetSubPackets();
+
+    vector<int> symbols;
+    for (int i = 0; i < _w; i++) {
+        symbols.push_back(layout[i][nodeid]);
+    }
+
+    return symbols;
+}
+
+vector<vector<int>> HTEC::GetSubPackets() {
+    int symbol_id = 0;
+    vector<vector<int>> layout(_w, vector<int>());
+
+    for (int i = 0; i < _n; i++) {
+        for (int j = 0; j < _w; j++) {
+            layout[j].push_back(symbol_id++);
+        }
+    }
+
+    return layout;
 }

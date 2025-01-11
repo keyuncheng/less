@@ -25,6 +25,26 @@ class RSCONV : public ECBase {
     ECDAG* Encode();
     ECDAG* Decode(vector<int> from, vector<int> to);
     void Place(vector<vector<int>>& group);
+
+
+    /**
+     * @brief Get sub-packets in nodeid
+     * 
+     * @param nodeid 
+     * @return vector<int> 
+     */
+    vector<int> getNodeSubPackets(int nodeid);
+
+    /**
+     * @brief Get all sub-packets
+     * N1 N2 ... Nn
+     * 0 2 4 6 8 ...
+     * 1 3 5 7 9 ... 
+     * 
+     * @return vector<vector<int>> 
+     */
+    vector<vector<int>> GetSubPackets();
+    
 };
 
 #endif

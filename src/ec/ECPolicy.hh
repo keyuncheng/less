@@ -10,7 +10,6 @@
 #include "ETRSConv.hh"
 #include "ETHHXORPlus.hh"
 #include "ETHTEC.hh"
-#include "ETAzureLRC.hh"
 #include "BUTTERFLY.hh"
 #include "Clay.hh"
 #include "STACKCode.hh"
