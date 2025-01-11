@@ -11,19 +11,21 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
     // field width (default: 8)
     _fw = 8;
     if (param.size() == 1) {
-        _fw = atoi(param[0].c_str());
+        if (param[0] != "-") {
+            _fw = atoi(param[0].c_str());
+        }
     }
 
     if (_fw != 8) {
         cout << "STACKCode::STACKCode() Currently only supports fw=8" << endl;
         exit(1);
     }
-    
-    _e = getAvailPrimElements(_n, _k, _fw);
+
+    _e = getAvailPrimElements(_n, _k, _w, _fw);
 
     if (_e == 0)
     {
-        cout << "STACKCode::STACKCode() failed to find available primitive elements in GF(2^" << w << ")" << endl;
+        cout << "STACKCode::STACKCode() failed to find available primitive elements in GF(2^" << _fw << ")" << endl;
         exit(-1);
     }
 
@@ -31,7 +33,18 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
     getPrimElementsPower(_order, _e, _fw);
     genEncodingMatrix();
 
+    cout << "STACKCode::STACKCode() Parity-check matrix:" << endl;
+    jerasure_print_matrix(_pcMatrix, _m * _w, _n * _w, 8);
+
+    cout << "STACKCode::STACKCode() Generator matrix:" << endl;
+    jerasure_print_matrix(_encodeMatrix, _m * _w, _k * _w, 8);
+
     initLayout();
+}
+
+STACKCode::~STACKCode() {
+    delete [] _pcMatrix;
+    delete [] _encodeMatrix;
 }
 
 ECDAG* STACKCode::Encode() {
@@ -40,24 +53,25 @@ ECDAG* STACKCode::Encode() {
     vector<int> codes;
 
     // data: (k * w)
-    for (int nodeId = _k; nodeId < _n; nodeId++) {
+    for (int nodeId = 0; nodeId < _k; nodeId++) {
         for (int alpha = 0; alpha < _w; alpha++) {
-            data.push_back(_layout[nodeId][alpha]);
+            data.push_back(_layout[alpha][nodeId]);
         }
     }
 
-    // parity: (m * w)
     for (int nodeId = _k; nodeId < _n; nodeId++) {
         for (int alpha = 0; alpha < _w; alpha++) {
-            int parityId = nodeId - _k;
-            int code = _layout[alpha][nodeId];
-            vector<int> coef(_encodeMatrix + parityId * _k * _w, _encodeMatrix + (parityId + 1) * _k * _w);
-            ecdag->Join(code, data, coef);
-            codes.push_back(code);
+            codes.push_back(_layout[alpha][nodeId]);
         }
     }
 
-    if (_m * _w > 1) {
+    for (int i = 0; i < codes.size(); i++) {
+        int code = codes[i];
+        vector<int> coef(_encodeMatrix + i * _k * _w, _encodeMatrix + (i + 1) * _k * _w);
+        ecdag->Join(code, data, coef);
+    }
+
+    if (codes.size() > 1) {
         int vidx = ecdag->BindX(codes);
         ecdag->BindY(vidx, data[0]);
 
@@ -67,8 +81,9 @@ ECDAG* STACKCode::Encode() {
 }
 
 ECDAG* STACKCode::Decode(vector<int> from, vector<int> to) {
-    if (to.size() == 1) {
-        return decodeSingle(from, to[0]);
+    if (to.size() == _w) {
+        int failedNodeId = to[0] / _w;
+        return decodeSingle(from, failedNodeId);
     } else {
         return decodeMultiple(from, to);
     }
@@ -104,28 +119,42 @@ void STACKCode::genParityCheckMatrix() {
 
 void STACKCode::genEncodingMatrix() {
     genParityCheckMatrix();
-    convertPCMatrix2EncMatrix(_n, _k, _w);
+    if (convertPCMatrix2EncMatrix(_n, _k, _w) == false) {
+        cout << "STACKCode::genEncodingMatrix() failed to obtain encoding matrix" << endl;
+        exit(-1);
+    }
 }
 
-void STACKCode::convertPCMatrix2EncMatrix(int n, int k, int w) {
+bool STACKCode::convertPCMatrix2EncMatrix(int n, int k, int w) {
     int *from = new int[n * w];
     int *to = new int[n * w];
+    memset(from, 0, n * w * sizeof(int));
+    memset(to, 0, n * w * sizeof(int));
 
-    // the first k*w symbols are data symbols, next (n-k)*w symbols are parity symbols
-    memset(from, 1, k * w * sizeof(int));
-    memset(from + k * w, 0, (n - k) * w * sizeof(int));
+    // the first k*w symbols are data symbols, next (n-k)*w symbols are parity
+    // symbols
+    for (int nodeId = 0; nodeId < k; nodeId++) {
+        for (int alpha = 0; alpha < w; alpha++) {
+            from[nodeId * w + alpha] = 1;
+        }
+    }
 
-    memset(to, 0, k * w * sizeof(int));
-    memset(to + k * w, 1, (n - k) * w * sizeof(int));
+    for (int nodeId = k; nodeId < n; nodeId++) {
+        for (int alpha = 0; alpha < w; alpha++) {
+            to[nodeId * w + alpha] = 1;
+        }
+    }
 
     _encodeMatrix = new int[k * w * n * w];
-    convertPCMatrix2GenMatrix(n * w, k * w, w, _pcMatrix, _encodeMatrix, from, to);
+    bool ret = getGenMatrixFromPCMatrix(n * w, k * w, _fw, _pcMatrix, _encodeMatrix, from, to);
 
     delete [] from;
     delete [] to;
+
+    return ret;
 }
 
-bool STACKCode::convertPCMatrix2GenMatrix(int n, int k, int fw, const int* pcMatrix, int *genMatrix, const int* from, const int* to) {
+bool STACKCode::getGenMatrixFromPCMatrix(int n, int k, int fw, const int* pcMatrix, int *genMatrix, const int* from, const int* to) {
     int m = n - k;
     int numFailedSymbols = 0;
     int numAvailSymbols = 0;
@@ -188,19 +217,18 @@ bool STACKCode::convertPCMatrix2GenMatrix(int n, int k, int fw, const int* pcMat
     // tmpMatrix has exactly m rows
     if (numFailedSymbols == m)
     {
-        return tmpMatrix;
-    }
+        memcpy(genMatrix, tmpMatrix, m * k * sizeof(int));
+    } else {
+        // only needs numFailedSymbols < m rows
 
-    // only needs numFailedSymbols < m rows
-    int *retMatrix = (int*) malloc(numFailedSymbols * k * sizeof(int));
-
-    for (int x = 0, y = 0, z = 0; x < n; x++) {
-        if (!from[x]) {
-            if (to[x]) {
-                memcpy(retMatrix + z * k, tmpMatrix + y * k, k * sizeof(int));
-                z++;
+        for (int x = 0, y = 0, z = 0; x < n; x++) {
+            if (!from[x]) {
+                if (to[x]) {
+                    memcpy(genMatrix + z * k, tmpMatrix + y * k, k * sizeof(int));
+                    z++;
+                }
+                y++;
             }
-            y++;
         }
     }
 
@@ -210,7 +238,7 @@ bool STACKCode::convertPCMatrix2GenMatrix(int n, int k, int fw, const int* pcMat
 
 void STACKCode::initLayout() {
     int symbolId = 0;
-    _layout.resize(_n, vector<int>(_w, 0));
+    _layout.resize(_w, vector<int>(_n, 0));
     for (int nodeId = 0; nodeId < _n; nodeId++) {
         for (int alpha = 0; alpha < _w; alpha++) {
             _layout[alpha][nodeId] = symbolId++;
@@ -229,6 +257,7 @@ ECDAG *STACKCode::decodeSingle(vector<int> &availNodes, int failedNode) {
     int groupId = failedNode % _numGroups;
     int repairBW = getRepairBandwidth(failedNode);
     vector<int> helperNodeIds = getHelperNodes(failedNode);
+
     vector<int> availSymbols;
     vector<int> failedSymbols;
     for (int alpha = 0; alpha < _w; alpha++)
@@ -260,6 +289,9 @@ ECDAG *STACKCode::decodeSingle(vector<int> &availNodes, int failedNode) {
     }
 
     int *repairMatrix = getRepairMatrix(failedNode);
+
+    cout << "STACKCode::decodeSingle() Repair Matrix: " << endl;
+    jerasure_print_matrix(repairMatrix, _m, repairBW, _fw);
 
     for (int i = 0; i < _w; i++) {
         vector<int> &data = availSymbols;
@@ -328,7 +360,7 @@ int *STACKCode::getRepairMatrix(int failedNode) {
             {
                 for (int t = 0; t < _m; t++)
                 {
-                    R2[t * numCols2 + start_col2] = _primElementPower[((a * _w + _numGroups) * t) % _order];
+                    R2[t * numCols2 + start_col2] = _primElementPower[((a * _w + groupId) * t) % _order];
                 }
                 start_col2 += 1;
             }
@@ -408,15 +440,15 @@ void STACKCode::getPrimElementsPower(int order, int e, int fw)
     }
 }
 
-int STACKCode::getAvailPrimElements(int n, int k, int fw) {
+int STACKCode::getAvailPrimElements(int n, int k, int w, int fw) {
     // invalid cases
     if (k <= 0 || n - k < 2) {
         return 0;
     }
-    else if (n * fw > 255) {
+    else if (n * w > 255) {
         return 0;
     }
-    else if (fw > n - k) {
+    else if (w > n - k) {
         return 0;
     }
     else if (n >= 100) {
@@ -425,8 +457,8 @@ int STACKCode::getAvailPrimElements(int n, int k, int fw) {
 
     /**
      * For the case of the number of parity nodes is 2,
-     * all primitive elements of GF(2^fw) can be used to
-     * generate the required n * fw elements.
+     * all primitive elements of GF(2^8) can be used to
+     * generate the required n * w elements.
      */
     if (n - k == 2) {
         return 2;
@@ -434,7 +466,7 @@ int STACKCode::getAvailPrimElements(int n, int k, int fw) {
 
     int f = 0;
 
-    int flag = n * 10000 + k * 100 + fw;
+    int flag = n * 10000 + k * 100 + w;
 
     switch (flag)
     {

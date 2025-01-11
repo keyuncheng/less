@@ -28,10 +28,10 @@ private:
     ECDAG *decodeMultiple(vector<int> &availNodes, vector<int> &failedNodes);
 
     void getPrimElementsPower(int order, int e, int fw); // get primitive elements power
-    int getAvailPrimElements(int n, int k, int fw); // get available primitive elements for GF(2^fw)
+    int getAvailPrimElements(int n, int k, int w, int fw); // get available primitive elements for STACKCode with w for GF(2^fw)
     int findRoot(int f, int fw); // find root with primitive polynomial f
     int polynomialAssignment(int x, int f, int fw); // polynomial assignment
-    void convertPCMatrix2EncMatrix(int n, int k, int w); // convert parity check matrix to encoding matrix
+    bool convertPCMatrix2EncMatrix(int n, int k, int w); // convert parity check matrix to encoding matrix
     /**
      * @brief convert parity check matrix to generator matrix, based on the
      * avialable ndoes and failed nodes
@@ -46,7 +46,7 @@ private:
      * @param to length of n * w vector, consisting of 0 and 1s. 0 means
      * failed symbol id, 1 means available symbol id
      */
-    bool convertPCMatrix2GenMatrix(int n, int k, int fw, const int* pcMatrix, int *genMatrix, const int* from, const int* to);
+    bool getGenMatrixFromPCMatrix(int n, int k, int fw, const int* pcMatrix, int *genMatrix, const int* from, const int* to);
 
     void initLayout(); // init code layout
     int getRepairBandwidth(int failedNode); // get repair bandwidth
@@ -56,6 +56,7 @@ private:
 public:
 
     STACKCode(int n, int k, int w, int opt, vector<string> param);
+    ~STACKCode();
     ECDAG* Encode();
     ECDAG* Decode(vector<int> from, vector<int> to);
     void Place(vector<vector<int>>& group);

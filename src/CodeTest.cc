@@ -36,7 +36,13 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    string ecid = string(argv[1]) + string(argv[2]) + "_" + string(argv[3]) + "_" + string(argv[4]);
+    string codeName = argv[1];
+
+    string ecid = codeName + "_" + string(argv[2]) + "_" + string(argv[3]) + "_" + string(argv[4]);
+
+    if (codeName == "RSCONV") {
+        ecid = string(argv[1]) + "_" + string(argv[2]) + "_" + string(argv[3]);
+    }
 
     int pktsizeB = atoi(argv[5]);
 
@@ -49,8 +55,13 @@ int main(int argc, char** argv) {
         failed_ids.push_back(failed_id);
     }
     
-    string confpath = "conf/sysSetting.xml";
+    string confpath = "./conf/sysSetting.xml";
     Config* conf = new Config(confpath);
+
+    // cout << "Loaded EC Schemes:" << endl;
+    // for (auto item : conf->_ecPolicyMap) {
+    //     cout << item.first << endl;
+    // }
 
     ECPolicy* ecpolicy = conf->_ecPolicyMap[ecid];
     ECBase* ec = ecpolicy->createECClass();
