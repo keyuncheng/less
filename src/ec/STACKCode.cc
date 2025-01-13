@@ -261,19 +261,15 @@ bool STACKCode::genDecodingMatrix(vector<int> &availSymbols, vector<int> &failed
         from[failedSymbol] = 0;
     }
 
-    for (int nodeId = k; nodeId < n; nodeId++) {
-        for (int alpha = 0; alpha < w; alpha++) {
-            to[nodeId * w + alpha] = 1;
-        }
-    }
-
     // only needs to retrieve the first _k * _w available symbols
-    if (failedSymbols.size() < _m * _w) {
-        int numRedundantNodes = _m * _w - failedSymbols.size();
-        for (int i = _n * _w - 1; (i >= 0) && (numRedundantNodes > 0); i--) {
-            if (from[i] == 1 && to[i] == 0) {
-                numRedundantNodes--;
-            }
+    int numRedundantSymbols = _m * _w - failedSymbols.size();
+    for (int i = _n * _w - 1; (i >= 0) && (numRedundantSymbols > 0); i--) {
+        if (from[i] == 1 && to[i] == 0) {
+            from[i] = 0;
+            numRedundantSymbols--;
+
+            // in place update availSymbols
+            availSymbols.erase(std::remove(availSymbols.begin(), availSymbols.end(), i), availSymbols.end());
         }
     }
 
@@ -463,12 +459,28 @@ ECDAG *STACKCode::decodeMultiple(vector<int> &availSymbols, vector<int> &failedS
     ECDAG *ecdag = new ECDAG();
 
     int *decodeMatrix = new int[_k * _w * _n * _w];
-    if (genDecodingMatrix(availSymbols, failedSymbols)) {
+    if (genDecodingMatrix(availSymbols, failedSymbols, decodeMatrix) == false) {
         cout << "STACKCode::decodeMultiple() failed to generate decode matrix" << endl;
         return ecdag;
     }
 
-    // TODO: handle decode matrix
+    // data: (k * w)
+    vector<int> &data = availSymbols;
+    vector<int> &codes = failedSymbols;
+
+    for (int i = 0; i < codes.size(); i++) {
+        int code = codes[i];
+        vector<int> coef(decodeMatrix + i * _k * _w, decodeMatrix + (i + 1) * _k * _w);
+        ecdag->Join(code, data, coef);
+    }
+
+    if (codes.size() > 1) {
+        int vidx = ecdag->BindX(codes);
+        ecdag->BindY(vidx, data[0]);
+
+    }
+    
+    delete [] decodeMatrix;
 
     return ecdag;
 }
