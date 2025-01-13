@@ -23,9 +23,9 @@ private:
 
     void genParityCheckMatrix();
     void genEncodingMatrix();
-    void genDecodingMatrix(vector<int> &availNodes, vector<int> &failedNodes);
-    ECDAG *decodeSingle(vector<int> &availNodes, int failedNode);
-    ECDAG *decodeMultiple(vector<int> &availNodes, vector<int> &failedNodes);
+    bool genDecodingMatrix(vector<int> &availSymbols, vector<int> &failedSymbols, int *decodeMatrix);
+    ECDAG *decodeSingle(int failedNode);
+    ECDAG *decodeMultiple(vector<int> &availSymbols, vector<int> &failedSymbols);
 
     void getPrimElementsPower(int order, int e, int fw); // get primitive elements power
     int getAvailPrimElements(int n, int k, int w, int fw); // get available primitive elements for STACKCode with w for GF(2^fw)

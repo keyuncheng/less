@@ -83,7 +83,7 @@ ECDAG* STACKCode::Encode() {
 ECDAG* STACKCode::Decode(vector<int> from, vector<int> to) {
     if (to.size() == _w) {
         int failedNodeId = to[0] / _w;
-        return decodeSingle(from, failedNodeId);
+        return decodeSingle(failedNodeId);
     } else {
         return decodeMultiple(from, to);
     }
@@ -246,11 +246,46 @@ void STACKCode::initLayout() {
     }
 }
 
-void STACKCode::genDecodingMatrix(vector<int> &availNodes, vector<int> &failedNodes) {
+bool STACKCode::genDecodingMatrix(vector<int> &availSymbols, vector<int> &failedSymbols, int *decodeMatrix) {
+    int *from = new int[_n * _w];
+    int *to = new int[_n * _w];
+    memset(to, 0, _n * _w * sizeof(int));
 
+    for (int symbolId = 0; symbolId < _n * _w; symbolId++) {
+        from[symbolId] = 1;
+    }
+
+    // mark failed / available symbols
+    for (auto failedSymbol : failedSymbols) {
+        to[failedSymbol] = 1;
+        from[failedSymbol] = 0;
+    }
+
+    for (int nodeId = k; nodeId < n; nodeId++) {
+        for (int alpha = 0; alpha < w; alpha++) {
+            to[nodeId * w + alpha] = 1;
+        }
+    }
+
+    // only needs to retrieve the first _k * _w available symbols
+    if (failedSymbols.size() < _m * _w) {
+        int numRedundantNodes = _m * _w - failedSymbols.size();
+        for (int i = _n * _w - 1; (i >= 0) && (numRedundantNodes > 0); i--) {
+            if (from[i] == 1 && to[i] == 0) {
+                numRedundantNodes--;
+            }
+        }
+    }
+
+    bool ret = getGenMatrixFromPCMatrix(_n * _w, _k * _w, _fw, _pcMatrix, decodeMatrix, from, to);
+
+    delete [] from;
+    delete [] to;
+
+    return ret;
 }
 
-ECDAG *STACKCode::decodeSingle(vector<int> &availNodes, int failedNode) {
+ECDAG *STACKCode::decodeSingle(int failedNode) {
     ECDAG *ecdag = new ECDAG();
 
     // symbols to repair
@@ -423,9 +458,17 @@ int *STACKCode::getRepairMatrix(int failedNode) {
     }
 }
 
-ECDAG *STACKCode::decodeMultiple(vector<int> &availNodes, vector<int> &failedNodes) {
+ECDAG *STACKCode::decodeMultiple(vector<int> &availSymbols, vector<int> &failedSymbols) {
     // TBD
     ECDAG *ecdag = new ECDAG();
+
+    int *decodeMatrix = new int[_k * _w * _n * _w];
+    if (genDecodingMatrix(availSymbols, failedSymbols)) {
+        cout << "STACKCode::decodeMultiple() failed to generate decode matrix" << endl;
+        return ecdag;
+    }
+
+    // TODO: handle decode matrix
 
     return ecdag;
 }
