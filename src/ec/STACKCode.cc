@@ -29,6 +29,9 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
         exit(-1);
     }
 
+    /**
+     * @brief method 1: directly construct parity check matrix for encoding and decoding
+     */
     _order = (1 << _fw) - 1;
     getPrimElementsPower(_order, _e, _fw);
     genEncodingMatrix();
@@ -40,6 +43,122 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
     jerasure_print_matrix(_encodeMatrix, _m * _w, _k * _w, 8);
 
     initLayout();
+
+    /**
+     * @brief method 2: use augmented sub-stripes for encoding and decoding
+     */
+    
+    // Step 1: assign nodes to node groups
+    _nodeGroups = vector<vector<int>>(_numGroups, vector<int>());
+    int maxGroupElements = ceil(1.0 * _n / _numGroups);
+    for (int groupId = 0, nodeId = 0; groupId < _numGroups; groupId++) {
+        for (int i = 0; i < maxGroupElements; i++) {
+            if (nodeId < _n) {
+                _nodeGroups[groupId].push_back(nodeId);
+                nodeId++;
+            }
+        }
+    }
+
+    // print out the node groups
+    cout << "STACKCode::STACKCode() Node groups:" << endl;
+    for (int groupId = 0; groupId < _numGroups; groupId++) {
+        cout << "Group " << groupId << ": ";
+        for (auto nodeId : _nodeGroups[groupId]) {
+            cout << nodeId << " ";
+        }
+        cout << endl;
+    }
+
+    // Step 2: assign symbols to symbol groups in augmented sub-stripes
+    _symbolGroups = vector<vector<int>>(_numGroups, vector<int>());
+    
+    // handle the first _numGroups - 1 symbol groups
+    for (int groupId = 0; groupId < _numGroups - 1; groupId++) {
+        auto &nodeGroup = _nodeGroups[groupId];
+        // add symbols from the same node group
+        for (auto nodeId : nodeGroup) {
+            for (int alpha = 0; alpha < _w; alpha++) {
+                _symbolGroups[groupId].push_back(_layout[alpha][nodeId]);
+            }
+        }
+        // add symbols from the <groupId>-th sub-stripe
+        for (int nodeId = 0; nodeId < _n ; nodeId++) {
+            // exclude the nodes from the same node group
+            if (find(nodeGroup.begin(), nodeGroup.end(), nodeId) == nodeGroup.end()) {
+                _symbolGroups[groupId].push_back(_layout[groupId][nodeId]);
+            }
+        }
+    }
+
+    // handle the last symbol group
+    auto &lastNodeGroup = _nodeGroups[_numGroups - 1];
+
+    // put all symbols diagonally
+    for (int groupId = 0; groupId < _numGroups - 1; groupId++) {
+        for (auto nodeId : _nodeGroups[groupId]) {
+            _symbolGroups[_numGroups - 1].push_back(_layout[groupId][nodeId]);
+        }
+    }
+
+    // put all symbols from the last node group
+    for (auto nodeId : lastNodeGroup) {
+        for (int alpha = 0; alpha < _w; alpha++) {
+            _symbolGroups[_numGroups - 1].push_back(_layout[alpha][nodeId]);
+        }
+    }
+
+    // print out the symbol groups
+    cout << "STACKCode::STACKCode() Symbol groups:" << endl;
+    for (int groupId = 0; groupId < _numGroups; groupId++) {
+        cout << "Group " << groupId << ": ";
+        for (auto symbolId : _symbolGroups[groupId]) {
+            cout << symbolId << " ";
+        }
+        cout << endl;
+    }
+
+    // Step 3: assign coefficients for each symbol for encoding
+    _coefs4Symbols = vector<vector<int>>(_w, vector<int>(_n, 0));
+
+    // get vertical permutation (vertically)
+    vector<int> perm;
+    for (int elementId = 0; elementId < maxGroupElements; elementId++) {
+        for (int groupId = 0; groupId < _numGroups; groupId++) {
+            if (elementId < _nodeGroups[groupId].size()) {
+                perm.push_back(_nodeGroups[groupId][elementId]);
+            }
+        }
+    }
+
+    // print permutation
+    cout << "STACKCode::STACKCode() Permutation:" << endl;
+    for (auto nodeId : perm) {
+        cout << nodeId << " ";
+    }
+    cout << endl;
+
+    for (int nodeId = 0; nodeId < _n; nodeId++) {
+        for (int alpha = 0; alpha < _w; alpha++) {
+            _coefs4Symbols[alpha][nodeId] = _primElementPower[perm[nodeId] * _w + alpha];
+        }
+    }
+
+    // print primElementPower
+    cout << "STACKCode::STACKCode() Primitive elements power:" << endl;
+    for (int i = 0; i < _order; i++) {
+        cout << _primElementPower[i] << " ";
+    }
+    cout << endl;
+
+    // print out the coefficients
+    cout << "STACKCode::STACKCode() Coefficients for encoding:" << endl;
+    for (int i = 0; i < _w; i++) {
+        for (int j = 0; j < _n; j++) {
+            cout << _coefs4Symbols[i][j] << " ";
+        }
+        cout << endl;
+    }
 }
 
 STACKCode::~STACKCode() {
@@ -49,32 +168,101 @@ STACKCode::~STACKCode() {
 
 ECDAG* STACKCode::Encode() {
     ECDAG *ecdag = new ECDAG();
-    vector<int> data;
-    vector<int> codes;
 
-    // data: (k * w)
-    for (int nodeId = 0; nodeId < _k; nodeId++) {
-        for (int alpha = 0; alpha < _w; alpha++) {
-            data.push_back(_layout[alpha][nodeId]);
+    /**
+     * @brief method 1: use parity check matrix for encoding
+     */
+    // vector<int> data;
+    // vector<int> codes;
+
+    // // data: (k * w)
+    // for (int nodeId = 0; nodeId < _k; nodeId++) {
+    //     for (int alpha = 0; alpha < _w; alpha++) {
+    //         data.push_back(_layout[alpha][nodeId]);
+    //     }
+    // }
+
+    // for (int nodeId = _k; nodeId < _n; nodeId++) {
+    //     for (int alpha = 0; alpha < _w; alpha++) {
+    //         codes.push_back(_layout[alpha][nodeId]);
+    //     }
+    // }
+
+    // for (int i = 0; i < codes.size(); i++) {
+    //     int code = codes[i];
+    //     vector<int> coef(_encodeMatrix + i * _k * _w, _encodeMatrix + (i + 1) * _k * _w);
+    //     ecdag->Join(code, data, coef);
+    // }
+
+    // if (codes.size() > 1) {
+    //     int vidx = ecdag->BindX(codes);
+    //     ecdag->BindY(vidx, data[0]);
+    // }
+
+    /**
+     * @brief method 2: use augmented sub-stripes for encoding
+     */
+    for (int alpha = 0; alpha < _w; alpha++) {
+        vector<int> &symbolGroup = _symbolGroups[alpha];
+
+        // construct RS(as_n, as_k) for the augmented sub-stripe
+        int as_n = symbolGroup.size();
+        int as_k = as_n - _m;
+
+        // obtain coefficients for each symbol for encoding
+        vector<int> coefs4Encoding(as_n, 0);
+        for (int i = 0; i < as_n; i++) {
+            int symbolNodeId = symbolGroup[i] / _w;
+            int symbolAlpha = symbolGroup[i] % _w;
+            coefs4Encoding[i] = _coefs4Symbols[symbolAlpha][symbolNodeId];
         }
-    }
 
-    for (int nodeId = _k; nodeId < _n; nodeId++) {
-        for (int alpha = 0; alpha < _w; alpha++) {
-            codes.push_back(_layout[alpha][nodeId]);
+        vector<int> data(symbolGroup.begin(), symbolGroup.begin() + as_k);
+        vector<int> codes(symbolGroup.begin() + as_k, symbolGroup.end());
+        
+        // construct parity check matrix for the augmented sub-stripe
+        int *pcMatrix4SubStripe = new int[_m * as_n];
+        for (int rid = 0; rid < _m; rid++) {
+            for (int cid = 0; cid < as_n; cid++) {
+                if (rid == 0) {
+                    pcMatrix4SubStripe[rid * as_n + cid] = 1;
+                } else {
+                    pcMatrix4SubStripe[rid * as_n + cid] = galois_single_multiply(pcMatrix4SubStripe[(rid - 1) * as_n + cid], coefs4Encoding[cid], _fw);
+                }
+            }
         }
-    }
 
-    for (int i = 0; i < codes.size(); i++) {
-        int code = codes[i];
-        vector<int> coef(_encodeMatrix + i * _k * _w, _encodeMatrix + (i + 1) * _k * _w);
-        ecdag->Join(code, data, coef);
-    }
+        // print matrix
+        cout << "STACKCode::Encode() Parity-check matrix for augmented sub-stripe " << alpha << ":" << endl;
+        jerasure_print_matrix(pcMatrix4SubStripe, _m, as_n, _fw);
 
-    if (codes.size() > 1) {
-        int vidx = ecdag->BindX(codes);
-        ecdag->BindY(vidx, data[0]);
+        // obtain encoding matrix
+        int *from = new int[as_n];
+        int *to = new int[as_n];
+        memset(from, 0, as_n * sizeof(int));
+        memset(to, 0, as_n * sizeof(int));
+        for (int i = 0; i < as_k; i++) {
+            from[i] = 1;
+        }
+        for (int i = as_k; i < as_n; i++) {
+            to[i] = 1;
+        }
+        int *encodeMatrix4SubStripe = new int[as_k * _m];
+        if (getGenMatrixFromPCMatrix(as_n, as_k, _fw, pcMatrix4SubStripe, encodeMatrix4SubStripe, from, to) == false) {
+            cout << "STACKCode::Encode() failed to obtain encoding matrix for augmented sub-stripe " << alpha << endl;
+            exit(-1);
+        }
 
+        // print encoding matrix for augmented sub-stripe
+        cout << "STACKCode::Encode() Encoding matrix for augmented sub-stripe " << alpha << ":" << endl;
+        jerasure_print_matrix(encodeMatrix4SubStripe, _m, as_k, _fw);
+
+        // encode the augmented sub-stripe
+        for (int i = 0; i < codes.size(); i++) {
+            int code = codes[i];
+            vector<int> coef(encodeMatrix4SubStripe + i * as_k, encodeMatrix4SubStripe + (i + 1) * as_k);
+            ecdag->Join(code, data, coef);
+        }
     }
 
     return ecdag;
@@ -284,6 +472,10 @@ bool STACKCode::genDecodingMatrix(vector<int> &availSymbols, vector<int> &failed
 ECDAG *STACKCode::decodeSingle(int failedNode) {
     ECDAG *ecdag = new ECDAG();
 
+    /**
+     * @brief method 1: use parity check matrix for single failure repair
+     */
+
     // symbols to repair
     int groupId = failedNode % _numGroups;
     int repairBW = getRepairBandwidth(failedNode);
@@ -330,6 +522,11 @@ ECDAG *STACKCode::decodeSingle(int failedNode) {
         int code = failedSymbols[i];
         ecdag->Join(code, data, coef);
     }
+
+    /**
+     * @brief method 2: use augmented sub-stripes for single failure repair
+     */
+    // TODO: resume here
 
     return ecdag;
 }

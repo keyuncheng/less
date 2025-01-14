@@ -21,6 +21,14 @@ private:
     int *_encodeMatrix; // encoding matrix
     int *_pcMatrix; // parity check matrix
 
+    /**
+     * @brief Implementation 2: use augmented sub-stripes to construct the code
+     * 
+     */
+    vector<vector<int>> _nodeGroups; // node groups (with _numGroups)
+    vector<vector<int>> _symbolGroups; // symbol groups (with _numGroups)
+    vector<vector<int>> _coefs4Symbols; // coefficient for each symbol for encoding
+
     void genParityCheckMatrix();
     void genEncodingMatrix();
     bool genDecodingMatrix(vector<int> &availSymbols, vector<int> &failedSymbols, int *decodeMatrix);
