@@ -28,6 +28,7 @@ private:
     vector<vector<int>> _nodeGroups; // node groups (with _numGroups)
     vector<vector<int>> _symbolGroups; // symbol groups (with _numGroups)
     vector<vector<int>> _coefs4Symbols; // coefficient for each symbol for encoding
+    vector<int> _nodePermutation; // node permutation
 
     void genParityCheckMatrix();
     void genEncodingMatrix();
