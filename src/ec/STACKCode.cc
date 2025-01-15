@@ -472,61 +472,134 @@ bool STACKCode::genDecodingMatrix(vector<int> &availSymbols, vector<int> &failed
 ECDAG *STACKCode::decodeSingle(int failedNode) {
     ECDAG *ecdag = new ECDAG();
 
-    /**
-     * @brief method 1: use parity check matrix for single failure repair
-     */
+    // /**
+    //  * @brief method 1: use parity check matrix for single failure repair
+    //  */
 
-    // symbols to repair
-    int groupId = failedNode % _numGroups;
-    int repairBW = getRepairBandwidth(failedNode);
-    vector<int> helperNodeIds = getHelperNodes(failedNode);
+    // // symbols to repair
+    // int groupId = failedNode % _numGroups;
+    // int repairBW = getRepairBandwidth(failedNode);
+    // vector<int> helperNodeIds = getHelperNodes(failedNode);
 
-    vector<int> availSymbols;
-    vector<int> failedSymbols;
-    for (int alpha = 0; alpha < _w; alpha++)
-    {
-        failedSymbols.push_back(_layout[alpha][failedNode]);
-    }
+    // vector<int> availSymbols;
+    // vector<int> failedSymbols;
+    // for (int alpha = 0; alpha < _w; alpha++)
+    // {
+    //     failedSymbols.push_back(_layout[alpha][failedNode]);
+    // }
 
-    for (int nodeId = 0; nodeId < _n; nodeId++)
-    {
-        if (helperNodeIds[nodeId])
-        {
-            // put all nodes in the group
-            if (nodeId % _numGroups == groupId)
-            {
-                for (int alpha = 0; alpha < _w; alpha++)
-                {
-                    availSymbols.push_back(_layout[alpha][nodeId]);
-                }
-            }
-            else if (groupId < _w)
-            {
-                availSymbols.push_back(_layout[groupId][nodeId]);
-            }
-            else
-            {
-                availSymbols.push_back(_layout[nodeId % _numGroups][nodeId]);
-            }
-        }
-    }
+    // for (int nodeId = 0; nodeId < _n; nodeId++)
+    // {
+    //     if (helperNodeIds[nodeId])
+    //     {
+    //         // put all nodes in the group
+    //         if (nodeId % _numGroups == groupId)
+    //         {
+    //             for (int alpha = 0; alpha < _w; alpha++)
+    //             {
+    //                 availSymbols.push_back(_layout[alpha][nodeId]);
+    //             }
+    //         }
+    //         else if (groupId < _w)
+    //         {
+    //             availSymbols.push_back(_layout[groupId][nodeId]);
+    //         }
+    //         else
+    //         {
+    //             availSymbols.push_back(_layout[nodeId % _numGroups][nodeId]);
+    //         }
+    //     }
+    // }
 
-    int *repairMatrix = getRepairMatrix(failedNode);
+    // int *repairMatrix = getRepairMatrix(failedNode);
 
-    cout << "STACKCode::decodeSingle() Repair Matrix: " << endl;
-    jerasure_print_matrix(repairMatrix, _m, repairBW, _fw);
+    // cout << "STACKCode::decodeSingle() Repair Matrix: " << endl;
+    // jerasure_print_matrix(repairMatrix, _m, repairBW, _fw);
 
-    for (int i = 0; i < _w; i++) {
-        vector<int> &data = availSymbols;
-        vector<int> coef(repairMatrix + i * repairBW, repairMatrix + (i + 1) * repairBW);
-        int code = failedSymbols[i];
-        ecdag->Join(code, data, coef);
-    }
+    // for (int i = 0; i < _w; i++) {
+    //     vector<int> &data = availSymbols;
+    //     vector<int> coef(repairMatrix + i * repairBW, repairMatrix + (i + 1) * repairBW);
+    //     int code = failedSymbols[i];
+    //     ecdag->Join(code, data, coef);
+    // }
 
     /**
      * @brief method 2: use augmented sub-stripes for single failure repair
      */
-    // TODO: resume here
+    int residingGroupId = -1;
+    for (int i = 0; i < _numGroups; i++)
+    {
+        if (find(_nodeGroups[i].begin(), _nodeGroups[i].end(), failedNode) != _nodeGroups[i].end())
+        {
+            residingGroupId = i;
+            break;
+        }
+    }
+    
+    // obtain available data symbols
+    vector<int> data;
+    vector<int> codes;
+    vector<int> symbolGroup = _symbolGroups[residingGroupId];
+    int as_n = symbolGroup.size();
+    int as_k = symbolGroup.size() - _m;
+
+    // obtain coefficients for each symbol for decoding
+    vector<int> coefs4Decoding(as_n, 0);
+
+    int *from = new int[as_n];
+    int *to = new int[as_n];
+    memset(from, 0, as_n * sizeof(int));
+    memset(to, 0, as_n * sizeof(int));
+
+    for (int i = 0, count = 0; i < as_n; i++) {
+        int symbol = symbolGroup[i];
+        int symbolNodeId = symbol / _w;
+        int symbolAlpha = symbol % _w;
+        coefs4Decoding[i] = _coefs4Symbols[symbolAlpha][symbolNodeId];
+        if (symbolNodeId != failedNode && count < as_k) {
+            // available node
+            from[i] = 1;
+            data.push_back(symbol);
+            count++;
+        } else {
+            // failed node
+            to[i] = 1;
+            codes.push_back(symbol);
+        }
+    }
+        
+    // construct parity check matrix for the augmented sub-stripe
+    int *pcMatrix4SubStripe = new int[_m * as_n];
+    for (int rid = 0; rid < _m; rid++) {
+        for (int cid = 0; cid < as_n; cid++) {
+            if (rid == 0) {
+                pcMatrix4SubStripe[rid * as_n + cid] = 1;
+            } else {
+                pcMatrix4SubStripe[rid * as_n + cid] = galois_single_multiply(pcMatrix4SubStripe[(rid - 1) * as_n + cid], coefs4Decoding[cid], _fw);
+            }
+        }
+    }
+
+    // print matrix
+    cout << "STACKCode::Encode() Parity-check matrix for augmented sub-stripe " << residingGroupId << ":" << endl;
+    jerasure_print_matrix(pcMatrix4SubStripe, _m, as_n, _fw);
+
+    int *decodeMatrix4SubStripe = new int[as_k * _m];
+    if (getGenMatrixFromPCMatrix(as_n, as_k, _fw, pcMatrix4SubStripe, decodeMatrix4SubStripe, from, to) == false) {
+        cout << "STACKCode::Encode() failed to obtain decoding matrix for augmented sub-stripe " << residingGroupId << endl;
+        exit(-1);
+    }
+
+    // print encoding matrix for augmented sub-stripe
+    cout << "STACKCode::DecodeSingle() Decoding matrix for augmented sub-stripe " << residingGroupId << ":" << endl;
+    jerasure_print_matrix(decodeMatrix4SubStripe, _m, as_k, _fw);
+
+    // encode the augmented sub-stripe
+    for (int i = 0; i < codes.size(); i++) {
+        int code = codes[i];
+        vector<int> coef(decodeMatrix4SubStripe + i * as_k, decodeMatrix4SubStripe + (i + 1) * as_k);
+        ecdag->Join(code, data, coef);
+    }
 
     return ecdag;
 }
