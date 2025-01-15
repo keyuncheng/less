@@ -29,23 +29,14 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
         exit(-1);
     }
 
-    /**
-     * @brief method 1: directly construct parity check matrix for encoding and decoding
-     */
-    _order = (1 << _fw) - 1;
-    getPrimElementsPower(_order, _e, _fw);
-    genEncodingMatrix();
-
-    cout << "STACKCode::STACKCode() Parity-check matrix:" << endl;
-    jerasure_print_matrix(_pcMatrix, _m * _w, _n * _w, 8);
-
-    cout << "STACKCode::STACKCode() Generator matrix:" << endl;
-    jerasure_print_matrix(_encodeMatrix, _m * _w, _k * _w, 8);
-
     initLayout();
 
+    // obtain GF elements
+    _order = (1 << _fw) - 1;
+    getPrimElementsPower(_order, _e, _fw);
+
     /**
-     * @brief method 2: use augmented sub-stripes for encoding and decoding
+     * @brief method 1: use augmented sub-stripes for encoding and decoding
      */
     
     // Step 1: assign nodes to node groups
@@ -119,28 +110,28 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
     }
 
     // Step 3: assign coefficients for each symbol for encoding
-    _coefs4Symbols = vector<vector<int>>(_w, vector<int>(_n, 0));
 
     // get vertical permutation (vertically)
-    vector<int> perm;
     for (int elementId = 0; elementId < maxGroupElements; elementId++) {
         for (int groupId = 0; groupId < _numGroups; groupId++) {
             if (elementId < _nodeGroups[groupId].size()) {
-                perm.push_back(_nodeGroups[groupId][elementId]);
+                _nodePermutation.push_back(_nodeGroups[groupId][elementId]);
             }
         }
     }
 
     // print permutation
     cout << "STACKCode::STACKCode() Permutation:" << endl;
-    for (auto nodeId : perm) {
+    for (auto nodeId : _nodePermutation) {
         cout << nodeId << " ";
     }
     cout << endl;
 
+    _coefs4Symbols = vector<vector<int>>(_w, vector<int>(_n, 0));
+
     for (int nodeId = 0; nodeId < _n; nodeId++) {
         for (int alpha = 0; alpha < _w; alpha++) {
-            _coefs4Symbols[alpha][nodeId] = _primElementPower[perm[nodeId] * _w + alpha];
+            _coefs4Symbols[alpha][nodeId] = _primElementPower[_nodePermutation[nodeId] * _w + alpha];
         }
     }
 
@@ -159,6 +150,17 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
         }
         cout << endl;
     }
+
+    /**
+     * @brief method 2: directly construct parity check matrix for encoding and decoding
+     */
+    genEncodingMatrix();
+
+    cout << "STACKCode::STACKCode() Parity-check matrix:" << endl;
+    jerasure_print_matrix(_pcMatrix, _m * _w, _n * _w, 8);
+
+    cout << "STACKCode::STACKCode() Generator matrix:" << endl;
+    jerasure_print_matrix(_encodeMatrix, _m * _w, _k * _w, 8);
 }
 
 STACKCode::~STACKCode() {
@@ -170,37 +172,7 @@ ECDAG* STACKCode::Encode() {
     ECDAG *ecdag = new ECDAG();
 
     /**
-     * @brief method 1: use parity check matrix for encoding
-     */
-    // vector<int> data;
-    // vector<int> codes;
-
-    // // data: (k * w)
-    // for (int nodeId = 0; nodeId < _k; nodeId++) {
-    //     for (int alpha = 0; alpha < _w; alpha++) {
-    //         data.push_back(_layout[alpha][nodeId]);
-    //     }
-    // }
-
-    // for (int nodeId = _k; nodeId < _n; nodeId++) {
-    //     for (int alpha = 0; alpha < _w; alpha++) {
-    //         codes.push_back(_layout[alpha][nodeId]);
-    //     }
-    // }
-
-    // for (int i = 0; i < codes.size(); i++) {
-    //     int code = codes[i];
-    //     vector<int> coef(_encodeMatrix + i * _k * _w, _encodeMatrix + (i + 1) * _k * _w);
-    //     ecdag->Join(code, data, coef);
-    // }
-
-    // if (codes.size() > 1) {
-    //     int vidx = ecdag->BindX(codes);
-    //     ecdag->BindY(vidx, data[0]);
-    // }
-
-    /**
-     * @brief method 2: use augmented sub-stripes for encoding
+     * @brief method 1: use augmented sub-stripes for encoding
      */
     for (int alpha = 0; alpha < _w; alpha++) {
         vector<int> &symbolGroup = _symbolGroups[alpha];
@@ -265,6 +237,36 @@ ECDAG* STACKCode::Encode() {
         }
     }
 
+    /**
+     * @brief method 2: use parity check matrix for encoding
+     */
+    // vector<int> data;
+    // vector<int> codes;
+
+    // // data: (k * w)
+    // for (int nodeId = 0; nodeId < _k; nodeId++) {
+    //     for (int alpha = 0; alpha < _w; alpha++) {
+    //         data.push_back(_layout[alpha][nodeId]);
+    //     }
+    // }
+
+    // for (int nodeId = _k; nodeId < _n; nodeId++) {
+    //     for (int alpha = 0; alpha < _w; alpha++) {
+    //         codes.push_back(_layout[alpha][nodeId]);
+    //     }
+    // }
+
+    // for (int i = 0; i < codes.size(); i++) {
+    //     int code = codes[i];
+    //     vector<int> coef(_encodeMatrix + i * _k * _w, _encodeMatrix + (i + 1) * _k * _w);
+    //     ecdag->Join(code, data, coef);
+    // }
+
+    // if (codes.size() > 1) {
+    //     int vidx = ecdag->BindX(codes);
+    //     ecdag->BindY(vidx, data[0]);
+    // }
+
     return ecdag;
 }
 
@@ -303,6 +305,43 @@ void STACKCode::genParityCheckMatrix() {
             }
         }
     }
+
+    // int *pcMatrixWithoutPermutate = new int[rows * cols];
+    // memset(pcMatrixWithoutPermutate, 0, rows * cols * sizeof(int));
+
+    // for (int x = 0; x < rows; x++)
+    // {
+    //     for (int y = 0; y < cols; y++)
+    //     {
+    //         // int a = y / _w / g;
+    //         int b = y / _w % _numGroups; // group id
+    //         int j = y % _w; // the j-th sub-mtx in col
+    //         int i = x / _m; // the i-th sub-mtx in row
+    //         int t = x % _m;
+    //         if (i == j || i == b)
+    //         { // diagonal or 
+    //             pcMatrixWithoutPermutate[x * cols + y] = _primElementPower[(y * t) % _order];
+    //         }
+    //     }
+    // }
+
+    // // print pcMatrixWithoutPermutate
+    // cout << "STACKCode::genParityCheckMatrix() Parity-check matrix without permutation:" << endl;
+    // jerasure_print_matrix(pcMatrixWithoutPermutate, rows, cols, _fw);
+
+    // // convert the parity check matrix based on node permutation
+    // for (int nodeId = 0; nodeId < _n; nodeId++) {
+    //     int permNodeId = _nodePermutation[nodeId];
+    //     for (int alpha = 0; alpha < _w; alpha++) {
+    //         for (int rid = 0; rid < rows; rid++) {
+    //             _pcMatrix[rid * cols + nodeId * _w + alpha] = pcMatrixWithoutPermutate[rid * cols + permNodeId * _w + alpha];
+    //         }
+    //     }
+    // }
+
+    // // print pcmatrix after permute
+    // cout << "STACKCode::genParityCheckMatrix() Parity-check matrix after permutation:" << endl;
+    // jerasure_print_matrix(_pcMatrix, rows, cols, _fw);
 }
 
 void STACKCode::genEncodingMatrix() {
@@ -472,59 +511,8 @@ bool STACKCode::genDecodingMatrix(vector<int> &availSymbols, vector<int> &failed
 ECDAG *STACKCode::decodeSingle(int failedNode) {
     ECDAG *ecdag = new ECDAG();
 
-    // /**
-    //  * @brief method 1: use parity check matrix for single failure repair
-    //  */
-
-    // // symbols to repair
-    // int groupId = failedNode % _numGroups;
-    // int repairBW = getRepairBandwidth(failedNode);
-    // vector<int> helperNodeIds = getHelperNodes(failedNode);
-
-    // vector<int> availSymbols;
-    // vector<int> failedSymbols;
-    // for (int alpha = 0; alpha < _w; alpha++)
-    // {
-    //     failedSymbols.push_back(_layout[alpha][failedNode]);
-    // }
-
-    // for (int nodeId = 0; nodeId < _n; nodeId++)
-    // {
-    //     if (helperNodeIds[nodeId])
-    //     {
-    //         // put all nodes in the group
-    //         if (nodeId % _numGroups == groupId)
-    //         {
-    //             for (int alpha = 0; alpha < _w; alpha++)
-    //             {
-    //                 availSymbols.push_back(_layout[alpha][nodeId]);
-    //             }
-    //         }
-    //         else if (groupId < _w)
-    //         {
-    //             availSymbols.push_back(_layout[groupId][nodeId]);
-    //         }
-    //         else
-    //         {
-    //             availSymbols.push_back(_layout[nodeId % _numGroups][nodeId]);
-    //         }
-    //     }
-    // }
-
-    // int *repairMatrix = getRepairMatrix(failedNode);
-
-    // cout << "STACKCode::decodeSingle() Repair Matrix: " << endl;
-    // jerasure_print_matrix(repairMatrix, _m, repairBW, _fw);
-
-    // for (int i = 0; i < _w; i++) {
-    //     vector<int> &data = availSymbols;
-    //     vector<int> coef(repairMatrix + i * repairBW, repairMatrix + (i + 1) * repairBW);
-    //     int code = failedSymbols[i];
-    //     ecdag->Join(code, data, coef);
-    // }
-
     /**
-     * @brief method 2: use augmented sub-stripes for single failure repair
+     * @brief method 1: use augmented sub-stripes for single failure repair
      */
     int residingGroupId = -1;
     for (int i = 0; i < _numGroups; i++)
@@ -600,6 +588,57 @@ ECDAG *STACKCode::decodeSingle(int failedNode) {
         vector<int> coef(decodeMatrix4SubStripe + i * as_k, decodeMatrix4SubStripe + (i + 1) * as_k);
         ecdag->Join(code, data, coef);
     }
+
+    // /**
+    //  * @brief method 2: use parity check matrix for single failure repair
+    //  */
+
+    // // symbols to repair
+    // int groupId = failedNode % _numGroups;
+    // int repairBW = getRepairBandwidth(failedNode);
+    // vector<int> helperNodeIds = getHelperNodes(failedNode);
+
+    // vector<int> availSymbols;
+    // vector<int> failedSymbols;
+    // for (int alpha = 0; alpha < _w; alpha++)
+    // {
+    //     failedSymbols.push_back(_layout[alpha][failedNode]);
+    // }
+
+    // for (int nodeId = 0; nodeId < _n; nodeId++)
+    // {
+    //     if (helperNodeIds[nodeId])
+    //     {
+    //         // put all nodes in the group
+    //         if (nodeId % _numGroups == groupId)
+    //         {
+    //             for (int alpha = 0; alpha < _w; alpha++)
+    //             {
+    //                 availSymbols.push_back(_layout[alpha][nodeId]);
+    //             }
+    //         }
+    //         else if (groupId < _w)
+    //         {
+    //             availSymbols.push_back(_layout[groupId][nodeId]);
+    //         }
+    //         else
+    //         {
+    //             availSymbols.push_back(_layout[nodeId % _numGroups][nodeId]);
+    //         }
+    //     }
+    // }
+
+    // int *repairMatrix = getRepairMatrix(failedNode);
+
+    // cout << "STACKCode::decodeSingle() Repair Matrix: " << endl;
+    // jerasure_print_matrix(repairMatrix, _m, repairBW, _fw);
+
+    // for (int i = 0; i < _w; i++) {
+    //     vector<int> &data = availSymbols;
+    //     vector<int> coef(repairMatrix + i * repairBW, repairMatrix + (i + 1) * repairBW);
+    //     int code = failedSymbols[i];
+    //     ecdag->Join(code, data, coef);
+    // }
 
     return ecdag;
 }
