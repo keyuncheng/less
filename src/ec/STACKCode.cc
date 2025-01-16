@@ -35,6 +35,11 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
     _order = (1 << _fw) - 1;
     getPrimElementsPower(_order, _e, _fw);
 
+    // element map (debug)
+    for (int i = 0; i < 255; i++) {
+        _elementMap[_primElementPower[i]] = i;
+    }
+
     /**
      * @brief method 1: use augmented sub-stripes for encoding and decoding
      */
@@ -166,6 +171,26 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
         cout << endl;
     }
 
+    // cout << "symbol element correspondence:" << endl;
+    // for (int groupId = 0; groupId < _numGroups; groupId++) {
+    //     cout << "Group " << groupId << ": ";
+    //     for (auto symbolId : _symbolGroups[groupId]) {
+    //         int nodeId = symbolId / _w;
+    //         int alpha = symbolId % _w;
+    //         cout << _elementMap[_coefs4Symbols[alpha][nodeId]] << " ";
+    //     }
+    //     cout << endl;
+    // }
+
+    // // print out the coefficients
+    // cout << "STACKCode::STACKCode() Coefficients for encoding (corresponding):" << endl;
+    // for (int i = 0; i < _w; i++) {
+    //     for (int j = 0; j < _n; j++) {
+    //         cout << _elementMap[_coefs4Symbols[i][j]] << " ";
+    //     }
+    //     cout << endl;
+    // }
+
     /**
      * @brief method 2: directly construct parity check matrix for encoding and decoding
      */
@@ -173,6 +198,24 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
 
     cout << "STACKCode::STACKCode() Parity-check matrix:" << endl;
     jerasure_print_matrix(_pcMatrix, _m * _w, _n * _w, 8);
+
+
+    // cout << "STACKCode::STACKCode() Parity-check matrix (corresponding):" << endl;
+    // for (int i = 0; i < _m * _w; i++) {
+    //     if (i % _m != 1) {
+    //         continue;
+    //     }
+    //     for (int j = 0; j < _n * _w; j++) {
+    //         int a = _pcMatrix[i * (_n * _w) + j];
+    //         if (a == 0)
+    //         {
+    //             printf("--- ");
+    //         }
+    //         else
+    //             printf("%03d ", _elementMap[a]);
+    //     }
+    //     cout << endl;
+    // }
 
     cout << "STACKCode::STACKCode() Generator matrix:" << endl;
     jerasure_print_matrix(_encodeMatrix, _m * _w, _k * _w, 8);
@@ -203,9 +246,18 @@ ECDAG* STACKCode::Encode() {
             int symbolAlpha = symbolGroup[i] % _w;
             coefs4Encoding[i] = _coefs4Symbols[symbolAlpha][symbolNodeId];
         }
+        
+        vector<int> data;
+        vector<int> codes;
+        for (int nodeId = _k; nodeId < _n; nodeId++) {
+            codes.push_back(_layout[alpha][nodeId]);
+        }
 
-        vector<int> data(symbolGroup.begin(), symbolGroup.begin() + as_k);
-        vector<int> codes(symbolGroup.begin() + as_k, symbolGroup.end());
+        for (auto symbolId : symbolGroup) {
+            if (find(codes.begin(), codes.end(), symbolId) == codes.end()) {
+                data.push_back(symbolId);
+            }
+        }
         
         // construct parity check matrix for the augmented sub-stripe
         int *pcMatrix4SubStripe = new int[_m * as_n];
@@ -228,11 +280,12 @@ ECDAG* STACKCode::Encode() {
         int *to = new int[as_n];
         memset(from, 0, as_n * sizeof(int));
         memset(to, 0, as_n * sizeof(int));
-        for (int i = 0; i < as_k; i++) {
-            from[i] = 1;
-        }
-        for (int i = as_k; i < as_n; i++) {
-            to[i] = 1;
+        for (int i = 0; i < as_n; i++) {
+            if (find(data.begin(), data.end(), symbolGroup[i]) != data.end()) {
+                from[i] = 1;
+            } else {
+                to[i] = 1;
+            }
         }
         int *encodeMatrix4SubStripe = new int[as_k * _m];
         if (getGenMatrixFromPCMatrix(as_n, as_k, _fw, pcMatrix4SubStripe, encodeMatrix4SubStripe, from, to) == false) {
@@ -432,7 +485,10 @@ bool STACKCode::getGenMatrixFromPCMatrix(int n, int k, int fw, const int* pcMatr
     }
 
     // inverse H1
-    jerasure_invert_matrix(H1, H1_inverse, m, fw);
+    if (jerasure_invert_matrix(H1, H1_inverse, m, fw) == -1) {
+        cout << "STACKCode::convertPCMatrix2GenMatrix() failed to invert H1" << endl;
+        exit(-1);
+    }
 
     // multiply H1_inverse and H2
     int *tmpMatrix = jerasure_matrix_multiply(H1_inverse, H2, m, m, m, k, fw);
@@ -498,6 +554,36 @@ bool STACKCode::genDecodingMatrix(vector<int> &availSymbols, vector<int> &failed
             availSymbols.erase(std::remove(availSymbols.begin(), availSymbols.end(), i), availSymbols.end());
         }
     }
+
+    // // print from and to
+    // cout << "STACKCode::genDecodingMatrix() from:" << endl;
+    // for (int i = 0; i < _n * _w; i++) {
+    //     cout << from[i] << " ";
+    // }
+    // cout << endl;
+
+    // cout << "STACKCode::genDecodingMatrix() to:" << endl;
+    // for (int i = 0; i < _n * _w; i++) {
+    //     cout << to[i] << " ";
+    // }
+    // cout << endl;
+
+    // cout << "STACKCode::STACKCode() Parity-check matrix (corresponding):" << endl;
+    // for (int i = 0; i < _m * _w; i++) {
+    //     if (i % _m != 1) {
+    //         continue;
+    //     }
+    //     for (int j = 0; j < _n * _w; j++) {
+    //         int a = _pcMatrix[i * (_n * _w) + j];
+    //         if (a == 0)
+    //         {
+    //             printf("--- ");
+    //         }
+    //         else
+    //             printf("%03d ", _elementMap[a]);
+    //     }
+    //     cout << endl;
+    // }
 
     bool ret = getGenMatrixFromPCMatrix(_n * _w, _k * _w, _fw, _pcMatrix, decodeMatrix, from, to);
 
@@ -766,11 +852,15 @@ ECDAG *STACKCode::decodeMultiple(vector<int> &availSymbols, vector<int> &failedS
     // TBD
     ECDAG *ecdag = new ECDAG();
 
-    int *decodeMatrix = new int[_k * _w * _n * _w];
+    int *decodeMatrix = new int[_m * _w * _k * _w];
     if (genDecodingMatrix(availSymbols, failedSymbols, decodeMatrix) == false) {
         cout << "STACKCode::decodeMultiple() failed to generate decode matrix" << endl;
         return ecdag;
     }
+
+    // print decode matrix
+    cout << "STACKCode::decodeMultiple() Decoding matrix:" << endl;
+    jerasure_print_matrix(decodeMatrix, _m * _w, _k * _w, 8);
 
     // data: (k * w)
     vector<int> &data = availSymbols;

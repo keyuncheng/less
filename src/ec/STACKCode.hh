@@ -4,6 +4,8 @@
 #include "ECBase.hh"
 #include "Computation.hh"
 
+#include <map>
+
 class STACKCode : public ECBase {
 private:
 
@@ -29,6 +31,8 @@ private:
     vector<vector<int>> _symbolGroups; // symbol groups (with _numGroups)
     vector<vector<int>> _coefs4Symbols; // coefficient for each symbol for encoding
     vector<int> _nodePermutation; // node permutation
+
+    map<int, int> _elementMap; // element map (for debugging)
 
     void genParityCheckMatrix();
     void genEncodingMatrix();
