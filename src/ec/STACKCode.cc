@@ -344,7 +344,7 @@ ECDAG* STACKCode::Encode() {
 ECDAG* STACKCode::Decode(vector<int> from, vector<int> to) {
     if (to.size() == _w) {
         int failedNodeId = to[0] / _w;
-        return decodeSingle(failedNodeId);
+        return decodeSingle(from, to);
     } else {
         return decodeMultiple(from, to);
     }
@@ -596,92 +596,20 @@ bool STACKCode::genDecodingMatrix(vector<int> &availSymbols, vector<int> &failed
     return ret;
 }
 
-ECDAG *STACKCode::decodeSingle(int failedNode) {
-    ECDAG *ecdag = new ECDAG();
-
+ECDAG *STACKCode::decodeSingle(vector<int> &availSymbols, vector<int> &failedSymbols) {
     /**
      * @brief method 1: use augmented sub-stripes for single failure repair
      */
-    int residingGroupId = -1;
-    for (int i = 0; i < _numGroups; i++)
-    {
-        if (find(_nodeGroups[i].begin(), _nodeGroups[i].end(), failedNode) != _nodeGroups[i].end())
-        {
-            residingGroupId = i;
-            break;
-        }
-    }
-    
-    // obtain available data symbols
-    vector<int> data;
-    vector<int> codes;
-    vector<int> symbolGroup = _symbolGroups[residingGroupId];
-    int as_n = symbolGroup.size();
-    int as_k = symbolGroup.size() - _m;
-
-    // obtain coefficients for each symbol for decoding
-    vector<int> coefs4Decoding(as_n, 0);
-
-    int *from = new int[as_n];
-    int *to = new int[as_n];
-    memset(from, 0, as_n * sizeof(int));
-    memset(to, 0, as_n * sizeof(int));
-
-    for (int i = 0, count = 0; i < as_n; i++) {
-        int symbol = symbolGroup[i];
-        int symbolNodeId = symbol / _w;
-        int symbolAlpha = symbol % _w;
-        coefs4Decoding[i] = _coefs4Symbols[symbolAlpha][symbolNodeId];
-        if (symbolNodeId != failedNode && count < as_k) {
-            // available node
-            from[i] = 1;
-            data.push_back(symbol);
-            count++;
-        } else {
-            // failed node
-            to[i] = 1;
-            codes.push_back(symbol);
-        }
-    }
-        
-    // construct parity check matrix for the augmented sub-stripe
-    int *pcMatrix4SubStripe = new int[_m * as_n];
-    for (int rid = 0; rid < _m; rid++) {
-        for (int cid = 0; cid < as_n; cid++) {
-            if (rid == 0) {
-                pcMatrix4SubStripe[rid * as_n + cid] = 1;
-            } else {
-                pcMatrix4SubStripe[rid * as_n + cid] = galois_single_multiply(pcMatrix4SubStripe[(rid - 1) * as_n + cid], coefs4Decoding[cid], _fw);
-            }
-        }
-    }
-
-    // print matrix
-    cout << "STACKCode::Encode() Parity-check matrix for augmented sub-stripe " << residingGroupId << ":" << endl;
-    jerasure_print_matrix(pcMatrix4SubStripe, _m, as_n, _fw);
-
-    int *decodeMatrix4SubStripe = new int[as_k * _m];
-    if (getGenMatrixFromPCMatrix(as_n, as_k, _fw, pcMatrix4SubStripe, decodeMatrix4SubStripe, from, to) == false) {
-        cout << "STACKCode::Encode() failed to obtain decoding matrix for augmented sub-stripe " << residingGroupId << endl;
-        exit(-1);
-    }
-
-    // // print encoding matrix for augmented sub-stripe
-    // cout << "STACKCode::DecodeSingle() Decoding matrix for augmented sub-stripe " << residingGroupId << ":" << endl;
-    // jerasure_print_matrix(decodeMatrix4SubStripe, _m, as_k, _fw);
-
-    // encode the augmented sub-stripe
-    for (int i = 0; i < codes.size(); i++) {
-        int code = codes[i];
-        vector<int> coef(decodeMatrix4SubStripe + i * as_k, decodeMatrix4SubStripe + (i + 1) * as_k);
-        ecdag->Join(code, data, coef);
-    }
+    return decodeMultipleWithSubStripes(availSymbols, failedSymbols);
 
     // /**
     //  * @brief method 2: use parity check matrix for single failure repair
     //  */
 
+    // ECDAG *ecdag = new ECDAG();
+
     // // symbols to repair
+    // int failedNode = failedSymbols[0] / _w;
     // int groupId = failedNode % _numGroups;
     // int repairBW = getRepairBandwidth(failedNode);
     // vector<int> helperNodeIds = getHelperNodes(failedNode);
@@ -728,7 +656,7 @@ ECDAG *STACKCode::decodeSingle(int failedNode) {
     //     ecdag->Join(code, data, coef);
     // }
 
-    return ecdag;
+    // return ecdag;
 }
 
 int *STACKCode::getRepairMatrix(int failedNode) {

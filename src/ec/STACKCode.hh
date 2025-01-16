@@ -37,7 +37,7 @@ private:
     void genParityCheckMatrix();
     void genEncodingMatrix();
     bool genDecodingMatrix(vector<int> &availSymbols, vector<int> &failedSymbols, int *decodeMatrix);
-    ECDAG *decodeSingle(int failedNode);
+    ECDAG *decodeSingle(vector<int> &availSymbols, vector<int> &failedSymbols);
     ECDAG *decodeMultiple(vector<int> &availSymbols, vector<int> &failedSymbols);
     ECDAG *decodeMultipleWithSubStripes(vector<int> &availSymbols, vector<int> &failedSymbols);
     ECDAG *decodeMultipleWithPCMatrix(vector<int> &availSymbols, vector<int> &failedSymbols);
