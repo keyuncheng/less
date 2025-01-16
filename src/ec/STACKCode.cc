@@ -41,10 +41,17 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
     
     // Step 1: assign nodes to node groups
     _nodeGroups = vector<vector<int>>(_numGroups, vector<int>());
-    int maxGroupElements = ceil(1.0 * _n / _numGroups);
+    int minNumGroupElements = _n / _numGroups;
+    int numMaxGroups = n % (_numGroups);
+
     for (int groupId = 0, nodeId = 0; groupId < _numGroups; groupId++) {
-        for (int i = 0; i < maxGroupElements; i++) {
-            if (nodeId < _n) {
+        if (groupId < numMaxGroups) {
+            for (int i = 0; i < minNumGroupElements + 1; i++) {
+                _nodeGroups[groupId].push_back(nodeId);
+                nodeId++;
+            }
+        } else {
+            for (int i = 0; i < minNumGroupElements; i++) {
                 _nodeGroups[groupId].push_back(nodeId);
                 nodeId++;
             }
@@ -97,6 +104,11 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
         for (int alpha = 0; alpha < _w; alpha++) {
             _symbolGroups[_numGroups - 1].push_back(_layout[alpha][nodeId]);
         }
+    }
+
+    // sort the symbol groups
+    for (int groupId = 0; groupId < _numGroups; groupId++) {
+        sort(_symbolGroups[groupId].begin(), _symbolGroups[groupId].end());
     }
 
     // print out the symbol groups
