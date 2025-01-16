@@ -111,12 +111,15 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
 
     // Step 3: assign coefficients for each symbol for encoding
 
-    // get vertical permutation (vertically)
-    for (int elementId = 0; elementId < maxGroupElements; elementId++) {
-        for (int groupId = 0; groupId < _numGroups; groupId++) {
-            if (elementId < _nodeGroups[groupId].size()) {
-                _nodePermutation.push_back(_nodeGroups[groupId][elementId]);
-            }
+    // generate permutation (vertically)
+    vector<vector<int>> nodeReordering(_numGroups, vector<int>());
+    for (int nodeId = 0, rid = 0; nodeId < _n; nodeId++) {
+        nodeReordering[rid].push_back(nodeId);
+        rid = (rid + 1) % _numGroups;
+    }
+    for (int groupId = 0; groupId < _numGroups; groupId++) {
+        for (auto nodeId : nodeReordering[groupId]) {
+            _nodePermutation.push_back(nodeId);
         }
     }
 
@@ -290,6 +293,9 @@ void STACKCode::genParityCheckMatrix() {
     _pcMatrix = new int[rows * cols];
     memset(_pcMatrix, 0, rows * cols * sizeof(int));
 
+    int *pcMatrixWithoutPermutate = new int[rows * cols];
+    memset(pcMatrixWithoutPermutate, 0, rows * cols * sizeof(int));
+
     for (int x = 0; x < rows; x++)
     {
         for (int y = 0; y < cols; y++)
@@ -301,47 +307,28 @@ void STACKCode::genParityCheckMatrix() {
             int t = x % _m;
             if (i == j || i == b)
             { // diagonal or 
-                _pcMatrix[x * cols + y] = _primElementPower[(y * t) % _order];
+                pcMatrixWithoutPermutate[x * cols + y] = _primElementPower[(y * t) % _order];
             }
         }
     }
 
-    // int *pcMatrixWithoutPermutate = new int[rows * cols];
-    // memset(pcMatrixWithoutPermutate, 0, rows * cols * sizeof(int));
+    // print pcMatrixWithoutPermutate
+    cout << "STACKCode::genParityCheckMatrix() Parity-check matrix without permutation:" << endl;
+    jerasure_print_matrix(pcMatrixWithoutPermutate, rows, cols, _fw);
 
-    // for (int x = 0; x < rows; x++)
-    // {
-    //     for (int y = 0; y < cols; y++)
-    //     {
-    //         // int a = y / _w / g;
-    //         int b = y / _w % _numGroups; // group id
-    //         int j = y % _w; // the j-th sub-mtx in col
-    //         int i = x / _m; // the i-th sub-mtx in row
-    //         int t = x % _m;
-    //         if (i == j || i == b)
-    //         { // diagonal or 
-    //             pcMatrixWithoutPermutate[x * cols + y] = _primElementPower[(y * t) % _order];
-    //         }
-    //     }
-    // }
+    // convert the parity check matrix based on node permutation
+    for (int nodeId = 0; nodeId < _n; nodeId++) {
+        int permNodeId = _nodePermutation[nodeId];
+        for (int alpha = 0; alpha < _w; alpha++) {
+            for (int rid = 0; rid < rows; rid++) {
+                _pcMatrix[rid * cols + nodeId * _w + alpha] = pcMatrixWithoutPermutate[rid * cols + permNodeId * _w + alpha];
+            }
+        }
+    }
 
-    // // print pcMatrixWithoutPermutate
-    // cout << "STACKCode::genParityCheckMatrix() Parity-check matrix without permutation:" << endl;
-    // jerasure_print_matrix(pcMatrixWithoutPermutate, rows, cols, _fw);
-
-    // // convert the parity check matrix based on node permutation
-    // for (int nodeId = 0; nodeId < _n; nodeId++) {
-    //     int permNodeId = _nodePermutation[nodeId];
-    //     for (int alpha = 0; alpha < _w; alpha++) {
-    //         for (int rid = 0; rid < rows; rid++) {
-    //             _pcMatrix[rid * cols + nodeId * _w + alpha] = pcMatrixWithoutPermutate[rid * cols + permNodeId * _w + alpha];
-    //         }
-    //     }
-    // }
-
-    // // print pcmatrix after permute
-    // cout << "STACKCode::genParityCheckMatrix() Parity-check matrix after permutation:" << endl;
-    // jerasure_print_matrix(_pcMatrix, rows, cols, _fw);
+    // print pcmatrix after permute
+    cout << "STACKCode::genParityCheckMatrix() Parity-check matrix after permutation:" << endl;
+    jerasure_print_matrix(_pcMatrix, rows, cols, _fw);
 }
 
 void STACKCode::genEncodingMatrix() {
