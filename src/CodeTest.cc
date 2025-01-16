@@ -170,7 +170,7 @@ int main(int argc, char** argv) {
     vector<int> failsymbols;
     unordered_map<int, char*> repairbuf;
 
-    cout<< "failed node ";
+    cout<< "failed nodes: ";
     for (auto failnode : failed_ids) {
         cout << failnode << " ";
         vector<int> failed_symbols_node = ec1->getNodeSubPackets(failnode);
@@ -191,13 +191,13 @@ int main(int argc, char** argv) {
             availsymbols.push_back(i);
     }
 
-    cout << "fail symbols: ";
+    cout << "failed symbols: ";
     for (int i=0; i<failsymbols.size(); i++) {
         cout << failsymbols[i] << " ";
     }
     cout << endl;
 
-    cout << "avail symbols:";
+    cout << "available symbols:";
     for(int i=0; i<availsymbols.size(); i++) {
         cout << availsymbols[i] << " ";
     }

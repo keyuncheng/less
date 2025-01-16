@@ -39,6 +39,8 @@ private:
     bool genDecodingMatrix(vector<int> &availSymbols, vector<int> &failedSymbols, int *decodeMatrix);
     ECDAG *decodeSingle(int failedNode);
     ECDAG *decodeMultiple(vector<int> &availSymbols, vector<int> &failedSymbols);
+    ECDAG *decodeMultipleWithSubStripes(vector<int> &availSymbols, vector<int> &failedSymbols);
+    ECDAG *decodeMultipleWithPCMatrix(vector<int> &availSymbols, vector<int> &failedSymbols);
 
     void getPrimElementsPower(int order, int e, int fw); // get primitive elements power
     int getAvailPrimElements(int n, int k, int w, int fw); // get available primitive elements for STACKCode with w for GF(2^fw)

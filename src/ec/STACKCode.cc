@@ -141,7 +141,7 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
     }
 
     // print permutation
-    cout << "STACKCode::STACKCode() Permutation:" << endl;
+    cout << "STACKCode::STACKCode() Node permutation:" << endl;
     for (auto nodeId : _nodePermutation) {
         cout << nodeId << " ";
     }
@@ -155,12 +155,15 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
         }
     }
 
-    // print primElementPower
-    cout << "STACKCode::STACKCode() Primitive elements power:" << endl;
-    for (int i = 0; i < _order; i++) {
-        cout << _primElementPower[i] << " ";
-    }
-    cout << endl;
+    // print primitive element
+    cout << "STACKCode::STACKCode() Primitive element (root): " << _e << endl;
+
+    // // print primElementPower
+    // cout << "STACKCode::STACKCode() Primitive elements power:" << endl;
+    // for (int i = 0; i < _order; i++) {
+    //     cout << _primElementPower[i] << " ";
+    // }
+    // cout << endl;
 
     // print out the coefficients
     cout << "STACKCode::STACKCode() Coefficients for encoding:" << endl;
@@ -293,9 +296,9 @@ ECDAG* STACKCode::Encode() {
             exit(-1);
         }
 
-        // print encoding matrix for augmented sub-stripe
-        cout << "STACKCode::Encode() Encoding matrix for augmented sub-stripe " << alpha << ":" << endl;
-        jerasure_print_matrix(encodeMatrix4SubStripe, _m, as_k, _fw);
+        // // print encoding matrix for augmented sub-stripe
+        // cout << "STACKCode::Encode() Encoding matrix for augmented sub-stripe " << alpha << ":" << endl;
+        // jerasure_print_matrix(encodeMatrix4SubStripe, _m, as_k, _fw);
 
         // encode the augmented sub-stripe
         for (int i = 0; i < codes.size(); i++) {
@@ -377,9 +380,9 @@ void STACKCode::genParityCheckMatrix() {
         }
     }
 
-    // print pcMatrixWithoutPermutate
-    cout << "STACKCode::genParityCheckMatrix() Parity-check matrix without permutation:" << endl;
-    jerasure_print_matrix(pcMatrixWithoutPermutate, rows, cols, _fw);
+    // // print pcMatrixWithoutPermutate
+    // cout << "STACKCode::genParityCheckMatrix() Parity-check matrix without permutation:" << endl;
+    // jerasure_print_matrix(pcMatrixWithoutPermutate, rows, cols, _fw);
 
     // convert the parity check matrix based on node permutation
     for (int nodeId = 0; nodeId < _n; nodeId++) {
@@ -391,9 +394,9 @@ void STACKCode::genParityCheckMatrix() {
         }
     }
 
-    // print pcmatrix after permute
-    cout << "STACKCode::genParityCheckMatrix() Parity-check matrix after permutation:" << endl;
-    jerasure_print_matrix(_pcMatrix, rows, cols, _fw);
+    // // print pcmatrix after permute
+    // cout << "STACKCode::genParityCheckMatrix() Parity-check matrix after permutation:" << endl;
+    // jerasure_print_matrix(_pcMatrix, rows, cols, _fw);
 }
 
 void STACKCode::genEncodingMatrix() {
@@ -663,9 +666,9 @@ ECDAG *STACKCode::decodeSingle(int failedNode) {
         exit(-1);
     }
 
-    // print encoding matrix for augmented sub-stripe
-    cout << "STACKCode::DecodeSingle() Decoding matrix for augmented sub-stripe " << residingGroupId << ":" << endl;
-    jerasure_print_matrix(decodeMatrix4SubStripe, _m, as_k, _fw);
+    // // print encoding matrix for augmented sub-stripe
+    // cout << "STACKCode::DecodeSingle() Decoding matrix for augmented sub-stripe " << residingGroupId << ":" << endl;
+    // jerasure_print_matrix(decodeMatrix4SubStripe, _m, as_k, _fw);
 
     // encode the augmented sub-stripe
     for (int i = 0; i < codes.size(); i++) {
@@ -849,7 +852,151 @@ int *STACKCode::getRepairMatrix(int failedNode) {
 }
 
 ECDAG *STACKCode::decodeMultiple(vector<int> &availSymbols, vector<int> &failedSymbols) {
-    // TBD
+    bool canDecodeWithSubStripes = false;
+
+    // identify failed nodes
+    vector<int> failedNodes;
+    for (auto symbolId : failedSymbols) {
+        int nodeId = symbolId / _w;
+        if (find(failedNodes.begin(), failedNodes.end(), nodeId) == failedNodes.end()) {
+            failedNodes.push_back(nodeId);
+        }
+    }
+
+    // identify failed groups
+    vector<int> failedGroups;
+    for (auto nodeId : failedNodes) {
+        for (int i = 0; i < _numGroups; i++) {
+            if (find(_nodeGroups[i].begin(), _nodeGroups[i].end(), nodeId) != _nodeGroups[i].end()) {
+                if (find(failedGroups.begin(), failedGroups.end(), i) == failedGroups.end()) {
+                    failedGroups.push_back(i);
+                }
+                break;
+            }
+        }
+    }
+
+    // print failed nodes
+    cout << "STACKCode::decodeMultiple() failed nodes: ";
+    for (auto nodeId : failedNodes) {
+        cout << nodeId << " ";
+    }
+    cout << endl;
+    
+    // print failed groups
+    cout << "STACKCode::decodeMultiple() failed groups: ";
+    for (auto groupId : failedGroups) {
+        cout << groupId << " ";
+    }
+    cout << endl;
+
+    // can tolerate at most t = _m / _w failures within one group
+    if (failedGroups.size() == 1 && failedNodes.size() <= (_m / _w)) {
+        canDecodeWithSubStripes = true;
+    }
+
+    if (canDecodeWithSubStripes == true) {
+        return decodeMultipleWithSubStripes(availSymbols, failedSymbols);
+    } else {
+        return decodeMultipleWithPCMatrix(availSymbols, failedSymbols);
+    }
+}
+
+ECDAG *STACKCode::decodeMultipleWithSubStripes(vector<int> &availSymbols, vector<int> &failedSymbols) {
+    ECDAG *ecdag = new ECDAG();
+
+    // use augmented sub-stripes for multiple failures repair
+    cout << "STACKCode::decodeMultipleWithSubStripes() Multiple failures repair using augmented sub-stripes" << endl;
+
+    // identify failed nodes
+    vector<int> failedNodes;
+    for (auto symbolId : failedSymbols) {
+        int nodeId = symbolId / _w;
+        if (find(failedNodes.begin(), failedNodes.end(), nodeId) == failedNodes.end()) {
+            failedNodes.push_back(nodeId);
+        }
+    }
+    int residingGroupId = -1;
+    for (int i = 0; i < _numGroups; i++)
+    {
+        if (find(_nodeGroups[i].begin(), _nodeGroups[i].end(), failedNodes[0]) != _nodeGroups[i].end())
+        {
+            residingGroupId = i;
+            break;
+        }
+    }
+    
+    // obtain available data symbols
+    vector<int> data;
+    vector<int> codes;
+    vector<int> symbolGroup = _symbolGroups[residingGroupId];
+    int as_n = symbolGroup.size();
+    int as_k = symbolGroup.size() - _m;
+
+    // obtain coefficients for each symbol for decoding
+    vector<int> coefs4Decoding(as_n, 0);
+
+    int *from = new int[as_n];
+    int *to = new int[as_n];
+    memset(from, 0, as_n * sizeof(int));
+    memset(to, 0, as_n * sizeof(int));
+
+    for (int i = 0, count = 0; i < as_n; i++) {
+        int symbol = symbolGroup[i];
+        int symbolNodeId = symbol / _w;
+        int symbolAlpha = symbol % _w;
+        coefs4Decoding[i] = _coefs4Symbols[symbolAlpha][symbolNodeId];
+        if (find(failedNodes.begin(), failedNodes.end(), symbolNodeId) != failedNodes.end()) {
+            // failed node
+            to[i] = 1;
+            codes.push_back(symbol);
+        } else {
+            if (count < as_k) {
+                // available node
+                from[i] = 1;
+                data.push_back(symbol);
+                count++;
+            }
+        }
+    }
+        
+    // construct parity check matrix for the augmented sub-stripe
+    int *pcMatrix4SubStripe = new int[_m * as_n];
+    for (int rid = 0; rid < _m; rid++) {
+        for (int cid = 0; cid < as_n; cid++) {
+            if (rid == 0) {
+                pcMatrix4SubStripe[rid * as_n + cid] = 1;
+            } else {
+                pcMatrix4SubStripe[rid * as_n + cid] = galois_single_multiply(pcMatrix4SubStripe[(rid - 1) * as_n + cid], coefs4Decoding[cid], _fw);
+            }
+        }
+    }
+
+    // print matrix
+    cout << "STACKCode::Encode() Parity-check matrix for augmented sub-stripe " << residingGroupId << ":" << endl;
+    jerasure_print_matrix(pcMatrix4SubStripe, _m, as_n, _fw);
+
+    int *decodeMatrix4SubStripe = new int[as_k * _m];
+    if (getGenMatrixFromPCMatrix(as_n, as_k, _fw, pcMatrix4SubStripe, decodeMatrix4SubStripe, from, to) == false) {
+        cout << "STACKCode::Encode() failed to obtain decoding matrix for augmented sub-stripe " << residingGroupId << endl;
+        exit(-1);
+    }
+
+    // print encoding matrix for augmented sub-stripe
+    cout << "STACKCode::DecodeSingle() Decoding matrix for augmented sub-stripe " << residingGroupId << ":" << endl;
+    jerasure_print_matrix(decodeMatrix4SubStripe, _m, as_k, _fw);
+
+    // encode the augmented sub-stripe
+    for (int i = 0; i < codes.size(); i++) {
+        int code = codes[i];
+        vector<int> coef(decodeMatrix4SubStripe + i * as_k, decodeMatrix4SubStripe + (i + 1) * as_k);
+        ecdag->Join(code, data, coef);
+    }
+
+    return ecdag;
+}
+
+ECDAG *STACKCode::decodeMultipleWithPCMatrix(vector<int> &availSymbols, vector<int> &failedSymbols) {
     ECDAG *ecdag = new ECDAG();
 
     int *decodeMatrix = new int[_m * _w * _k * _w];
