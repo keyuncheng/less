@@ -37,7 +37,12 @@
 <value><ecid>STACKCode_9_6_3</ecid><class>STACKCode</class><n>9</n><k>6</k><w>3</w><opt>-1</opt><param>-</param></value>
 <value><ecid>STACKCode_14_10_2</ecid><class>STACKCode</class><n>14</n><k>10</k><w>2</w><opt>-1</opt><param>-</param></value>
 <value><ecid>STACKCode_14_10_3</ecid><class>STACKCode</class><n>14</n><k>10</k><w>3</w><opt>-1</opt><param>-</param></value>
-
+<value><ecid>STACKCode_14_10_4</ecid><class>STACKCode</class><n>14</n><k>10</k><w>4</w><opt>-1</opt><param>-</param></value>
+<value><ecid>STACKCode_12_8_3</ecid><class>STACKCode</class><n>12</n><k>8</k><w>3</w><opt>-1</opt><param>-</param></value>
+<value><ecid>STACKCode_12_8_4</ecid><class>STACKCode</class><n>12</n><k>8</k><w>4</w><opt>-1</opt><param>-</param></value>
+<value><ecid>STACKCode_10_6_2</ecid><class>STACKCode</class><n>10</n><k>6</k><w>2</w><opt>-1</opt><param>-</param></value>
+<value><ecid>STACKCode_10_6_3</ecid><class>STACKCode</class><n>10</n><k>6</k><w>3</w><opt>-1</opt><param>-</param></value>
+<value><ecid>STACKCode_10_6_4</ecid><class>STACKCode</class><n>10</n><k>6</k><w>4</w><opt>-1</opt><param>-</param></value>
 </attribute>
 <attribute><name>offline.pool</name>
 <value><poolid>RSCONV_4_3_pool</poolid><ecid>RSCONV_4_3</ecid><base>64</base></value>
@@ -52,5 +57,11 @@
 <value><poolid>STACKCode_9_6_3_pool</poolid><ecid>STACKCode_9_6_3</ecid><base>64</base></value>
 <value><poolid>STACKCode_14_10_2_pool</poolid><ecid>STACKCode_14_10_2</ecid><base>64</base></value>
 <value><poolid>STACKCode_14_10_3_pool</poolid><ecid>STACKCode_14_10_3</ecid><base>64</base></value>
+<value><poolid>STACKCode_14_10_4_pool</poolid><ecid>STACKCode_14_10_4</ecid><base>64</base></value>
+<value><poolid>STACKCode_12_8_4_pool</poolid><ecid>STACKCode_12_8_4</ecid><base>64</base></value>
+<value><poolid>STACKCode_12_8_3_pool</poolid><ecid>STACKCode_12_8_3</ecid><base>64</base></value>
+<value><poolid>STACKCode_10_6_2_pool</poolid><ecid>STACKCode_10_6_2</ecid><base>64</base></value>
+<value><poolid>STACKCode_10_6_3_pool</poolid><ecid>STACKCode_10_6_3</ecid><base>64</base></value>
+<value><poolid>STACKCode_10_6_4_pool</poolid><ecid>STACKCode_10_6_4</ecid><base>64</base></value>
 </attribute>
 </setting>
