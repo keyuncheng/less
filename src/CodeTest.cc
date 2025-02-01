@@ -140,7 +140,7 @@ int main(int argc, char** argv) {
             }
             codeBufIdx++;
         }
-        Computation::Multi(code, data, matrix, row, col, pktsizeB, "Isal");
+        Computation::Multi(code, data, matrix, row, col, pktsizeB, "Jerasure");
 
         free(matrix);
         free(data);
@@ -289,7 +289,7 @@ int main(int argc, char** argv) {
             }
             codeBufIdx++;
         }
-        Computation::Multi(code, data, matrix, row, col, pktsizeB, "Isal");
+        Computation::Multi(code, data, matrix, row, col, pktsizeB, "Jerasure");
         free(matrix);
         free(data);
         free(code);

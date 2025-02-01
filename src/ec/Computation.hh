@@ -7,7 +7,7 @@
 
 #include <isa-l.h>
 
-#define GF_W 8
+#define GF_W 16
 
 using namespace std;
 
