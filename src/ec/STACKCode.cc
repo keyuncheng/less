@@ -1097,6 +1097,121 @@ int STACKCode::getAvailPrimElements(int n, int k, int w, int fw) {
     return findRoot(f, fw);
 }
 
+bool STACKCode::getAvailPrimElements(int n, int k, int w, int &fw, uint32_t &e, uint32_t &f) {
+    
+    // no available primitive elements: k <= 1; n - k == 1
+    if (k <= 1 || n <= k + 1)
+    {
+        f = 0;
+        fw = 0;
+        e = 0;
+        return false;
+    }
+
+    // reset fw, f, e
+    fw = 0;
+    f = 0;
+    e = 0;
+
+    if (n - k == 2)
+    {
+        if (n * w <= ((1 << 8) - 1))
+        {
+            fw = 8;
+            f = 0b100011101; // x^8 + x^4 + x^3 + x^2 + 1
+            e = 2;
+        }
+        else if (n * w <= ((1 << 16) - 1))
+        {
+            fw = 16;
+            f = 0b10000000000101101; // x^{16} + x^5 + x^3 + x^2 + 1
+            e = 2;
+        }
+    }
+    else if (n - k == 3)
+    {
+        if (w == 2)
+        {
+            if (n <= 44)
+            {
+                f = 0b111001111; // x^8 + x^7 + x^6 + x^3 + x^2 + x + 1
+                fw = 8;
+            }
+            else if (n <= 127)
+            {
+                f = 0b10000000000101101; // x^{16} + x^5 + x^3 + x^2 + 1
+                fw = 16;
+            }
+        }
+        else if (w == 3)
+        {
+            if (n <= 40)
+            {
+                f = 0b100101101; // x^8 + x^5 + x^3 + x^2 + 1
+                fw = 8;
+            }
+            else if (n <= 127)
+            {
+                f = 0b10000000000101101; // x^{16} + x^5 + x^3 + x^2 + 1
+                fw = 16;
+            }
+        }
+    }
+    else if (n - k == 4)
+    {
+        if (w == 2)
+        {
+            if (n <= 23)
+            {
+                f = 0b100101011; // x^8 + x^5 + x^3 + x + 1
+                fw = 8;
+            }
+            else if (n <= 127)
+            {
+                f = 0b10000001101110001; // x^{16} + x^9 + x^8 + x^6 + x^5 + x^4 + 1
+                fw = 16;
+            }
+        }
+        else if (w == 3)
+        {
+            if (n <= 17)
+            {
+                f = 0b100011101; // x^8 + x^4 + x^3 + x^2 + 1
+                fw = 8;
+            }
+            else if (n <= 127)
+            {
+                f = 0b10001001011110011; // x^{16} + x^{12} + x^9 + x^7 + x^6 + x^5 + x^4 + x + 1
+                fw = 16;
+            }
+        }
+        else if (w == 4)
+        {
+            if (n <= 16)
+            {
+                f = 0b100101101; // x^8 + x^5 + x^3 + x^2 + 1
+                fw = 8;
+            }
+            else if (n <= 127)
+            {
+                f = 0b10000011101111001; // x^{16} + x^{10} + x^9 + x^8 + x^6 + x^5 + x^4 + x^3 + 1
+                fw = 16;
+            }
+        }
+    }
+
+    if (f)
+    {
+        // TODO: fix uint32_t
+        e = find_root(f, fw);
+        //printf("r = %d, w = %d:\n   n = %d\n    w = %2d, f(x) = ", r, w, n, w);
+        //print_polynomial(f);
+        //printf("    available element: %d\n\n", e);
+    }
+
+    return e != 0;
+}
+
 int STACKCode::findRoot(int f, int fw)
 {
     for (int root = 1; ; root++)
