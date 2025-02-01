@@ -11,7 +11,8 @@ private:
 
     int _m; // m = n - k
     int _fw; // field width
-    int _e; // primitive element
+    uint32_t _e; // primitive root element
+    uint32_t _f; // primitive root element (in uint32_t)
     int _order; // the number of nonzero elements in GF(2^fw)
     vector<int> _primElementPower; // primitive elements power in GF(2^fw)
 
@@ -45,8 +46,8 @@ private:
     void getPrimElementsPower(int order, int e, int fw); // get primitive elements power
     int getAvailPrimElements(int n, int k, int w, int fw); // get available primitive elements for STACKCode with w for GF(2^fw)
     bool getAvailPrimElements(int n, int k, int w, int &fw, uint32_t &e, uint32_t &f); // get available primitive elements for STACKCode with w. Return field width: fw GF(2^fw); primitive root: e; polynomial assignment: f
-    int findRoot(int f, int fw); // find root with primitive polynomial f
-    int polynomialAssignment(int x, int f, int fw); // polynomial assignment
+    uint32_t findRoot(uint32_t f, int fw); // find root with primitive polynomial f
+    uint32_t polynomialAssignment(uint32_t x, uint32_t f, int fw); // polynomial assignment
     bool convertPCMatrix2EncMatrix(int n, int k, int w); // convert parity check matrix to encoding matrix
     /**
      * @brief convert parity check matrix to generator matrix, based on the

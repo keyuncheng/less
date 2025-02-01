@@ -8,20 +8,32 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
     _m = n - k;
     _numGroups = _w + 1; // num_groups = sub-packetization + 1
 
-    // field width (default: 8)
-    _fw = 8;
+    _f = 0b0; // init f to 0b0
+    _fw = 8; // init fw to 8
     if (param.size() == 1) {
         if (param[0] != "-") {
             _fw = atoi(param[0].c_str());
         }
     }
 
-    if (_fw != 8) {
-        cout << "STACKCode::STACKCode() Currently only supports fw=8" << endl;
+    /**
+     * @brief set default fw = 8
+     * 
+     */
+    // if (_fw != 8) {
+    //     cout << "STACKCode::STACKCode() Currently only supports fw=8" << endl;
+    //     exit(1);
+    // }
+    // _e = getAvailPrimElements(_n, _k, _w, _fw);
+
+    /**
+     * @brief extend fw to 16 and 32
+     * 
+     */
+    if (getAvailPrimElements(n, k, w, _fw, _e, _f) == false) {
+        cout << "STACKCode::STACKCode() failed to find primitive element" << endl;
         exit(1);
     }
-
-    _e = getAvailPrimElements(_n, _k, _w, _fw);
 
     if (_e == 0)
     {
@@ -1202,8 +1214,7 @@ bool STACKCode::getAvailPrimElements(int n, int k, int w, int &fw, uint32_t &e, 
 
     if (f)
     {
-        // TODO: fix uint32_t
-        e = find_root(f, fw);
+        e = findRoot(f, fw);
         //printf("r = %d, w = %d:\n   n = %d\n    w = %2d, f(x) = ", r, w, n, w);
         //print_polynomial(f);
         //printf("    available element: %d\n\n", e);
@@ -1212,11 +1223,11 @@ bool STACKCode::getAvailPrimElements(int n, int k, int w, int &fw, uint32_t &e, 
     return e != 0;
 }
 
-int STACKCode::findRoot(int f, int fw)
+uint32_t STACKCode::findRoot(uint32_t f, int fw)
 {
-    for (int root = 1; ; root++)
+    for (uint32_t root = 1; ; root++)
     {
-        if (root == 0) {
+        if (root == 0 || root > ((1 << fw) - 1)) {
             return 0;
         }
         if (polynomialAssignment(root, f, fw) != 0) {
@@ -1226,10 +1237,10 @@ int STACKCode::findRoot(int f, int fw)
     }
 }
 
-int STACKCode::polynomialAssignment(int x, int f, int fw)
+uint32_t STACKCode::polynomialAssignment(uint32_t x, uint32_t f, int fw)
 {
-    int fx = 1;
-    for (int i = fw - 1; i >= 0; i--)
+    uint32_t fx = 0;
+    for (int i = 31; i >= 0; i--)
     {
         fx = galois_single_multiply(fx, x, fw);
         // fx *= x;
