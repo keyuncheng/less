@@ -1,6 +1,6 @@
-#include "STACKCode.hh"
+#include "LESS.hh"
 
-STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
+LESS::LESS(int n, int k, int w, int opt, vector<string> param) {
     _n = n;
     _k = k;
     _w = w; // sub-packetization
@@ -21,7 +21,7 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
      * 
      */
     // if (_fw != 8) {
-    //     cout << "STACKCode::STACKCode() Currently only supports fw=8" << endl;
+    //     cout << "LESS::LESS() Currently only supports fw=8" << endl;
     //     exit(1);
     // }
     // _e = getAvailPrimElements(_n, _k, _w, _fw);
@@ -31,13 +31,13 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
      * 
      */
     if (getAvailPrimElements(n, k, w, _fw, _e, _f) == false) {
-        cout << "STACKCode::STACKCode() failed to find primitive element" << endl;
+        cout << "LESS::LESS() failed to find primitive element" << endl;
         exit(1);
     }
 
     if (_e == 0)
     {
-        cout << "STACKCode::STACKCode() failed to find available primitive elements in GF(2^" << _fw << ")" << endl;
+        cout << "LESS::LESS() failed to find available primitive elements in GF(2^" << _fw << ")" << endl;
         exit(-1);
     }
 
@@ -76,7 +76,7 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
     }
 
     // print out the node groups
-    cout << "STACKCode::STACKCode() Node groups:" << endl;
+    cout << "LESS::LESS() Node groups:" << endl;
     for (int groupId = 0; groupId < _numGroups; groupId++) {
         cout << "Group " << groupId << ": ";
         for (auto nodeId : _nodeGroups[groupId]) {
@@ -129,7 +129,7 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
     }
 
     // print out the symbol groups
-    cout << "STACKCode::STACKCode() Symbol groups:" << endl;
+    cout << "LESS::LESS() Symbol groups:" << endl;
     for (int groupId = 0; groupId < _numGroups; groupId++) {
         cout << "Group " << groupId << ": ";
         for (auto symbolId : _symbolGroups[groupId]) {
@@ -153,7 +153,7 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
     }
 
     // print permutation
-    cout << "STACKCode::STACKCode() Node permutation:" << endl;
+    cout << "LESS::LESS() Node permutation:" << endl;
     for (auto nodeId : _nodePermutation) {
         cout << nodeId << " ";
     }
@@ -168,17 +168,17 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
     }
 
     // print primitive element
-    cout << "STACKCode::STACKCode() Primitive element (root): " << _e << endl;
+    cout << "LESS::LESS() Primitive element (root): " << _e << endl;
 
     // // print primElementPower
-    // cout << "STACKCode::STACKCode() Primitive elements power:" << endl;
+    // cout << "LESS::LESS() Primitive elements power:" << endl;
     // for (int i = 0; i < _order; i++) {
     //     cout << _primElementPower[i] << " ";
     // }
     // cout << endl;
 
     // print out the coefficients
-    cout << "STACKCode::STACKCode() Coefficients for encoding:" << endl;
+    cout << "LESS::LESS() Coefficients for encoding:" << endl;
     for (int i = 0; i < _w; i++) {
         for (int j = 0; j < _n; j++) {
             cout << _coefs4Symbols[i][j] << " ";
@@ -198,7 +198,7 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
     // }
 
     // // print out the coefficients
-    // cout << "STACKCode::STACKCode() Coefficients for encoding (corresponding):" << endl;
+    // cout << "LESS::LESS() Coefficients for encoding (corresponding):" << endl;
     // for (int i = 0; i < _w; i++) {
     //     for (int j = 0; j < _n; j++) {
     //         cout << _elementMap[_coefs4Symbols[i][j]] << " ";
@@ -211,11 +211,11 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
      */
     genEncodingMatrix();
 
-    cout << "STACKCode::STACKCode() Parity-check matrix:" << endl;
+    cout << "LESS::LESS() Parity-check matrix:" << endl;
     jerasure_print_matrix(_pcMatrix, _m * _w, _n * _w, 8);
 
 
-    // cout << "STACKCode::STACKCode() Parity-check matrix (corresponding):" << endl;
+    // cout << "LESS::LESS() Parity-check matrix (corresponding):" << endl;
     // for (int i = 0; i < _m * _w; i++) {
     //     if (i % _m != 1) {
     //         continue;
@@ -232,16 +232,16 @@ STACKCode::STACKCode(int n, int k, int w, int opt, vector<string> param) {
     //     cout << endl;
     // }
 
-    cout << "STACKCode::STACKCode() Generator matrix:" << endl;
+    cout << "LESS::LESS() Generator matrix:" << endl;
     jerasure_print_matrix(_encodeMatrix, _m * _w, _k * _w, 8);
 }
 
-STACKCode::~STACKCode() {
+LESS::~LESS() {
     delete [] _pcMatrix;
     delete [] _encodeMatrix;
 }
 
-ECDAG* STACKCode::Encode() {
+ECDAG* LESS::Encode() {
     ECDAG *ecdag = new ECDAG();
 
     /**
@@ -287,7 +287,7 @@ ECDAG* STACKCode::Encode() {
         }
 
         // print matrix
-        cout << "STACKCode::Encode() Parity-check matrix for augmented sub-stripe " << alpha << ":" << endl;
+        cout << "LESS::Encode() Parity-check matrix for augmented sub-stripe " << alpha << ":" << endl;
         jerasure_print_matrix(pcMatrix4SubStripe, _m, as_n, _fw);
 
         // obtain encoding matrix
@@ -304,12 +304,12 @@ ECDAG* STACKCode::Encode() {
         }
         int *encodeMatrix4SubStripe = new int[as_k * _m];
         if (getGenMatrixFromPCMatrix(as_n, as_k, _fw, pcMatrix4SubStripe, encodeMatrix4SubStripe, from, to) == false) {
-            cout << "STACKCode::Encode() failed to obtain encoding matrix for augmented sub-stripe " << alpha << endl;
+            cout << "LESS::Encode() failed to obtain encoding matrix for augmented sub-stripe " << alpha << endl;
             exit(-1);
         }
 
         // // print encoding matrix for augmented sub-stripe
-        // cout << "STACKCode::Encode() Encoding matrix for augmented sub-stripe " << alpha << ":" << endl;
+        // cout << "LESS::Encode() Encoding matrix for augmented sub-stripe " << alpha << ":" << endl;
         // jerasure_print_matrix(encodeMatrix4SubStripe, _m, as_k, _fw);
 
         // encode the augmented sub-stripe
@@ -353,7 +353,7 @@ ECDAG* STACKCode::Encode() {
     return ecdag;
 }
 
-ECDAG* STACKCode::Decode(vector<int> from, vector<int> to) {
+ECDAG* LESS::Decode(vector<int> from, vector<int> to) {
     if (to.size() == _w) {
         int failedNodeId = to[0] / _w;
         return decodeSingle(from, to);
@@ -362,11 +362,11 @@ ECDAG* STACKCode::Decode(vector<int> from, vector<int> to) {
     }
 }
 
-void STACKCode::Place(vector<vector<int>>& group) {
+void LESS::Place(vector<vector<int>>& group) {
 
 }
 
-void STACKCode::genParityCheckMatrix() {
+void LESS::genParityCheckMatrix() {
     int rows = _m * _w;
     int cols = _n * _w;
 
@@ -393,7 +393,7 @@ void STACKCode::genParityCheckMatrix() {
     }
 
     // // print pcMatrixWithoutPermutate
-    // cout << "STACKCode::genParityCheckMatrix() Parity-check matrix without permutation:" << endl;
+    // cout << "LESS::genParityCheckMatrix() Parity-check matrix without permutation:" << endl;
     // jerasure_print_matrix(pcMatrixWithoutPermutate, rows, cols, _fw);
 
     // convert the parity check matrix based on node permutation
@@ -407,19 +407,19 @@ void STACKCode::genParityCheckMatrix() {
     }
 
     // // print pcmatrix after permute
-    // cout << "STACKCode::genParityCheckMatrix() Parity-check matrix after permutation:" << endl;
+    // cout << "LESS::genParityCheckMatrix() Parity-check matrix after permutation:" << endl;
     // jerasure_print_matrix(_pcMatrix, rows, cols, _fw);
 }
 
-void STACKCode::genEncodingMatrix() {
+void LESS::genEncodingMatrix() {
     genParityCheckMatrix();
     if (convertPCMatrix2EncMatrix(_n, _k, _w) == false) {
-        cout << "STACKCode::genEncodingMatrix() failed to obtain encoding matrix" << endl;
+        cout << "LESS::genEncodingMatrix() failed to obtain encoding matrix" << endl;
         exit(-1);
     }
 }
 
-bool STACKCode::convertPCMatrix2EncMatrix(int n, int k, int w) {
+bool LESS::convertPCMatrix2EncMatrix(int n, int k, int w) {
     int *from = new int[n * w];
     int *to = new int[n * w];
     memset(from, 0, n * w * sizeof(int));
@@ -448,7 +448,7 @@ bool STACKCode::convertPCMatrix2EncMatrix(int n, int k, int w) {
     return ret;
 }
 
-bool STACKCode::getGenMatrixFromPCMatrix(int n, int k, int fw, const int* pcMatrix, int *genMatrix, const int* from, const int* to) {
+bool LESS::getGenMatrixFromPCMatrix(int n, int k, int fw, const int* pcMatrix, int *genMatrix, const int* from, const int* to) {
     int m = n - k;
     int numFailedSymbols = 0;
     int numAvailSymbols = 0;
@@ -464,18 +464,18 @@ bool STACKCode::getGenMatrixFromPCMatrix(int n, int k, int fw, const int* pcMatr
         }
         if (to[i] == 1 && from[i] == 1)
         {
-            cout << "STACKCode::convertPCMatrix2GenMatrix() numFailedSymbols node " << i << " cannot be used for decoding" << endl;
+            cout << "LESS::convertPCMatrix2GenMatrix() numFailedSymbols node " << i << " cannot be used for decoding" << endl;
             return false;
         }
     }
     if (numFailedSymbols > m)
     {
-        cout << "STACKCode::convertPCMatrix2GenMatrix() Too many failed symbols to decode: " << numFailedSymbols << ", max allowed: " << m << endl;
+        cout << "LESS::convertPCMatrix2GenMatrix() Too many failed symbols to decode: " << numFailedSymbols << ", max allowed: " << m << endl;
         return false;
     }
     if (numAvailSymbols != k)
     {
-        cout << "STACKCode::convertPCMatrix2GenMatrix() Invalid number of available symbols: " << numAvailSymbols << ", k: " << k << std::endl;
+        cout << "LESS::convertPCMatrix2GenMatrix() Invalid number of available symbols: " << numAvailSymbols << ", k: " << k << std::endl;
         return false;
     }
 
@@ -501,7 +501,7 @@ bool STACKCode::getGenMatrixFromPCMatrix(int n, int k, int fw, const int* pcMatr
 
     // inverse H1
     if (jerasure_invert_matrix(H1, H1_inverse, m, fw) == -1) {
-        cout << "STACKCode::convertPCMatrix2GenMatrix() failed to invert H1" << endl;
+        cout << "LESS::convertPCMatrix2GenMatrix() failed to invert H1" << endl;
         exit(-1);
     }
 
@@ -533,7 +533,7 @@ bool STACKCode::getGenMatrixFromPCMatrix(int n, int k, int fw, const int* pcMatr
     return true;
 }
 
-void STACKCode::initLayout() {
+void LESS::initLayout() {
     int symbolId = 0;
     _layout.resize(_w, vector<int>(_n, 0));
     for (int nodeId = 0; nodeId < _n; nodeId++) {
@@ -543,7 +543,7 @@ void STACKCode::initLayout() {
     }
 }
 
-bool STACKCode::genDecodingMatrix(vector<int> &availSymbols, vector<int> &failedSymbols, int *decodeMatrix) {
+bool LESS::genDecodingMatrix(vector<int> &availSymbols, vector<int> &failedSymbols, int *decodeMatrix) {
     int *from = new int[_n * _w];
     int *to = new int[_n * _w];
     memset(to, 0, _n * _w * sizeof(int));
@@ -571,19 +571,19 @@ bool STACKCode::genDecodingMatrix(vector<int> &availSymbols, vector<int> &failed
     }
 
     // // print from and to
-    // cout << "STACKCode::genDecodingMatrix() from:" << endl;
+    // cout << "LESS::genDecodingMatrix() from:" << endl;
     // for (int i = 0; i < _n * _w; i++) {
     //     cout << from[i] << " ";
     // }
     // cout << endl;
 
-    // cout << "STACKCode::genDecodingMatrix() to:" << endl;
+    // cout << "LESS::genDecodingMatrix() to:" << endl;
     // for (int i = 0; i < _n * _w; i++) {
     //     cout << to[i] << " ";
     // }
     // cout << endl;
 
-    // cout << "STACKCode::STACKCode() Parity-check matrix (corresponding):" << endl;
+    // cout << "LESS::LESS() Parity-check matrix (corresponding):" << endl;
     // for (int i = 0; i < _m * _w; i++) {
     //     if (i % _m != 1) {
     //         continue;
@@ -608,7 +608,7 @@ bool STACKCode::genDecodingMatrix(vector<int> &availSymbols, vector<int> &failed
     return ret;
 }
 
-ECDAG *STACKCode::decodeSingle(vector<int> &availSymbols, vector<int> &failedSymbols) {
+ECDAG *LESS::decodeSingle(vector<int> &availSymbols, vector<int> &failedSymbols) {
     /**
      * @brief method 1: use augmented sub-stripes for single failure repair
      */
@@ -658,7 +658,7 @@ ECDAG *STACKCode::decodeSingle(vector<int> &availSymbols, vector<int> &failedSym
 
     // int *repairMatrix = getRepairMatrix(failedNode);
 
-    // cout << "STACKCode::decodeSingle() Repair Matrix: " << endl;
+    // cout << "LESS::decodeSingle() Repair Matrix: " << endl;
     // jerasure_print_matrix(repairMatrix, _m, repairBW, _fw);
 
     // for (int i = 0; i < _w; i++) {
@@ -671,7 +671,7 @@ ECDAG *STACKCode::decodeSingle(vector<int> &availSymbols, vector<int> &failedSym
     // return ecdag;
 }
 
-int *STACKCode::getRepairMatrix(int failedNode) {
+int *LESS::getRepairMatrix(int failedNode) {
     int groupId = failedNode % _numGroups;
     int repairBW = getRepairBandwidth(failedNode);
     vector<int> helperNodeIds = getHelperNodes(failedNode);
@@ -791,7 +791,7 @@ int *STACKCode::getRepairMatrix(int failedNode) {
     }
 }
 
-ECDAG *STACKCode::decodeMultiple(vector<int> &availSymbols, vector<int> &failedSymbols) {
+ECDAG *LESS::decodeMultiple(vector<int> &availSymbols, vector<int> &failedSymbols) {
     bool canDecodeWithSubStripes = false;
 
     // identify failed nodes
@@ -817,14 +817,14 @@ ECDAG *STACKCode::decodeMultiple(vector<int> &availSymbols, vector<int> &failedS
     }
 
     // print failed nodes
-    cout << "STACKCode::decodeMultiple() failed nodes: ";
+    cout << "LESS::decodeMultiple() failed nodes: ";
     for (auto nodeId : failedNodes) {
         cout << nodeId << " ";
     }
     cout << endl;
     
     // print failed groups
-    cout << "STACKCode::decodeMultiple() failed groups: ";
+    cout << "LESS::decodeMultiple() failed groups: ";
     for (auto groupId : failedGroups) {
         cout << groupId << " ";
     }
@@ -842,11 +842,11 @@ ECDAG *STACKCode::decodeMultiple(vector<int> &availSymbols, vector<int> &failedS
     }
 }
 
-ECDAG *STACKCode::decodeMultipleWithSubStripes(vector<int> &availSymbols, vector<int> &failedSymbols) {
+ECDAG *LESS::decodeMultipleWithSubStripes(vector<int> &availSymbols, vector<int> &failedSymbols) {
     ECDAG *ecdag = new ECDAG();
 
     // use augmented sub-stripes for multiple failures repair
-    cout << "STACKCode::decodeMultipleWithSubStripes() Multiple failures repair using augmented sub-stripes" << endl;
+    cout << "LESS::decodeMultipleWithSubStripes() Multiple failures repair using augmented sub-stripes" << endl;
 
     // identify failed nodes
     vector<int> failedNodes;
@@ -913,17 +913,17 @@ ECDAG *STACKCode::decodeMultipleWithSubStripes(vector<int> &availSymbols, vector
     }
 
     // print matrix
-    cout << "STACKCode::Encode() Parity-check matrix for augmented sub-stripe " << residingGroupId << ":" << endl;
+    cout << "LESS::Encode() Parity-check matrix for augmented sub-stripe " << residingGroupId << ":" << endl;
     jerasure_print_matrix(pcMatrix4SubStripe, _m, as_n, _fw);
 
     int *decodeMatrix4SubStripe = new int[as_k * _m];
     if (getGenMatrixFromPCMatrix(as_n, as_k, _fw, pcMatrix4SubStripe, decodeMatrix4SubStripe, from, to) == false) {
-        cout << "STACKCode::Encode() failed to obtain decoding matrix for augmented sub-stripe " << residingGroupId << endl;
+        cout << "LESS::Encode() failed to obtain decoding matrix for augmented sub-stripe " << residingGroupId << endl;
         exit(-1);
     }
 
     // print encoding matrix for augmented sub-stripe
-    cout << "STACKCode::DecodeSingle() Decoding matrix for augmented sub-stripe " << residingGroupId << ":" << endl;
+    cout << "LESS::DecodeSingle() Decoding matrix for augmented sub-stripe " << residingGroupId << ":" << endl;
     jerasure_print_matrix(decodeMatrix4SubStripe, _m, as_k, _fw);
 
     // encode the augmented sub-stripe
@@ -936,17 +936,17 @@ ECDAG *STACKCode::decodeMultipleWithSubStripes(vector<int> &availSymbols, vector
     return ecdag;
 }
 
-ECDAG *STACKCode::decodeMultipleWithPCMatrix(vector<int> &availSymbols, vector<int> &failedSymbols) {
+ECDAG *LESS::decodeMultipleWithPCMatrix(vector<int> &availSymbols, vector<int> &failedSymbols) {
     ECDAG *ecdag = new ECDAG();
 
     int *decodeMatrix = new int[_m * _w * _k * _w];
     if (genDecodingMatrix(availSymbols, failedSymbols, decodeMatrix) == false) {
-        cout << "STACKCode::decodeMultiple() failed to generate decode matrix" << endl;
+        cout << "LESS::decodeMultiple() failed to generate decode matrix" << endl;
         return ecdag;
     }
 
     // print decode matrix
-    cout << "STACKCode::decodeMultiple() Decoding matrix:" << endl;
+    cout << "LESS::decodeMultiple() Decoding matrix:" << endl;
     jerasure_print_matrix(decodeMatrix, _m * _w, _k * _w, 8);
 
     // data: (k * w)
@@ -970,7 +970,7 @@ ECDAG *STACKCode::decodeMultipleWithPCMatrix(vector<int> &availSymbols, vector<i
     return ecdag;
 }
 
-void STACKCode::getPrimElementsPower(int order, int e, int fw)
+void LESS::getPrimElementsPower(int order, int e, int fw)
 {
     _primElementPower.resize(order);
     _primElementPower[0] = 1;
@@ -980,7 +980,7 @@ void STACKCode::getPrimElementsPower(int order, int e, int fw)
     }
 }
 
-int STACKCode::getAvailPrimElements(int n, int k, int w, int fw) {
+int LESS::getAvailPrimElements(int n, int k, int w, int fw) {
     // invalid cases
     if (k <= 0 || n - k < 2) {
         return 0;
@@ -1109,7 +1109,7 @@ int STACKCode::getAvailPrimElements(int n, int k, int w, int fw) {
     return findRoot(f, fw);
 }
 
-bool STACKCode::getAvailPrimElements(int n, int k, int w, int &fw, uint32_t &e, uint32_t &f) {
+bool LESS::getAvailPrimElements(int n, int k, int w, int &fw, uint32_t &e, uint32_t &f) {
     
     // no available primitive elements: k <= 1; n - k == 1
     if (k <= 1 || n <= k + 1)
@@ -1223,7 +1223,7 @@ bool STACKCode::getAvailPrimElements(int n, int k, int w, int &fw, uint32_t &e, 
     return e != 0;
 }
 
-uint32_t STACKCode::findRoot(uint32_t f, int fw)
+uint32_t LESS::findRoot(uint32_t f, int fw)
 {
     for (uint32_t root = 1; ; root++)
     {
@@ -1237,7 +1237,7 @@ uint32_t STACKCode::findRoot(uint32_t f, int fw)
     }
 }
 
-uint32_t STACKCode::polynomialAssignment(uint32_t x, uint32_t f, int fw)
+uint32_t LESS::polynomialAssignment(uint32_t x, uint32_t f, int fw)
 {
     uint32_t fx = 0;
     for (int i = 31; i >= 0; i--)
@@ -1250,7 +1250,7 @@ uint32_t STACKCode::polynomialAssignment(uint32_t x, uint32_t f, int fw)
     return fx;
 }
 
-vector<int> STACKCode::getNodeSubPackets(int nodeid) {
+vector<int> LESS::getNodeSubPackets(int nodeid) {
     vector<int> symbols;
     for (int i = 0; i < _w; i++) {
         symbols.push_back(_layout[i][nodeid]);
@@ -1259,11 +1259,11 @@ vector<int> STACKCode::getNodeSubPackets(int nodeid) {
     return symbols;
 }
 
-vector<vector<int>> STACKCode::GetSubPackets() {
+vector<vector<int>> LESS::GetSubPackets() {
     return _layout;
 }
 
-int STACKCode::getRepairBandwidth(int failedNode)
+int LESS::getRepairBandwidth(int failedNode)
 {
     int groupId = failedNode % _numGroups;
     if (groupId < _n % _numGroups)
@@ -1276,7 +1276,7 @@ int STACKCode::getRepairBandwidth(int failedNode)
     }
 }
 
-vector<int> STACKCode::getHelperNodes(int failedNode)
+vector<int> LESS::getHelperNodes(int failedNode)
 {
     int groupId = failedNode % _numGroups;
     vector<int> helperNodeIds(_n, 1);

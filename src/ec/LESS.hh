@@ -1,12 +1,12 @@
-#ifndef __STACKCode_HH__
-#define __STACKCode_HH__
+#ifndef __LESS_HH__
+#define __LESS_HH__
 
 #include "ECBase.hh"
 #include "Computation.hh"
 
 #include <map>
 
-class STACKCode : public ECBase {
+class LESS : public ECBase {
 private:
 
     int _m; // m = n - k
@@ -44,8 +44,8 @@ private:
     ECDAG *decodeMultipleWithPCMatrix(vector<int> &availSymbols, vector<int> &failedSymbols);
 
     void getPrimElementsPower(int order, int e, int fw); // get primitive elements power
-    int getAvailPrimElements(int n, int k, int w, int fw); // get available primitive elements for STACKCode with w for GF(2^fw)
-    bool getAvailPrimElements(int n, int k, int w, int &fw, uint32_t &e, uint32_t &f); // get available primitive elements for STACKCode with w. Return field width: fw GF(2^fw); primitive root: e; polynomial assignment: f
+    int getAvailPrimElements(int n, int k, int w, int fw); // get available primitive elements for LESS with w for GF(2^fw)
+    bool getAvailPrimElements(int n, int k, int w, int &fw, uint32_t &e, uint32_t &f); // get available primitive elements for LESS with w. Return field width: fw GF(2^fw); primitive root: e; polynomial assignment: f
     uint32_t findRoot(uint32_t f, int fw); // find root with primitive polynomial f
     uint32_t polynomialAssignment(uint32_t x, uint32_t f, int fw); // polynomial assignment
     bool convertPCMatrix2EncMatrix(int n, int k, int w); // convert parity check matrix to encoding matrix
@@ -72,8 +72,8 @@ private:
 
 public:
 
-    STACKCode(int n, int k, int w, int opt, vector<string> param);
-    ~STACKCode();
+    LESS(int n, int k, int w, int opt, vector<string> param);
+    ~LESS();
     ECDAG* Encode();
     ECDAG* Decode(vector<int> from, vector<int> to);
     void Place(vector<vector<int>>& group);
@@ -97,4 +97,4 @@ public:
     vector<vector<int>> GetSubPackets();
 };
 
-#endif // __STACKCode_HH_
+#endif // __LESS_HH_

@@ -61,10 +61,10 @@ ECBase *ECPolicy::createECClass()
     //    toret = new Clay(_n, _k, _w, _locality, _opt, _param);
     toret = new Clay(_n, _k, _w, _opt, _param);
   }
-  else if (_classname == "STACKCode")
+  else if (_classname == "LESS")
   {
-    //    toret = new STACKCode(_n, _k, _w, _locality, _opt, _param);
-    toret = new STACKCode(_n, _k, _w, _opt, _param);
+    //    toret = new LESS(_n, _k, _w, _locality, _opt, _param);
+    toret = new LESS(_n, _k, _w, _opt, _param);
   }
   else
   {

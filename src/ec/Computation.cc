@@ -9,12 +9,16 @@ int Computation::singleMulti(int a, int b, int w) {
   return res;
 }
 
-void Computation::Multi(char** dst, char** src, int* mat, int rowCnt, int colCnt, int len, string lib) {
+void Computation::Multi(char** dst, char** src, int* mat, int rowCnt, int colCnt, int len, string lib, int fw) {
   if (lib == "Jerasure") {
     Computation::_cLock.lock();
-    jerasure_matrix_encode(colCnt, rowCnt, GF_W, mat, src, dst, len);
+    jerasure_matrix_encode(colCnt, rowCnt, fw, mat, src, dst, len);
     Computation::_cLock.unlock();
   } else {
+    if (fw != 8) {
+      cout << "Computation::Multi ISA-L library only supports GF(2^8), required fw: " << fw << endl;
+      exit(-1);
+    }
     // first transfer the mat into char*
     char* imatrix;
     imatrix = (char*)calloc(rowCnt * colCnt, sizeof(char));
