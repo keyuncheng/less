@@ -37,14 +37,15 @@ int main(int argc, char** argv) {
     }
 
     string codeName = argv[1];
-
-    string ecid = codeName + "_" + string(argv[2]) + "_" + string(argv[3]) + "_" + string(argv[4]);
-
-    if (codeName == "RSCONV") {
-        ecid = string(argv[1]) + "_" + string(argv[2]) + "_" + string(argv[3]);
-    }
-
+    int n = atoi(argv[2]);
+    int k = atoi(argv[3]);
+    int w = atoi(argv[4]);
     int pktsizeB = atoi(argv[5]);
+
+    string ecid = codeName + "_" + to_string(n) + "_" + to_string(k) + "_" + to_string(w);
+    if (codeName == "RSCONV") {
+        ecid = codeName + "_" + to_string(n) + "_" + to_string(k);
+    }
 
     // double disk_seek_time_ms = stod(argv[5]);
     // double disk_bdwt_MBps = stod(argv[6]);
@@ -58,17 +59,23 @@ int main(int argc, char** argv) {
     string confpath = "./conf/sysSetting.xml";
     Config* conf = new Config(confpath);
 
-    // cout << "Loaded EC Schemes:" << endl;
-    // for (auto item : conf->_ecPolicyMap) {
-    //     cout << item.first << endl;
-    // }
+    cout << "Loaded EC Schemes:" << endl;
+    for (auto item : conf->_ecPolicyMap) {
+        cout << item.first << endl;
+    }
 
     ECPolicy* ecpolicy = conf->_ecPolicyMap[ecid];
     ECBase* ec = ecpolicy->createECClass();
 
-    int n = ec->_n;
-    int k = ec->_k;
-    int w = ec->_w;
+    // field width (special setting for LESS)
+    int fw = 8; // default fw
+    if (codeName == "LESS") {
+        uint32_t e, f;
+        if (LESS::getAvailPrimElements(n, k, w, fw, e, f) == false) {
+            cout << "LESS::getAvailPrimElements() failed to find primitive element" << endl;
+            exit(1);
+        }
+    }
 
     int n_data_symbols = k * w;
     int n_code_symbols = (n - k) * w;
@@ -140,7 +147,7 @@ int main(int argc, char** argv) {
             }
             codeBufIdx++;
         }
-        Computation::Multi(code, data, matrix, row, col, pktsizeB, "Jerasure");
+        Computation::Multi(code, data, matrix, row, col, pktsizeB, "Isal", fw);
 
         free(matrix);
         free(data);
@@ -289,7 +296,7 @@ int main(int argc, char** argv) {
             }
             codeBufIdx++;
         }
-        Computation::Multi(code, data, matrix, row, col, pktsizeB, "Jerasure");
+        Computation::Multi(code, data, matrix, row, col, pktsizeB, "Isal", fw);
         free(matrix);
         free(data);
         free(code);

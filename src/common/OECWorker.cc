@@ -490,7 +490,7 @@ void OECWorker::computeWorkerDegradedOffline(FSObjInputStream** readStreams,
           codeBufIdx++;
         }
         // perform compute operation
-        Computation::Multi(code, data, matrix, row, col, splitsize, "Jerasure");
+        Computation::Multi(code, data, matrix, row, col, splitsize, "Isal");
         free(matrix);
         free(code);
         free(data);
@@ -638,7 +638,7 @@ void OECWorker::computeWorker(FSObjInputStream** readStreams,
           codeBufIdx++;
         }
         // perform compute operation
-        Computation::Multi(code, data, matrix, row, col, splitsize, "Jerasure");
+        Computation::Multi(code, data, matrix, row, col, splitsize, "Isal");
       }
       // check whether there is a need to discuss about row*col = 1
     }
@@ -803,7 +803,7 @@ void OECWorker::computeWorker(vector<ECTask*> computeTasks,
           }
         }
         // perform compute operation
-        Computation::Multi(code, data, matrix, row, col, splitsize, "Jerasure");
+        Computation::Multi(code, data, matrix, row, col, splitsize, "Isal");
         free(code);
         free(data);
         free(matrix);
@@ -1257,7 +1257,7 @@ void OECWorker::computeWorker(BlockingQueue<OECDataPacket*>** fetchQueue,
       code[i] = curstripe[col+i]->getData();
     }
     // compute
-    Computation::Multi(code, data, matrix, row, col, slicesize, "Jerasure");
+    Computation::Multi(code, data, matrix, row, col, slicesize, "Isal");
 
     // now we free data
     for (int i=0; i<col; i++) {
@@ -1322,7 +1322,7 @@ void OECWorker::computeWorker(BlockingQueue<OECDataPacket*>** fetchQueue,
       code[i] = curstripe[col+i]->getData();
     }
     // compute
-    Computation::Multi(code, data, matrix, row, col, slicesize, "Jerasure");
+    Computation::Multi(code, data, matrix, row, col, slicesize, "Isal");
 
     // put needed data into writeQueue
     for (auto item: writeQueue) {

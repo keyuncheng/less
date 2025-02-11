@@ -44,10 +44,6 @@ private:
     ECDAG *decodeMultipleWithPCMatrix(vector<int> &availSymbols, vector<int> &failedSymbols);
 
     void getPrimElementsPower(int order, int e, int fw); // get primitive elements power
-    int getAvailPrimElements(int n, int k, int w, int fw); // get available primitive elements for LESS with w for GF(2^fw)
-    bool getAvailPrimElements(int n, int k, int w, int &fw, uint32_t &e, uint32_t &f); // get available primitive elements for LESS with w. Return field width: fw GF(2^fw); primitive root: e; polynomial assignment: f
-    uint32_t findRoot(uint32_t f, int fw); // find root with primitive polynomial f
-    uint32_t polynomialAssignment(uint32_t x, uint32_t f, int fw); // polynomial assignment
     bool convertPCMatrix2EncMatrix(int n, int k, int w); // convert parity check matrix to encoding matrix
     /**
      * @brief convert parity check matrix to generator matrix, based on the
@@ -74,6 +70,40 @@ public:
 
     LESS(int n, int k, int w, int opt, vector<string> param);
     ~LESS();
+
+    /**
+     * @brief Get Available Prim Elements for LESS with (n,k,w).
+     * 
+     * @param n 
+     * @param k 
+     * @param w 
+     * @param fw return field width
+     * @param e return primitive element
+     * @param f return polynomial f (in uint32_t)
+     * @return true
+     * @return false 
+     */
+    static bool getAvailPrimElements(int n, int k, int w, int &fw, uint32_t &e, uint32_t &f);
+
+    /**
+     * @brief find root with primitive polynomial f
+     * 
+     * @param f polynomial 
+     * @param fw field width
+     * @return uint32_t root
+     */
+    static uint32_t findRoot(uint32_t f, int fw);
+
+    /**
+     * @brief polynomial assignment
+     * 
+     * @param x 
+     * @param f 
+     * @param fw 
+     * @return uint32_t 
+     */
+    static uint32_t polynomialAssignment(uint32_t x, uint32_t f, int fw);
+
     ECDAG* Encode();
     ECDAG* Decode(vector<int> from, vector<int> to);
     void Place(vector<vector<int>>& group);
