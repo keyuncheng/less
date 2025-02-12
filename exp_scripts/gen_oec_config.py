@@ -1,21 +1,13 @@
-import os
-import time
 import sys
-import json
 import argparse
 import sys
 import subprocess
 from pathlib import Path
-import numpy as np
-import math
 import configparser
-import re
 import xml.etree.cElementTree as ET
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.dirname(SCRIPT_DIR)
-BUILD_DIR = os.path.join(ROOT_DIR, "build")
-CONFIG_DIR = os.path.join(BUILD_DIR, "conf")
+# import common configs
+import common
 
 class DictToObject:
     def __init__(self, dictionary):
@@ -27,7 +19,7 @@ def parse_args(cmd_args):
 
     # Input parameters: -f code test file
     argParser.add_argument("-f", type=str, required=True, help="config file (.ini): config file")
-    argParser.add_argument("-o", type=str, help="output file (.xml): output file", default=CONFIG_DIR + "/sysSetting.xml")
+    argParser.add_argument("-o", type=str, help="output file (.xml): output file", default=common.CONFIG_DIR + "/sysSetting.xml")
     
     args = argParser.parse_args(cmd_args)
     return args
@@ -125,15 +117,15 @@ def main():
     agentIds = cluster.agent_ids.split(',')
     # set default rack
     addAttrListToXMLTree(root, "agents.addr", [("/default/" + nodeIpList[int(agentId)]) for agentId in agentIds])
-    addAttrToXMLTree(root, "oec.controller.thread.num", oec.oec_controller_thread_num)
-    addAttrToXMLTree(root, "oec.agent.thread.num", oec.oec_agent_thread_num)
-    addAttrToXMLTree(root, "oec.cmddist.thread.num", oec.oec_cmddist_thread_num)
+    addAttrToXMLTree(root, "oec.controller.thread.num", oec.controller_thread_num)
+    addAttrToXMLTree(root, "oec.agent.thread.num", oec.agent_thread_num)
+    addAttrToXMLTree(root, "oec.cmddist.thread.num", oec.cmddist_thread_num)
     # set to controller address
     addAttrToXMLTree(root, "local.addr", nodeIpList[int(cluster.controller_id)])
-    addAttrToXMLTree(root, "packet.size", experiment.packet_size_byte)
+    addAttrToXMLTree(root, "packet.size", oec.packet_size_byte)
     addAttrToXMLTree(root, "dss.type", oec.dss_type)
-    addAttrToXMLTree(root, "dss.parameter", nodeIpList[int(cluster.controller_id)] + "," + oec.oec_controller_port)
-    addAttrToXMLTree(root, "ec.concurrent.num", oec.oec_ec_concurrent_num)
+    addAttrToXMLTree(root, "dss.parameter", nodeIpList[int(cluster.controller_id)] + "," + oec.controller_port)
+    addAttrToXMLTree(root, "ec.concurrent.num", oec.ec_concurrent_num)
     # ec policy
     codeList = getCodeList(experiment.code_test_list_file)
     ECPolicyXMLList = []
@@ -164,7 +156,7 @@ def main():
         codeName, codeN, codeK, codeW = item
         codeId = "_".join((codeName, str(codeN), str(codeK), str(codeW)))
         codePoolId = codeId + "_pool"
-        blockSizeMiB = str(int(int(experiment.block_size_byte) / 1024 / 1024))
+        blockSizeMiB = str(int(int(oec.block_size_byte) / 1024 / 1024))
         tp = []
         tp.append(("poolid", codePoolId))
         tp.append(("ecid", codeId))
@@ -173,10 +165,12 @@ def main():
         ECOfflinePoolXMLList.append(tp)
     addAttrTupleListToXMLTree(root, "offline.pool", ECOfflinePoolXMLList)
 
-
+    # write xml to file
     tree = ET.ElementTree(root)
     ET.indent(tree, space="\t", level=0)
     print("Generated config to {}".format(outputConfigXMLFile))
+
+    Path(common.CONFIG_DIR).mkdir(parents=True, exist_ok=True)
     tree.write(outputConfigXMLFile)
 
 

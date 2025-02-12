@@ -11,10 +11,10 @@ import math
 import configparser
 import re
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.dirname(SCRIPT_DIR)
-BUILD_DIR = os.path.join(ROOT_DIR, "build")
-CONFIG_DIR = os.path.join(BUILD_DIR, "config")
+# import common configs
+import common
+
+DEFAULT_SIM_PACKET_SIZE = 1024
 
 def parse_args(cmd_args):
     argParser = argparse.ArgumentParser(description="run code test") 
@@ -70,16 +70,24 @@ def main():
     startExpTime = time.time()
 
     print(codeList)
-    print(SCRIPT_DIR)
-    print(ROOT_DIR)
-    print(BUILD_DIR)
-    print(CONFIG_DIR)
 
-    Path(CONFIG_DIR).mkdir(parents=True, exist_ok=True)
-    
     # generate OpenEC configs with codeList
+    print("Generate OpenEC configs")
+    genOECConfigScript = os.path.join(common.SCRIPT_DIR, "gen_oec_config.py")
+    cmd = "python3 {} -f {}".format(genOECConfigScript, common.EVAL_SETTING_FILE)
+    execCmd(cmd)
 
-    
+    print("Run OpenEC CodeTest for each code")
+    for code in codeList:
+        codeName = code[0]
+        codeN = code[1]
+        codeK = code[2]
+        codeW = code[3]
+        for failedNodeId in range(codeN):
+            cmd = "source {} && cd {} && ./{} {} {} {} {} {} {}".format("~/.zshrc", common.BUILD_DIR, common.CODE_TEST_BIN, codeName, codeN, codeK, codeW, DEFAULT_SIM_PACKET_SIZE, failedNodeId)
+            execCmd(cmd)
+
+            # TODO: extract repair bandwidth
 
     endExpTime = time.time()
     print("Test finished, used time: {} (s)".format(str(endExpTime - startExpTime)))

@@ -413,9 +413,9 @@ int main(int argc, char** argv) {
             diff = memcmp(decodeBufMap[failidx], codebuffers[failidx - n_data_symbols], pktsizeB * sizeof(char));
         }
         if (diff != 0) {
-            printf("failed to decode data of symbol %d!!!!\n", i);
+            printf("error: failed to decode data of symbol %d!!!!\n", i);
         } else {
-            printf("Decoded data of symbol %d.\n", i);
+            printf("decoded data of symbol %d.\n", i);
         }
     }
 }
