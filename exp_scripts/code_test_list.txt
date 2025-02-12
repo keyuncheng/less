@@ -1,9 +1,9 @@
-RSCONV 9 6
+RSCONV 9 6 1
 Clay 9 6 27
-Hitchhiker 9 6 2
-HashTag 9 6 2
-HashTag 9 6 3
-RS-ET 9 6 2
-RS-ET 9 6 3
+HHXORPlus 9 6 2
+HTEC 9 6 2
+HTEC 9 6 3
+ETRSConv 9 6 2
+ETRSConv 9 6 3
 LESS 9 6 2
 LESS 9 6 3

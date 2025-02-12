@@ -42,7 +42,7 @@ def execCmd(cmd, exec=True, timeout=None):
     return msg, success
 
 
-def getCodes(codeTestListFile):
+def getCodeList(codeTestListFile):
     # code name
     codeList = []
     with open(codeTestListFile, 'r') as f:
@@ -53,9 +53,7 @@ def getCodes(codeTestListFile):
             codeName = items[0]
             codeN = int(items[1])
             codeK = int(items[2])
-            codeW = 1
-            if codeName != "RSCONV":
-                codeW = int(items[3])
+            codeW = int(items[3])
             codeList.append((codeName, codeN, codeK, codeW))
     return codeList
 
@@ -67,7 +65,7 @@ def main():
 
     # Input parameters: codeTestListFile
     codeTestListFile = args.f
-    codeList = getCodes(codeTestListFile)
+    codeList = getCodeList(codeTestListFile)
 
     startExpTime = time.time()
 

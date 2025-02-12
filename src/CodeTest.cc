@@ -43,9 +43,6 @@ int main(int argc, char** argv) {
     int pktsizeB = atoi(argv[5]);
 
     string ecid = codeName + "_" + to_string(n) + "_" + to_string(k) + "_" + to_string(w);
-    if (codeName == "RSCONV") {
-        ecid = codeName + "_" + to_string(n) + "_" + to_string(k);
-    }
 
     // double disk_seek_time_ms = stod(argv[5]);
     // double disk_bdwt_MBps = stod(argv[6]);
@@ -53,6 +50,10 @@ int main(int argc, char** argv) {
     vector<int> failed_ids;
     for (int i = 6; i < argc; i++) {
         int failed_id = atoi(argv[i]);
+        if (failed_id >= n) {
+            cout << "error: failed_id " << failed_id << " is larger than n " << n << endl;
+            return 1;
+        }
         failed_ids.push_back(failed_id);
     }
     

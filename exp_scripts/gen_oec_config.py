@@ -27,7 +27,7 @@ def parse_args(cmd_args):
 
     # Input parameters: -f code test file
     argParser.add_argument("-f", type=str, required=True, help="config file (.ini): config file")
-    argParser.add_argument("-o", type=str, help="output file (.xml): output file", default=CONFIG_DIR + "/sampleSysConf.xml")
+    argParser.add_argument("-o", type=str, help="output file (.xml): output file", default=CONFIG_DIR + "/sysSetting.xml")
     
     args = argParser.parse_args(cmd_args)
     return args
@@ -48,7 +48,7 @@ def execCmd(cmd, exec=True, timeout=None):
         print(msg)
     return msg, success
 
-def addAttributeToXMLTree(root, attrName, attrVal):
+def addAttrToXMLTree(root, attrName, attrVal):
     attribute = ET.SubElement(root, "attribute")
 
     name = ET.SubElement(attribute, "name")
@@ -57,7 +57,7 @@ def addAttributeToXMLTree(root, attrName, attrVal):
     value = ET.SubElement(attribute, "value")
     value.text = attrVal
 
-def addAttributeListToXMLTree(root, attrName, attrValList):
+def addAttrListToXMLTree(root, attrName, attrValList):
     attribute = ET.SubElement(root, "attribute")
 
     name = ET.SubElement(attribute, "name")
@@ -66,6 +66,34 @@ def addAttributeListToXMLTree(root, attrName, attrValList):
     for item in attrValList:
         value = ET.SubElement(attribute, "value")
         value.text = item
+
+def addAttrTupleListToXMLTree(root, attrName, attrValList):
+    attribute = ET.SubElement(root, "attribute")
+
+    name = ET.SubElement(attribute, "name")
+    name.text = attrName
+
+    for tp in attrValList:
+        value = ET.SubElement(attribute, "value")
+        for item in tp:
+            key, val = item
+            keyElem = ET.SubElement(value, key)
+            keyElem.text = val
+
+def getCodeList(codeTestListFile):
+    # code name
+    codeList = []
+    with open(codeTestListFile, 'r') as f:
+        for line in f.readlines():
+            if len(line.strip()) == 0:
+                continue
+            items = line.strip().split(' ')
+            codeName = items[0]
+            codeN = int(items[1])
+            codeK = int(items[2])
+            codeW = int(items[3])
+            codeList.append((codeName, codeN, codeK, codeW))
+    return codeList
 
 def main():
     args = parse_args(sys.argv[1:])
@@ -82,11 +110,69 @@ def main():
     configs = DictToObject({section: dict(configsRaw[section]) for section in configsRaw.sections()})
 
     oec = DictToObject(configs.OpenEC)
+    experiment = DictToObject(configs.Experiment)
+    cluster = DictToObject(configs.Cluster)
+
+    # read node list
+    nodeIpList = []
+    with open(cluster.node_list_file, 'r') as f:
+        for line in f.readlines():
+            nodeIpList.append(line.strip())
 
     # generate xml file
     root = ET.Element("setting")
-    addAttributeToXMLTree(root, "controller.addr", oec.dss_type)
-    addAttributeToXMLTree(root, "oec.controller.thread.num", oec.oec_controller_thread_num)
+    addAttrToXMLTree(root, "controller.addr", nodeIpList[int(cluster.controller_id)])
+    agentIds = cluster.agent_ids.split(',')
+    # set default rack
+    addAttrListToXMLTree(root, "agents.addr", [("/default/" + nodeIpList[int(agentId)]) for agentId in agentIds])
+    addAttrToXMLTree(root, "oec.controller.thread.num", oec.oec_controller_thread_num)
+    addAttrToXMLTree(root, "oec.agent.thread.num", oec.oec_agent_thread_num)
+    addAttrToXMLTree(root, "oec.cmddist.thread.num", oec.oec_cmddist_thread_num)
+    # set to controller address
+    addAttrToXMLTree(root, "local.addr", nodeIpList[int(cluster.controller_id)])
+    addAttrToXMLTree(root, "packet.size", experiment.packet_size_byte)
+    addAttrToXMLTree(root, "dss.type", oec.dss_type)
+    addAttrToXMLTree(root, "dss.parameter", nodeIpList[int(cluster.controller_id)] + "," + oec.oec_controller_port)
+    addAttrToXMLTree(root, "ec.concurrent.num", oec.oec_ec_concurrent_num)
+    # ec policy
+    codeList = getCodeList(experiment.code_test_list_file)
+    ECPolicyXMLList = []
+    for item in codeList:
+        codeName, codeN, codeK, codeW = item
+        codeId = "_".join((codeName, str(codeN), str(codeK), str(codeW)))
+        opt = "-1"
+        param = "-"
+        tp = []
+        tp.append(("ecid", codeId))
+        tp.append(("class", codeName))
+        tp.append(("n", str(codeN)))
+        tp.append(("k", str(codeK)))
+        tp.append(("w", str(codeW)))
+        tp.append(("opt", opt))
+        
+        # set param for specific codes
+        if codeName == "Clay":
+            param = str(codeN - 1)
+        elif codeName == "ETRSConv":
+            param = str(codeW)
+        tp.append(("param", param))
+        ECPolicyXMLList.append(tp)
+    addAttrTupleListToXMLTree(root, "ec.policy", ECPolicyXMLList)
+    # ec offline pool
+    ECOfflinePoolXMLList = []
+    for item in codeList:
+        codeName, codeN, codeK, codeW = item
+        codeId = "_".join((codeName, str(codeN), str(codeK), str(codeW)))
+        codePoolId = codeId + "_pool"
+        blockSizeMiB = str(int(int(experiment.block_size_byte) / 1024 / 1024))
+        tp = []
+        tp.append(("poolid", codePoolId))
+        tp.append(("ecid", codeId))
+        tp.append(("base", blockSizeMiB))
+
+        ECOfflinePoolXMLList.append(tp)
+    addAttrTupleListToXMLTree(root, "offline.pool", ECOfflinePoolXMLList)
+
 
     tree = ET.ElementTree(root)
     ET.indent(tree, space="\t", level=0)
