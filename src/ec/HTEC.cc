@@ -236,9 +236,7 @@ void HTEC::InitPartitionSearchMaps() {
             rst = st;
             do {
                 vector<int> subset;
-
-                bool *packetsSelected = (bool *) malloc(_w * sizeof(bool));
-                memset(packetsSelected, 0, _w * sizeof(bool));
+                vector<bool> packetsSelected(_w, false);
 
                 int numSelected = 0;
                 int numSubsets = useMoreSubsets? _m : (_w + _portion - 1) / _portion;
@@ -255,7 +253,7 @@ void HTEC::InitPartitionSearchMaps() {
 
                         // reset packet selection (i.e., allow partial overlap in subsets) if portion cannot divide sub-packetization
                         if (numSelected >= _w && (_w % _portion != 0)) {
-                            for (int i = 0; i < _w; i++) packetsSelected[i] = { false };
+                            for (int i = 0; i < _w; i++) packetsSelected[i] = false;
                             numSelected = 0;
                         } else if (numSelected >= _w) { // if the condition cannot relaxed, stop searching
                             break;
@@ -288,8 +286,6 @@ void HTEC::InitPartitionSearchMaps() {
                 // try a new 'random' step for next search
                 rst = (rst + 1) % _w;
 
-                free(packetsSelected);
-
             } while (p.Empty() && rst != st); // a partition is not found and not search for all 'random' steps
 
             // no partition can be found...
@@ -317,8 +313,8 @@ void HTEC::InitPartitionSearchMaps() {
         int retry = 0;
         do {
             set<int> subset;
-            bool *packetsSelected = (bool *) malloc(_w * sizeof(bool));
-            memset(packetsSelected, 0, _w * sizeof(bool));
+            vector<bool> packetsSelected(_w, false);
+
             int numSelected = 0;
             int numSubsets = useMoreSubsets? _m : (_w + _portion - 1) / _portion;
             for (ss = 0; ss < numSubsets; ss++) {
@@ -328,7 +324,7 @@ void HTEC::InitPartitionSearchMaps() {
                 for (l = 0; l < numElements; l++) {
                     // allow partial overlap in subsets if portion cannot divide sub-packetization
                     if (numSelected >= _w && (_w % _portion != 0)) {
-                        for (int i = 0; i < _w; i++) packetsSelected[i] = { false };
+                        for (int i = 0; i < _w; i++) packetsSelected[i] = false;
                         numSelected = 0;
                     } else if (numSelected >= _w) { // if the condition cannot relaxed, stop searching
                         break;
@@ -349,8 +345,6 @@ void HTEC::InitPartitionSearchMaps() {
                 // add the subset
                 p.AppendSubset(vector<int>(subset.begin(), subset.end()));
                 subset.clear();
-
-                free(packetsSelected);
             }
 
             // check for same partition, discard the result and search again if it overlaps with any others
