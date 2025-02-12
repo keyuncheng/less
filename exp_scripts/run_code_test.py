@@ -1,14 +1,9 @@
 import os
 import time
 import sys
-import json
 import argparse
 import sys
 import subprocess
-from pathlib import Path
-import numpy as np
-import math
-import configparser
 import re
 
 # import common configs
@@ -25,8 +20,9 @@ def parse_args(cmd_args):
     args = argParser.parse_args(cmd_args)
     return args
 
-def execCmd(cmd, exec=True, timeout=None):
-    print("Execute Command: {}".format(cmd))
+def execCmd(cmd, exec=True, timeout=None, printCmd=True, printOutputs=True):
+    if printCmd == True:
+        print("Execute Command: {}".format(cmd))
     msg = ""
     success=False
     if exec == True:
@@ -38,7 +34,8 @@ def execCmd(cmd, exec=True, timeout=None):
             except Exception as e:
                 print(e)
                 p.terminate()
-        print(msg)
+        if printOutputs == True:
+            print(msg)
     return msg, success
 
 
@@ -83,11 +80,43 @@ def main():
         codeN = code[1]
         codeK = code[2]
         codeW = code[3]
+        codeId = "_".join([codeName, str(codeN), str(codeK), str(codeW)])
+
+        SumNumRetrievedSubPkts = 0
+        SumNumTotalSubPkts = 0
         for failedNodeId in range(codeN):
             cmd = "source {} && cd {} && ./{} {} {} {} {} {} {}".format("~/.zshrc", common.BUILD_DIR, common.CODE_TEST_BIN, codeName, codeN, codeK, codeW, DEFAULT_SIM_PACKET_SIZE, failedNodeId)
-            execCmd(cmd)
+            msg, success = execCmd(cmd, printCmd=False, printOutputs=False)
 
-            # TODO: extract repair bandwidth
+            if "error" in msg:
+                print("Error: invalid outputs")
+                exit(-1)
+            
+            # extract the repair bandwidth
+            result_token = "packets read:"
+            for line in msg.split('\n'):
+                line = line.strip()
+                if len(line) == 0:
+                    continue
+                if result_token not in line:
+                    continue
+                match = re.search(r"{} ([0-9]*) / ([0-9]*), (.*)".format(result_token), line)
+                if not match:
+                    print("Error: cannot find result from line: {}".format(line))
+                    # print(msg)
+                    exit()
+                numRetrievedSubPkts = match.group(1)
+                numAllSubPkts = match.group(2)
+                # results_raw = match.group(3)
+
+                SumNumRetrievedSubPkts += int(numRetrievedSubPkts)
+                SumNumTotalSubPkts += int(numAllSubPkts)
+        OverallRepairBW = SumNumRetrievedSubPkts / SumNumTotalSubPkts
+        if codeN * codeW != SumNumTotalSubPkts / codeK:
+            print("Error: invalid number of total subpackets: {} != {}".format(int(codeN * codeW), int(SumNumTotalSubPkts / codeK)))
+            exit(-1)
+        print("Code: {}, Repair bandwidth: {} ({} / {})".format(codeId, OverallRepairBW, SumNumRetrievedSubPkts / codeN / codeW, SumNumTotalSubPkts / codeN / codeW))
+            
 
     endExpTime = time.time()
     print("Test finished, used time: {} (s)".format(str(endExpTime - startExpTime)))
