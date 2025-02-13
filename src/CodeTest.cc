@@ -112,6 +112,9 @@ int main(int argc, char** argv) {
     for (int i=0; i<n_code_symbols; i++) encodeBufMap.insert(make_pair(n_data_symbols+i, codebuffers[i]));
     initEncodeTime += getCurrentTime();
 
+    // free list to support shortening
+    vector<int> shortening_free_list;
+
     encodeTime -= getCurrentTime();
     for (int taskid = 0; taskid < encodetasks.size(); taskid++) {
         ECTask* compute = encodetasks[taskid];
@@ -128,6 +131,14 @@ int main(int argc, char** argv) {
         char** code = (char**)calloc(row, sizeof(char*));
         for (int bufIdx=0; bufIdx<children.size(); bufIdx++) {
             int child = children[bufIdx];
+
+            // create buffers to support shortening
+            if (child >= n * w && encodeBufMap.find(child) == encodeBufMap.end()) {
+                shortening_free_list.push_back(child);
+                char* slicebuf = (char *) calloc(pktsizeB, sizeof(char));
+                encodeBufMap[child] = slicebuf;
+            }
+
             data[bufIdx] = encodeBufMap[child];
         }
         int codeBufIdx = 0;
@@ -154,6 +165,12 @@ int main(int argc, char** argv) {
         free(data);
         free(code);
     }
+
+    // free buffers in shortening free list
+    for (auto pkt_idx : shortening_free_list) {
+        free(encodeBufMap[pkt_idx]);
+    }
+    shortening_free_list.clear();
 
     encodeTime += getCurrentTime();
 
@@ -230,7 +247,7 @@ int main(int argc, char** argv) {
             decodeBufMap.insert(make_pair(n_data_symbols+i, codebuffers[i]));
         else
             decodeBufMap.insert(make_pair(i, repairbuf[n_data_symbols+i]));
-        
+
     initDecodeTime += getCurrentTime();
 
     decodeTime -= getCurrentTime();
@@ -269,6 +286,13 @@ int main(int argc, char** argv) {
         for (int bufIdx=0; bufIdx<children.size(); bufIdx++) {
             int child = children[bufIdx];
 
+            // create buffers to support shortening
+            if (child >= n * w && decodeBufMap.find(child) == decodeBufMap.end()) {
+                shortening_free_list.push_back(child);
+                char* slicebuf = (char *) calloc(pktsizeB, sizeof(char));
+                decodeBufMap[child] = slicebuf;
+            }
+
             if (child < n * w) {
                 int node_id = child / w;
                 vector<int> &read_pkts = disk_read_pkts_map[node_id];
@@ -302,6 +326,12 @@ int main(int argc, char** argv) {
         free(data);
         free(code);
     }
+
+    // free buffers in shortening free list
+    for (auto pkt_idx : shortening_free_list) {
+        free(decodeBufMap[pkt_idx]);
+    }
+    shortening_free_list.clear();
 
     decodeTime += getCurrentTime();
 
