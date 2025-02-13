@@ -17,6 +17,9 @@ def parse_args(cmd_args):
     # Input parameters: -f code test file
     argParser.add_argument("-f", type=str, required=True, help="code test file (.txt): each line represents a code name with parameters")
     
+    # Input parameters: -f code test file
+    argParser.add_argument("-m", type=str, required=True, help="metric (1) adrc: average degraded read cost; (2) arc: average repair cost")
+    
     args = argParser.parse_args(cmd_args)
     return args
 
@@ -62,6 +65,7 @@ def main():
 
     # Input parameters: codeTestListFile
     codeTestListFile = args.f
+    metric = args.m
     codeList = getCodeList(codeTestListFile)
 
     startExpTime = time.time()
@@ -84,7 +88,13 @@ def main():
 
         SumNumRetrievedSubPkts = 0
         SumNumTotalSubPkts = 0
-        for failedNodeId in range(codeN):
+
+        maxBlockId = codeN
+        if metric == "adrc":
+            maxBlockId = codeK
+        elif metric == "arc":
+            maxBlockId = codeN
+        for failedNodeId in range(maxBlockId):
             cmd = "source {} && cd {} && ./{} {} {} {} {} {} {}".format("~/.zshrc", common.BUILD_DIR, common.CODE_TEST_BIN, codeName, codeN, codeK, codeW, DEFAULT_SIM_PACKET_SIZE, failedNodeId)
             msg, success = execCmd(cmd, printCmd=False, printOutputs=False)
 
@@ -112,10 +122,10 @@ def main():
                 SumNumRetrievedSubPkts += int(numRetrievedSubPkts)
                 SumNumTotalSubPkts += int(numAllSubPkts)
         OverallRepairBW = SumNumRetrievedSubPkts / SumNumTotalSubPkts
-        if codeN * codeW != SumNumTotalSubPkts / codeK:
-            print("Error: invalid number of total subpackets: {} != {}".format(int(codeN * codeW), int(SumNumTotalSubPkts / codeK)))
+        if maxBlockId * codeW != SumNumTotalSubPkts / codeK:
+            print("Error: invalid number of total subpackets: {} != {}".format(int(maxBlockId * codeW), int(SumNumTotalSubPkts / codeK)))
             exit(-1)
-        print("Code: {}, Repair bandwidth: {} ({} / {})".format(codeId, OverallRepairBW, SumNumRetrievedSubPkts / codeN / codeW, SumNumTotalSubPkts / codeN / codeW))
+        print("Code: {}, Repair bandwidth: {} ({} / {})".format(codeId, OverallRepairBW, SumNumRetrievedSubPkts / maxBlockId / codeW, SumNumTotalSubPkts / maxBlockId / codeW))
             
 
     endExpTime = time.time()
