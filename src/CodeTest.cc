@@ -159,7 +159,7 @@ int main(int argc, char** argv) {
             }
             codeBufIdx++;
         }
-        Computation::Multi(code, data, matrix, row, col, pktsizeB, "Isal", fw);
+        Computation::Multi(code, data, matrix, row, col, pktsizeB, "Jerasure", fw);
 
         free(matrix);
         free(data);
@@ -321,7 +321,7 @@ int main(int argc, char** argv) {
             }
             codeBufIdx++;
         }
-        Computation::Multi(code, data, matrix, row, col, pktsizeB, "Isal", fw);
+        Computation::Multi(code, data, matrix, row, col, pktsizeB, "Jerasure", fw);
         free(matrix);
         free(data);
         free(code);
@@ -448,4 +448,8 @@ int main(int argc, char** argv) {
             printf("decoded data of symbol %d.\n", i);
         }
     }
+
+    // print encode and decode time
+    printf("Code: %s, encode throughput: %f MiB/s, encode time: %f\n", codeName.c_str(), 1.0 * pktsizeB * k / encodeTime, encodeTime / 1000000.0);
+    printf("Code: %s, decode throughput: %f MiB/s, decode time: %f\n", codeName.c_str(), 1.0 * pktsizeB * k / decodeTime, decodeTime / 1000000.0);
 }

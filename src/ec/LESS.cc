@@ -9,7 +9,7 @@ LESS::LESS(int n, int k, int w, int opt, vector<string> param) {
     _numGroups = _w + 1; // num_groups = sub-packetization + 1
 
     // field width
-    if (getAvailPrimElements(n, k, w, _fw, _e, _f) == false) {
+    if (getAvailPrimElements(_n, _k, _w, _fw, _e, _f) == false) {
         cout << "LESS::LESS() failed to find primitive element" << endl;
         exit(1);
     }
