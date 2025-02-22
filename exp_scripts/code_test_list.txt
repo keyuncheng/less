@@ -1,3 +1,6 @@
+RSCONV 6 4 1
+LESS 6 4 2
+Clay 6 4 8
 RSCONV 9 6 1
 Clay 9 6 27
 HHXORPlus 9 6 2
