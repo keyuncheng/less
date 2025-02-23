@@ -44,9 +44,6 @@ int main(int argc, char** argv) {
 
     string ecid = codeName + "_" + to_string(n) + "_" + to_string(k) + "_" + to_string(w);
 
-    // double disk_seek_time_ms = stod(argv[5]);
-    // double disk_bdwt_MBps = stod(argv[6]);
-
     vector<int> failed_ids;
     for (int i = 6; i < argc; i++) {
         int failed_id = atoi(argv[i]);
@@ -56,6 +53,9 @@ int main(int argc, char** argv) {
         }
         failed_ids.push_back(failed_id);
     }
+
+    // double disk_seek_time_ms = stod(argv[5]);
+    // double disk_bdwt_MBps = stod(argv[6]);
     
     string confpath = "./conf/sysSetting.xml";
     Config* conf = new Config(confpath);
@@ -450,6 +450,6 @@ int main(int argc, char** argv) {
     }
 
     // print encode and decode time
-    printf("Code: %s, encode throughput: %f MiB/s, encode time: %f\n", codeName.c_str(), 1.0 * pktsizeB * k / encodeTime, encodeTime / 1000000.0);
-    printf("Code: %s, decode throughput: %f MiB/s, decode time: %f\n", codeName.c_str(), 1.0 * pktsizeB * k / decodeTime, decodeTime / 1000000.0);
+    printf("Code: %s, encode throughput: %f MiB/s, encode time: %f\n", codeName.c_str(), 1.0 * pktsizeB * k * w / encodeTime, encodeTime / 1000000.0);
+    printf("Code: %s, decode throughput: %f MiB/s, decode time: %f\n", codeName.c_str(), 1.0 * pktsizeB * failed_ids.size() * w / decodeTime, decodeTime / 1000000.0);
 }
