@@ -21,16 +21,17 @@ void Computation::Multi(char** dst, char** src, int* mat, int rowCnt, int colCnt
     Computation::_cLock.unlock();
   } else {
     // first transfer the mat into char*
-    char* imatrix;
-    imatrix = (char*)calloc(rowCnt * colCnt, sizeof(char));
+    char* imatrix = new char[rowCnt * colCnt];
     for (int i=0; i<rowCnt * colCnt; i++) {
       char tmpc = mat[i];
       imatrix[i] = tmpc;
     }
     // call isa-l library
-    unsigned char itable[32 * rowCnt * colCnt];
+    unsigned char *itable = new unsigned char[32 * rowCnt * colCnt];
     ec_init_tables(colCnt, rowCnt, (unsigned char*)imatrix, itable);
     ec_encode_data(len, colCnt, rowCnt, itable, (unsigned char**)src, (unsigned char**)dst);
+    delete [] itable;
+    delete [] imatrix;
   }
 }
 
