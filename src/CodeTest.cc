@@ -120,6 +120,7 @@ int main(int argc, char** argv) {
     for (int i=0; i<n_data_symbols; i++) encodeBufMap.insert(make_pair(i, databuffers[i]));
     for (int i=0; i<n_code_symbols; i++) encodeBufMap.insert(make_pair(n_data_symbols+i, codebuffers[i]));
     initEncodeTime += getCurrentTime();
+    initEncodeTime /= 1000000;
 
     // free list to support shortening
     vector<int> shortening_free_list;
@@ -168,11 +169,7 @@ int main(int argc, char** argv) {
             }
             codeBufIdx++;
         }
-        double timex = getCurrentTime();
         Computation::Multi(code, data, matrix, row, col, pktSizeBytes, "Isal", fw);
-        double timey = getCurrentTime();
-        cout << 1.0 * (timey - timex) / 1e6 << endl;
-        cout << "called " << row << " " << col << " " << pktSizeBytes << endl;
 
         free(matrix);
         free(data);
@@ -186,6 +183,7 @@ int main(int argc, char** argv) {
     shortening_free_list.clear();
 
     encodeTime += getCurrentTime();
+    encodeTime /= 1000000;
 
     // debug encode
     for (int i=0; i<n_data_symbols; i++) {
@@ -262,6 +260,7 @@ int main(int argc, char** argv) {
             decodeBufMap.insert(make_pair(i, repairbuf[n_data_symbols+i]));
 
     initDecodeTime += getCurrentTime();
+    initDecodeTime /= 1000000;
 
     decodeTime -= getCurrentTime();
 
@@ -347,6 +346,7 @@ int main(int argc, char** argv) {
     shortening_free_list.clear();
 
     decodeTime += getCurrentTime();
+    decodeTime /= 1000000;
 
     /**
      * @brief record the disk_read_info_map
@@ -463,6 +463,6 @@ int main(int argc, char** argv) {
     }
 
     // print encode and decode time
-    printf("Code: %s, code data: %llu, encode throughput: %f MiB/s, encode time: %f\n", codeName.c_str(), pktSizeBytes * k * w, 1.0 * pktSizeBytes * k * w / encodeTime, encodeTime / 1000000.0);
-    printf("Code: %s, code data: %llu, decode throughput: %f MiB/s, decode time: %f\n", codeName.c_str(), pktSizeBytes * failed_ids.size(), 1.0 * pktSizeBytes * failed_ids.size() * w / decodeTime, decodeTime / 1000000.0);
+    printf("Code: %s, data volume: %llu MiB, encode throughput: %f MiB/s, encode time: %f\n", codeName.c_str(), blockSizeBytes * k / 1048576, 1.0 * blockSizeBytes * k / 1048576 / encodeTime, encodeTime);
+    printf("Code: %s, decode data volume: %llu MiB, decode throughput: %f MiB/s, decode time: %f\n", codeName.c_str(), blockSizeBytes * failed_ids.size() / 1048576, 1.0 * blockSizeBytes * failed_ids.size() / 1048576 / decodeTime, decodeTime);
 }
