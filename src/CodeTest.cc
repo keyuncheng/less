@@ -69,10 +69,10 @@ int main(int argc, char** argv) {
     string confpath = "./conf/sysSetting.xml";
     Config* conf = new Config(confpath);
 
-    cout << "Loaded EC Schemes:" << endl;
-    for (auto item : conf->_ecPolicyMap) {
-        cout << item.first << endl;
-    }
+    // cout << "Loaded EC Schemes:" << endl;
+    // for (auto item : conf->_ecPolicyMap) {
+    //     cout << item.first << endl;
+    // }
 
     ECPolicy* ecpolicy = conf->_ecPolicyMap[ecid];
     ECBase* ec = ecpolicy->createECClass();
@@ -284,7 +284,7 @@ int main(int argc, char** argv) {
 
     for (int taskid = 0; taskid < decodetasks.size(); taskid++) {
         ECTask* compute = decodetasks[taskid];
-        compute->dump();
+        // compute->dump();
 
         vector<int> children = compute->getChildren();
         unordered_map<int, vector<int>> coefMap = compute->getCoefMap();
@@ -392,13 +392,13 @@ int main(int argc, char** argv) {
             cons_read_list.push_back(cons_list);
         }
 
-        printf("node id: %d, cons_read_list:\n", node_id);
-        for (auto cons_list : cons_read_list) {
-            for (auto offset : cons_list) {
-            printf("%d ", offset);
-            }
-            printf("\n");
-        }
+        // printf("node id: %d, cons_read_list:\n", node_id);
+        // for (auto cons_list : cons_read_list) {
+        //     for (auto offset : cons_list) {
+        //     printf("%d ", offset);
+        //     }
+        //     printf("\n");
+        // }
 
         // update disk_read_info_map
         disk_read_info_map[node_id].first = cons_read_list.size();

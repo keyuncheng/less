@@ -8,7 +8,10 @@ LESS::LESS(int n, int k, int w, int opt, vector<string> param) {
     _m = n - k;
     _numGroups = _w + 1; // num_groups = sub-packetization + 1
 
-    // field width
+    // init ECDAG symbols layout
+    initLayout();
+
+    // obtain primitive elements (assign fw, e, f)
     if (getAvailPrimElements(_n, _k, _w, _fw, _e, _f) == false) {
         cout << "LESS::LESS() failed to find primitive element" << endl;
         exit(1);
@@ -20,19 +23,27 @@ LESS::LESS(int n, int k, int w, int opt, vector<string> param) {
         exit(-1);
     }
     
-    // obtain GF elements
+    // obtain primitive elements power
     _order = (1 << _fw) - 1;
     getPrimElementsPower(_order, _e, _fw);
     
-    // element map (debug)
+    // element map (for debugging)
     for (int i = 0; i < 255; i++) {
         _elementMap[_primElementPower[i]] = i;
     }
 
-    initLayout();
+    // print primitive element
+    // cout << "LESS::LESS() Primitive element (root): " << _e << endl;
+
+    // // print primElementPower
+    // cout << "LESS::LESS() Primitive elements power:" << endl;
+    // for (int i = 0; i < _order; i++) {
+    //     cout << _primElementPower[i] << " ";
+    // }
+    // cout << endl;
 
     /**
-     * @brief method 1: use augmented sub-stripes for encoding and decoding
+     * @brief Construct extended sub-stripes for encoding and decoding
      */
     
     // Step 1: assign nodes to node groups
@@ -54,17 +65,17 @@ LESS::LESS(int n, int k, int w, int opt, vector<string> param) {
         }
     }
 
-    // print out the node groups
-    cout << "LESS::LESS() Node groups:" << endl;
-    for (int groupId = 0; groupId < _numGroups; groupId++) {
-        cout << "Group " << groupId << ": ";
-        for (auto nodeId : _nodeGroups[groupId]) {
-            cout << nodeId << " ";
-        }
-        cout << endl;
-    }
+    // // print out the node groups
+    // cout << "LESS::LESS() Node groups:" << endl;
+    // for (int groupId = 0; groupId < _numGroups; groupId++) {
+    //     cout << "Group " << groupId << ": ";
+    //     for (auto nodeId : _nodeGroups[groupId]) {
+    //         cout << nodeId << " ";
+    //     }
+    //     cout << endl;
+    // }
 
-    // Step 2: assign symbols to symbol groups in augmented sub-stripes
+    // Step 2: assign symbols to symbol groups
     _symbolGroups = vector<vector<int>>(_numGroups, vector<int>());
     
     // handle the first _numGroups - 1 symbol groups
@@ -85,7 +96,7 @@ LESS::LESS(int n, int k, int w, int opt, vector<string> param) {
         }
     }
 
-    // handle the last symbol group
+    // assign the last symbol group
     auto &lastNodeGroup = _nodeGroups[_numGroups - 1];
 
     // put all symbols diagonally
@@ -107,19 +118,20 @@ LESS::LESS(int n, int k, int w, int opt, vector<string> param) {
         sort(_symbolGroups[groupId].begin(), _symbolGroups[groupId].end());
     }
 
-    // print out the symbol groups
-    cout << "LESS::LESS() Symbol groups:" << endl;
-    for (int groupId = 0; groupId < _numGroups; groupId++) {
-        cout << "Group " << groupId << ": ";
-        for (auto symbolId : _symbolGroups[groupId]) {
-            cout << symbolId << " ";
-        }
-        cout << endl;
-    }
+    // // print out the symbol groups
+    // cout << "LESS::LESS() Symbol groups:" << endl;
+    // for (int groupId = 0; groupId < _numGroups; groupId++) {
+    //     cout << "Group " << groupId << ": ";
+    //     for (auto symbolId : _symbolGroups[groupId]) {
+    //         cout << symbolId << " ";
+    //     }
+    //     cout << endl;
+    // }
 
-    // Step 3: assign coefficients for each symbol for encoding
+    // Step 3: assign coefficients for each symbol for constructing parity
+    // check matrix
 
-    // generate permutation (vertically)
+    // generate node permutation (in vertical order)
     vector<vector<int>> nodeReordering(_numGroups, vector<int>());
     for (int nodeId = 0, rid = 0; nodeId < _n; nodeId++) {
         nodeReordering[rid].push_back(nodeId);
@@ -131,13 +143,14 @@ LESS::LESS(int n, int k, int w, int opt, vector<string> param) {
         }
     }
 
-    // print permutation
-    cout << "LESS::LESS() Node permutation:" << endl;
-    for (auto nodeId : _nodePermutation) {
-        cout << nodeId << " ";
-    }
-    cout << endl;
+    // // print node permutation
+    // cout << "LESS::LESS() Node permutation:" << endl;
+    // for (auto nodeId : _nodePermutation) {
+    //     cout << nodeId << " ";
+    // }
+    // cout << endl;
 
+    // assign coefficients to each symbols: (w * n)
     _coefs4Symbols = vector<vector<int>>(_w, vector<int>(_n, 0));
 
     for (int nodeId = 0; nodeId < _n; nodeId++) {
@@ -146,24 +159,14 @@ LESS::LESS(int n, int k, int w, int opt, vector<string> param) {
         }
     }
 
-    // print primitive element
-    cout << "LESS::LESS() Primitive element (root): " << _e << endl;
-
-    // // print primElementPower
-    // cout << "LESS::LESS() Primitive elements power:" << endl;
-    // for (int i = 0; i < _order; i++) {
-    //     cout << _primElementPower[i] << " ";
+    // // print out the coefficients
+    // cout << "LESS::LESS() Coefficients for encoding:" << endl;
+    // for (int i = 0; i < _w; i++) {
+    //     for (int j = 0; j < _n; j++) {
+    //         cout << _coefs4Symbols[i][j] << " ";
+    //     }
+    //     cout << endl;
     // }
-    // cout << endl;
-
-    // print out the coefficients
-    cout << "LESS::LESS() Coefficients for encoding:" << endl;
-    for (int i = 0; i < _w; i++) {
-        for (int j = 0; j < _n; j++) {
-            cout << _coefs4Symbols[i][j] << " ";
-        }
-        cout << endl;
-    }
 
     // cout << "symbol element correspondence:" << endl;
     // for (int groupId = 0; groupId < _numGroups; groupId++) {
@@ -185,8 +188,65 @@ LESS::LESS(int n, int k, int w, int opt, vector<string> param) {
     //     cout << endl;
     // }
 
+    // Step 4: construct encoding matrix for each extended sub-stripe
+    for (int esId = 0; esId < _numGroups; esId++) {
+        vector<int> &symbolGroup = _symbolGroups[esId];
+
+        int as_n = symbolGroup.size();
+        int as_k = as_n - _m;
+
+        // obtain coefficients for each symbol for encoding
+        vector<int> coefs4Encoding(as_n, 0);
+        for (int i = 0; i < as_n; i++) {
+            int symbolNodeId = symbolGroup[i] / _w;
+            int symbolAlpha = symbolGroup[i] % _w;
+            coefs4Encoding[i] = _coefs4Symbols[symbolAlpha][symbolNodeId];
+        }
+
+        // construct parity check matrix for the extended sub-stripe
+        int *pcMatrix4SubStripe = new int[_m * as_n];
+        for (int rid = 0; rid < _m; rid++) {
+            for (int cid = 0; cid < as_n; cid++) {
+                if (rid == 0) {
+                    pcMatrix4SubStripe[rid * as_n + cid] = 1;
+                } else {
+                    pcMatrix4SubStripe[rid * as_n + cid] = galois_single_multiply(pcMatrix4SubStripe[(rid - 1) * as_n + cid], coefs4Encoding[cid], _fw);
+                }
+            }
+        }
+        _ES2pcMatrixMap[esId] = pcMatrix4SubStripe;
+
+        // print parity check matrix
+        cout << "LESS::Encode() Parity-check matrix for extended sub-stripe " << esId << ":" << endl;
+        jerasure_print_matrix(_ES2pcMatrixMap[esId], _m, as_n, _fw);
+
+        // obtain encoding matrix for the extended sub-stripe
+        int *from = new int[as_n];
+        int *to = new int[as_n];
+        memset(from, 0, as_n * sizeof(int));
+        memset(to, 0, as_n * sizeof(int));
+        // the first symbols are data symbols, the last symbols are parity symbols 
+        for (int i = 0; i < as_n; i++) {
+            if (i < as_k) {
+                from[i] = 1;
+            } else {
+                to[i] = 1;
+            }
+        }
+        int *encodeMatrix4SubStripe = new int[as_k * _m];
+        if (getGenMatrixFromPCMatrix(as_n, as_k, _fw, pcMatrix4SubStripe, encodeMatrix4SubStripe, from, to) == false) {
+            cout << "LESS::Encode() failed to obtain encoding matrix for extended sub-stripe " << esId << endl;
+            exit(-1);
+        }
+        _ES2encodeMatrixMap[esId] = encodeMatrix4SubStripe;
+
+        // // print encoding matrix for extended sub-stripe
+        // cout << "LESS::Encode() Encoding matrix for extended sub-stripe " << esId << ":" << endl;
+        // jerasure_print_matrix(_ES2encodeMatrixMap[esId], _m, as_k, _fw);
+    }
+
     /**
-     * @brief method 2: directly construct parity check matrix for encoding and decoding
+     * @brief Construct generator matrix for the code
      */
     genEncodingMatrix();
 
@@ -211,11 +271,21 @@ LESS::LESS(int n, int k, int w, int opt, vector<string> param) {
     //     cout << endl;
     // }
 
-    cout << "LESS::LESS() Generator matrix:" << endl;
-    jerasure_print_matrix(_encodeMatrix, _m * _w, _k * _w, 8);
+    // cout << "LESS::LESS() Generator matrix:" << endl;
+    // jerasure_print_matrix(_encodeMatrix, _m * _w, _k * _w, 8);
 }
 
 LESS::~LESS() {
+    // delete matrices for each extended sub-stripe
+    for (auto &pcMatrix : _ES2pcMatrixMap) {
+        delete [] pcMatrix.second;
+    }
+
+    for (auto &encodeMatrix : _ES2encodeMatrixMap) {
+        delete [] encodeMatrix.second;
+    }
+
+    // delete parity check matrix and encoding matrix
     delete [] _pcMatrix;
     delete [] _encodeMatrix;
 }
@@ -224,74 +294,30 @@ ECDAG* LESS::Encode() {
     ECDAG *ecdag = new ECDAG();
 
     /**
-     * @brief method 1: use augmented sub-stripes for encoding
+     * @brief method 1: use extended sub-stripes for encoding
      */
     for (int alpha = 0; alpha < _w; alpha++) {
         vector<int> &symbolGroup = _symbolGroups[alpha];
-
-        // construct RS(as_n, as_k) for the augmented sub-stripe
+        
+        // construct RS(as_n, as_k) for the extended sub-stripe
         int as_n = symbolGroup.size();
         int as_k = as_n - _m;
-
-        // obtain coefficients for each symbol for encoding
-        vector<int> coefs4Encoding(as_n, 0);
-        for (int i = 0; i < as_n; i++) {
-            int symbolNodeId = symbolGroup[i] / _w;
-            int symbolAlpha = symbolGroup[i] % _w;
-            coefs4Encoding[i] = _coefs4Symbols[symbolAlpha][symbolNodeId];
-        }
         
         vector<int> data;
         vector<int> codes;
-        for (int nodeId = _k; nodeId < _n; nodeId++) {
-            codes.push_back(_layout[alpha][nodeId]);
-        }
-
-        for (auto symbolId : symbolGroup) {
-            if (find(codes.begin(), codes.end(), symbolId) == codes.end()) {
-                data.push_back(symbolId);
-            }
-        }
         
-        // construct parity check matrix for the augmented sub-stripe
-        int *pcMatrix4SubStripe = new int[_m * as_n];
-        for (int rid = 0; rid < _m; rid++) {
-            for (int cid = 0; cid < as_n; cid++) {
-                if (rid == 0) {
-                    pcMatrix4SubStripe[rid * as_n + cid] = 1;
-                } else {
-                    pcMatrix4SubStripe[rid * as_n + cid] = galois_single_multiply(pcMatrix4SubStripe[(rid - 1) * as_n + cid], coefs4Encoding[cid], _fw);
-                }
-            }
-        }
-
-        // print matrix
-        cout << "LESS::Encode() Parity-check matrix for augmented sub-stripe " << alpha << ":" << endl;
-        jerasure_print_matrix(pcMatrix4SubStripe, _m, as_n, _fw);
-
-        // obtain encoding matrix
-        int *from = new int[as_n];
-        int *to = new int[as_n];
-        memset(from, 0, as_n * sizeof(int));
-        memset(to, 0, as_n * sizeof(int));
         for (int i = 0; i < as_n; i++) {
-            if (find(data.begin(), data.end(), symbolGroup[i]) != data.end()) {
-                from[i] = 1;
+            if (i < as_k) {
+                // data: the first as_k symbols
+                data.push_back(symbolGroup[i]);
             } else {
-                to[i] = 1;
+                // codes: the last as_m symbols
+                codes.push_back(symbolGroup[i]);
             }
         }
-        int *encodeMatrix4SubStripe = new int[as_k * _m];
-        if (getGenMatrixFromPCMatrix(as_n, as_k, _fw, pcMatrix4SubStripe, encodeMatrix4SubStripe, from, to) == false) {
-            cout << "LESS::Encode() failed to obtain encoding matrix for augmented sub-stripe " << alpha << endl;
-            exit(-1);
-        }
+        int *encodeMatrix4SubStripe = _ES2encodeMatrixMap[alpha];
 
-        // // print encoding matrix for augmented sub-stripe
-        // cout << "LESS::Encode() Encoding matrix for augmented sub-stripe " << alpha << ":" << endl;
-        // jerasure_print_matrix(encodeMatrix4SubStripe, _m, as_k, _fw);
-
-        // encode the augmented sub-stripe
+        // encode the extended sub-stripe
         for (int i = 0; i < codes.size(); i++) {
             int code = codes[i];
             vector<int> coef(encodeMatrix4SubStripe + i * as_k, encodeMatrix4SubStripe + (i + 1) * as_k);
@@ -346,48 +372,102 @@ void LESS::Place(vector<vector<int>>& group) {
 }
 
 void LESS::genParityCheckMatrix() {
-    int rows = _m * _w;
-    int cols = _n * _w;
+    // int rows = _m * _w;
+    // int cols = _n * _w;
 
-    _pcMatrix = new int[rows * cols];
-    memset(_pcMatrix, 0, rows * cols * sizeof(int));
+    // _pcMatrix = new int[rows * cols];
+    // memset(_pcMatrix, 0, rows * cols * sizeof(int));
 
-    int *pcMatrixWithoutPermutate = new int[rows * cols];
-    memset(pcMatrixWithoutPermutate, 0, rows * cols * sizeof(int));
+    // int *pcMatrixWithoutPermutate = new int[rows * cols];
+    // memset(pcMatrixWithoutPermutate, 0, rows * cols * sizeof(int));
 
-    for (int x = 0; x < rows; x++)
-    {
-        for (int y = 0; y < cols; y++)
-        {
-            // int a = y / _w / g;
-            int b = y / _w % _numGroups; // group id
-            int j = y % _w; // the j-th sub-mtx in col
-            int i = x / _m; // the i-th sub-mtx in row
-            int t = x % _m;
-            if (i == j || i == b)
-            { // diagonal or 
-                pcMatrixWithoutPermutate[x * cols + y] = _primElementPower[(y * t) % _order];
-            }
-        }
-    }
+    // for (int x = 0; x < rows; x++)
+    // {
+    //     for (int y = 0; y < cols; y++)
+    //     {
+    //         // int a = y / _w / g;
+    //         int b = y / _w % _numGroups; // group id
+    //         int j = y % _w; // the j-th sub-mtx in col
+    //         int i = x / _m; // the i-th sub-mtx in row
+    //         int t = x % _m;
+    //         if (i == j || i == b)
+    //         { // diagonal or 
+    //             pcMatrixWithoutPermutate[x * cols + y] = _primElementPower[(y * t) % _order];
+    //         }
+    //     }
+    // }
 
-    // // print pcMatrixWithoutPermutate
-    // cout << "LESS::genParityCheckMatrix() Parity-check matrix without permutation:" << endl;
-    // jerasure_print_matrix(pcMatrixWithoutPermutate, rows, cols, _fw);
+    // // // print pcMatrixWithoutPermutate
+    // // cout << "LESS::genParityCheckMatrix() Parity-check matrix without permutation:" << endl;
+    // // jerasure_print_matrix(pcMatrixWithoutPermutate, rows, cols, _fw);
 
-    // convert the parity check matrix based on node permutation
-    for (int nodeId = 0; nodeId < _n; nodeId++) {
-        int permNodeId = _nodePermutation[nodeId];
-        for (int alpha = 0; alpha < _w; alpha++) {
-            for (int rid = 0; rid < rows; rid++) {
-                _pcMatrix[rid * cols + nodeId * _w + alpha] = pcMatrixWithoutPermutate[rid * cols + permNodeId * _w + alpha];
-            }
-        }
-    }
+    // // convert the parity check matrix based on node permutation
+    // for (int nodeId = 0; nodeId < _n; nodeId++) {
+    //     int permNodeId = _nodePermutation[nodeId];
+    //     for (int alpha = 0; alpha < _w; alpha++) {
+    //         for (int rid = 0; rid < rows; rid++) {
+    //             _pcMatrix[rid * cols + nodeId * _w + alpha] = pcMatrixWithoutPermutate[rid * cols + permNodeId * _w + alpha];
+    //         }
+    //     }
+    // }
 
     // // print pcmatrix after permute
     // cout << "LESS::genParityCheckMatrix() Parity-check matrix after permutation:" << endl;
     // jerasure_print_matrix(_pcMatrix, rows, cols, _fw);
+
+
+    // construct parity check matrix
+    _pcMatrix = new int[_m * _w * _n * _w];
+    memset(_pcMatrix, 0, _m * _w * _n * _w * sizeof(int));
+
+    int s = _n / _numGroups; // minimum number of elements in a group
+    int t = _n % _numGroups; // number of items in the last group
+
+    // H_i of H
+    for (int i = 0; i < _n; i++)
+    {
+        int g_i = -1; // the group id
+        if (i < t * (s + 1))
+        {
+            g_i = i / (s + 1);
+        }
+        else
+        {
+            g_i = (i - t * (s + 1)) / s + t;
+        }
+        int h_i = -1; // the i-th sub-mtx in row
+        if (i < t * (s + 1))
+        {
+            h_i = i % (s + 1);
+        }
+        else
+        {
+            h_i = (i - t * (s + 1)) % s;
+        }
+        // z-th row of H_i
+        for (int z = 0; z < _w; z++)
+        {
+            // j-th col of H_i
+            for (int j = 0; j < _w; j++)
+            {
+                if (z == j || z == g_i)
+                {
+                    // assign as column vector v_ij
+                    int order_idx = ((h_i * (_w + 1) + g_i) * _w + j) % _order;
+                    for (int bidx = 0; bidx < _m; bidx++)
+                    {
+                        int ridx = z * _m + bidx;
+                        int cidx = i * _w + j;
+                        _pcMatrix[ridx * _n * _w + cidx] = _primElementPower[(order_idx * bidx) % _order];
+                    }
+                }
+            }
+        }
+    }
+
+    // // print parity check matrix
+    // cout << "LESS::genParityCheckMatrix() Parity-check matrix:" << endl;
+    // jerasure_print_matrix(_pcMatrix, _m * _w, _n * _w, _fw);
 }
 
 void LESS::genEncodingMatrix() {
@@ -512,16 +592,6 @@ bool LESS::getGenMatrixFromPCMatrix(int n, int k, int fw, const int* pcMatrix, i
     return true;
 }
 
-void LESS::initLayout() {
-    int symbolId = 0;
-    _layout.resize(_w, vector<int>(_n, 0));
-    for (int nodeId = 0; nodeId < _n; nodeId++) {
-        for (int alpha = 0; alpha < _w; alpha++) {
-            _layout[alpha][nodeId] = symbolId++;
-        }
-    }
-}
-
 bool LESS::genDecodingMatrix(vector<int> &availSymbols, vector<int> &failedSymbols, int *decodeMatrix) {
     int *from = new int[_n * _w];
     int *to = new int[_n * _w];
@@ -588,186 +658,8 @@ bool LESS::genDecodingMatrix(vector<int> &availSymbols, vector<int> &failedSymbo
 }
 
 ECDAG *LESS::decodeSingle(vector<int> &availSymbols, vector<int> &failedSymbols) {
-    /**
-     * @brief method 1: use augmented sub-stripes for single failure repair
-     */
+    // use extended sub-stripes for single failure repair
     return decodeMultipleWithSubStripes(availSymbols, failedSymbols);
-
-    // /**
-    //  * @brief method 2: use parity check matrix for single failure repair
-    //  */
-
-    // ECDAG *ecdag = new ECDAG();
-
-    // // symbols to repair
-    // int failedNode = failedSymbols[0] / _w;
-    // int groupId = failedNode % _numGroups;
-    // int repairBW = getRepairBandwidth(failedNode);
-    // vector<int> helperNodeIds = getHelperNodes(failedNode);
-
-    // vector<int> availSymbols;
-    // vector<int> failedSymbols;
-    // for (int alpha = 0; alpha < _w; alpha++)
-    // {
-    //     failedSymbols.push_back(_layout[alpha][failedNode]);
-    // }
-
-    // for (int nodeId = 0; nodeId < _n; nodeId++)
-    // {
-    //     if (helperNodeIds[nodeId])
-    //     {
-    //         // put all nodes in the group
-    //         if (nodeId % _numGroups == groupId)
-    //         {
-    //             for (int alpha = 0; alpha < _w; alpha++)
-    //             {
-    //                 availSymbols.push_back(_layout[alpha][nodeId]);
-    //             }
-    //         }
-    //         else if (groupId < _w)
-    //         {
-    //             availSymbols.push_back(_layout[groupId][nodeId]);
-    //         }
-    //         else
-    //         {
-    //             availSymbols.push_back(_layout[nodeId % _numGroups][nodeId]);
-    //         }
-    //     }
-    // }
-
-    // int *repairMatrix = getRepairMatrix(failedNode);
-
-    // cout << "LESS::decodeSingle() Repair Matrix: " << endl;
-    // jerasure_print_matrix(repairMatrix, _m, repairBW, _fw);
-
-    // for (int i = 0; i < _w; i++) {
-    //     vector<int> &data = availSymbols;
-    //     vector<int> coef(repairMatrix + i * repairBW, repairMatrix + (i + 1) * repairBW);
-    //     int code = failedSymbols[i];
-    //     ecdag->Join(code, data, coef);
-    // }
-
-    // return ecdag;
-}
-
-int *LESS::getRepairMatrix(int failedNode) {
-    int groupId = failedNode % _numGroups;
-    int repairBW = getRepairBandwidth(failedNode);
-    vector<int> helperNodeIds = getHelperNodes(failedNode);
-
-    int numRows = _m;
-    // int cols = r + beta;
-    int numCols1 = _m;
-    int numCols2 = repairBW;
-
-    int before = 0;
-    for (int nodeId = 0; nodeId < _n; nodeId++)
-    {
-        if (nodeId >= failedNode) {
-            break;
-        }
-        if (!helperNodeIds[nodeId])
-        {
-            before += (((nodeId % _numGroups) == groupId) ? (_w) : (1));
-        }
-    }
-
-    int *R1 = new int[numRows * numCols1];
-    int *R2 = new int[numRows * numCols2];
-
-    /**
-     * get R1 and R2
-     */
-    int start_col1 = 0;
-    int start_col2 = 0;
-    for (int a = 0; a < _n; a++)
-    {
-        if (helperNodeIds[a])
-        {
-            if (a % _numGroups == groupId)
-            {
-                for (int alpha = 0; alpha < _w; alpha++)
-                {
-                    for (int t = 0; t < _m; t++)
-                    {
-                        R2[t * numCols2 + start_col2 + alpha] = _primElementPower[((a * _w + alpha) * t) % _order];
-                    }
-                }
-                start_col2 += _w;
-            }
-            else if (groupId == _w)
-            {
-                for (int t = 0; t < _m; t++)
-                {
-                    R2[t * numCols2 + start_col2] = _primElementPower[((a * _w + a % _numGroups) * t) % _order];
-                }
-                start_col2 += 1;
-            }
-            else
-            {
-                for (int t = 0; t < _m; t++)
-                {
-                    R2[t * numCols2 + start_col2] = _primElementPower[((a * _w + groupId) * t) % _order];
-                }
-                start_col2 += 1;
-            }
-        }
-        else
-        {
-            if (a % _numGroups == groupId)
-            {
-                for (int alpha = 0; alpha < _w; alpha++)
-                {
-                    for (int t = 0; t < _m; t++)
-                    {
-                        R1[t * numCols1 + start_col1 + alpha] = _primElementPower[((a * _w + alpha) * t) % _order];
-                    }
-                }
-                start_col1 += _w;
-            }
-            else if (groupId == _w)
-            {
-                for (int t = 0; t < _m; t++)
-                {
-                    R1[t * numCols1 + start_col1] = _primElementPower[((a * _w + a % groupId) * t) % _order];
-                }
-                start_col1 += 1;
-            }
-            else
-            {
-                for (int t = 0; t < _m; t++)
-                {
-                    R1[t * numCols1 + start_col1] = _primElementPower[((a * _w + groupId) * t) % _order];
-                }
-                start_col1 += 1;
-            }
-        }
-    }
-
-    // print_mat(R1, numRows, numCols1);
-    // print_mat(R2, numRows, numCols2);
-
-    int *R1_inverse = new int[numRows * numCols1];
-    jerasure_invert_matrix(R1, R1_inverse, numRows, _fw);
-    int *temp = jerasure_matrix_multiply(R1_inverse, R2, numRows, numCols1, numRows, numCols2, _fw);
-    // print_mat(temp, numRows, numCols2);
-    delete[] R1;
-    delete[] R2;
-    delete[] R1_inverse;
-    if (numCols1 == _w)
-    {
-        return temp;
-    }
-    else
-    {
-        int *R = (int *)malloc(sizeof(int) * _w * numCols2);
-        for (int i = 0; i < _w; i++)
-        {
-            memcpy(R + i * numCols2, temp + (i + before) * numCols2, sizeof(int) * numCols2);
-        }
-        free(temp);
-        return R;
-    }
 }
 
 ECDAG *LESS::decodeMultiple(vector<int> &availSymbols, vector<int> &failedSymbols) {
@@ -824,8 +716,8 @@ ECDAG *LESS::decodeMultiple(vector<int> &availSymbols, vector<int> &failedSymbol
 ECDAG *LESS::decodeMultipleWithSubStripes(vector<int> &availSymbols, vector<int> &failedSymbols) {
     ECDAG *ecdag = new ECDAG();
 
-    // use augmented sub-stripes for multiple failures repair
-    cout << "LESS::decodeMultipleWithSubStripes() Multiple failures repair using augmented sub-stripes" << endl;
+    // use extended sub-stripes for multiple failures repair
+    cout << "LESS::decodeMultipleWithSubStripes() Multiple failures repair using extended sub-stripes" << endl;
 
     // identify failed nodes
     vector<int> failedNodes;
@@ -852,9 +744,7 @@ ECDAG *LESS::decodeMultipleWithSubStripes(vector<int> &availSymbols, vector<int>
     int as_n = symbolGroup.size();
     int as_k = symbolGroup.size() - _m;
 
-    // obtain coefficients for each symbol for decoding
-    vector<int> coefs4Decoding(as_n, 0);
-
+    // construct decoding matrix for the extended sub-stripe
     int *from = new int[as_n];
     int *to = new int[as_n];
     memset(from, 0, as_n * sizeof(int));
@@ -863,8 +753,6 @@ ECDAG *LESS::decodeMultipleWithSubStripes(vector<int> &availSymbols, vector<int>
     for (int i = 0, count = 0; i < as_n; i++) {
         int symbol = symbolGroup[i];
         int symbolNodeId = symbol / _w;
-        int symbolAlpha = symbol % _w;
-        coefs4Decoding[i] = _coefs4Symbols[symbolAlpha][symbolNodeId];
         if (find(failedNodes.begin(), failedNodes.end(), symbolNodeId) != failedNodes.end()) {
             // failed node
             to[i] = 1;
@@ -879,33 +767,24 @@ ECDAG *LESS::decodeMultipleWithSubStripes(vector<int> &availSymbols, vector<int>
         }
     }
         
-    // construct parity check matrix for the augmented sub-stripe
-    int *pcMatrix4SubStripe = new int[_m * as_n];
-    for (int rid = 0; rid < _m; rid++) {
-        for (int cid = 0; cid < as_n; cid++) {
-            if (rid == 0) {
-                pcMatrix4SubStripe[rid * as_n + cid] = 1;
-            } else {
-                pcMatrix4SubStripe[rid * as_n + cid] = galois_single_multiply(pcMatrix4SubStripe[(rid - 1) * as_n + cid], coefs4Decoding[cid], _fw);
-            }
-        }
-    }
+    // construct parity check matrix for the extended sub-stripe
+    int *pcMatrix4SubStripe = _ES2pcMatrixMap[residingGroupId];
 
     // print matrix
-    cout << "LESS::Encode() Parity-check matrix for augmented sub-stripe " << residingGroupId << ":" << endl;
+    cout << "LESS::Encode() Parity-check matrix for extended sub-stripe " << residingGroupId << ":" << endl;
     jerasure_print_matrix(pcMatrix4SubStripe, _m, as_n, _fw);
 
     int *decodeMatrix4SubStripe = new int[as_k * _m];
     if (getGenMatrixFromPCMatrix(as_n, as_k, _fw, pcMatrix4SubStripe, decodeMatrix4SubStripe, from, to) == false) {
-        cout << "LESS::Encode() failed to obtain decoding matrix for augmented sub-stripe " << residingGroupId << endl;
+        cout << "LESS::Encode() failed to obtain decoding matrix for extended sub-stripe " << residingGroupId << endl;
         exit(-1);
     }
 
-    // print encoding matrix for augmented sub-stripe
-    cout << "LESS::DecodeSingle() Decoding matrix for augmented sub-stripe " << residingGroupId << ":" << endl;
-    jerasure_print_matrix(decodeMatrix4SubStripe, _m, as_k, _fw);
+    // // print encoding matrix for extended sub-stripe
+    // cout << "LESS::DecodeSingle() Decoding matrix for extended sub-stripe " << residingGroupId << ":" << endl;
+    // jerasure_print_matrix(decodeMatrix4SubStripe, _m, as_k, _fw);
 
-    // encode the augmented sub-stripe
+    // encode the extended sub-stripe
     for (int i = 0; i < codes.size(); i++) {
         int code = codes[i];
         vector<int> coef(decodeMatrix4SubStripe + i * as_k, decodeMatrix4SubStripe + (i + 1) * as_k);
@@ -926,7 +805,7 @@ ECDAG *LESS::decodeMultipleWithPCMatrix(vector<int> &availSymbols, vector<int> &
 
     // print decode matrix
     cout << "LESS::decodeMultiple() Decoding matrix:" << endl;
-    jerasure_print_matrix(decodeMatrix, _m * _w, _k * _w, 8);
+    jerasure_print_matrix(decodeMatrix, failedSymbols.size(), _k * _w, 8);
 
     // data: (k * w)
     vector<int> &data = availSymbols;
@@ -1112,49 +991,12 @@ vector<vector<int>> LESS::GetSubPackets() {
     return _layout;
 }
 
-int LESS::getRepairBandwidth(int failedNode)
-{
-    int groupId = failedNode % _numGroups;
-    if (groupId < _n % _numGroups)
-    {
-        return (_n / _numGroups + 1) * (_w - 1) + _k;
-    }
-    else
-    {
-        return (_n / _numGroups) * (_w - 1) + _k;
-    }
-}
-
-vector<int> LESS::getHelperNodes(int failedNode)
-{
-    int groupId = failedNode % _numGroups;
-    vector<int> helperNodeIds(_n, 1);
-    for (int i = 0; i < _n; i++)
-
-    helperNodeIds[failedNode] = 0;
-    if (_w < _m)
-    {
-        int count = _m - _w;
-        int single = (groupId < (_n % _numGroups)) ? (_n - _n / _numGroups - 1) : (_n - _n / _numGroups);
-
-        for (int i = 0; (i < _n) && (single < count); i++)
-        {
-            if (i % _numGroups == groupId)
-            {
-                helperNodeIds[i] = 0;
-                count -= _w;
-            }
-        }
-
-        for (int i = 0; (i < _n) && (count > 0); i++)
-        {
-            if (i % _numGroups != groupId)
-            {
-                helperNodeIds[i] = 0;
-                count -= 1;
-            }
+void LESS::initLayout() {
+    int symbolId = 0;
+    _layout.resize(_w, vector<int>(_n, 0));
+    for (int nodeId = 0; nodeId < _n; nodeId++) {
+        for (int alpha = 0; alpha < _w; alpha++) {
+            _layout[alpha][nodeId] = symbolId++;
         }
     }
-    
-    return helperNodeIds;
 }
