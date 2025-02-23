@@ -612,7 +612,7 @@ vector<int> Clay::decode_uncoupled(vector<int> erased_chunks, int z, ECDAG* ecda
         memcpy(_select_vector,
                 _mds_encode_matrix + cidx * _mds_k,
                 _mds_k * sizeof(int));
-        int* _coef_vector = jerasure_matrix_multiply(
+        // int* _coef_vector = jerasure_matrix_multiply(
                 // _select_vector, _invert_matrix, 1, _mds_k, _mds_k, _mds_k, 8);
         int* _coef_vector = Computation::JerasureMatrixMultiply(_select_vector, _invert_matrix, 1, _mds_k, _mds_k, _mds_k, 8);
         vector<int> coef;
