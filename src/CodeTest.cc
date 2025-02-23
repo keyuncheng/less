@@ -19,8 +19,8 @@
 using namespace std;
 
 void usage() {
-    // printf("usage: ./CodeTest code_name n k w pktbytes disk_seek_time_ms disk_bdwt_MBps failed_ids\n");
-    printf("usage: ./CodeTest code_name n k w pktbytes <failed_ids>\n");
+    // printf("usage: ./CodeTest code_name n k w blockSizeBytes disk_seek_time_ms disk_bdwt_MBps failed_ids\n");
+    printf("usage: ./CodeTest code_name n k w blockSizeBytes <failed_ids>\n");
 }
 
 double getCurrentTime() {
@@ -40,7 +40,16 @@ int main(int argc, char** argv) {
     int n = atoi(argv[2]);
     int k = atoi(argv[3]);
     int w = atoi(argv[4]);
-    int pktsizeB = atoi(argv[5]);
+    unsigned long long blockSizeBytes = atoi(argv[5]);
+
+    if (blockSizeBytes % (16 * w) != 0)
+    {
+        int nearestBS = (int) ceil(1.0 * blockSizeBytes / (16 * w)) * 16 * w;
+        printf("Warning: block size must be a multiple of 16 * w = %d; rounded to the nearest: %d\n", 16 * w, nearestBS);
+        blockSizeBytes = nearestBS;
+    }
+    
+    unsigned long long pktSizeBytes = blockSizeBytes / w;
 
     string ecid = codeName + "_" + to_string(n) + "_" + to_string(k) + "_" + to_string(w);
 
@@ -84,16 +93,16 @@ int main(int argc, char** argv) {
     // 0. prepare data buffers
     char **databuffers = (char **)calloc(n_data_symbols, sizeof(char *));
     for (int i = 0; i < n_data_symbols; i++) {
-        databuffers[i] = (char *)calloc(pktsizeB, sizeof(char));
+        databuffers[i] = (char *)calloc(pktSizeBytes, sizeof(char));
         char v = i;
-        memset(databuffers[i], v, pktsizeB);
+        memset(databuffers[i], v, pktSizeBytes);
     }
 
     // 1. prepare code buffers
     char **codebuffers = (char **)calloc(n_code_symbols, sizeof(char *));
     for (int i = 0; i < n_code_symbols; i++) {
-        codebuffers[i] = (char *)calloc(pktsizeB, sizeof(char));
-        memset(codebuffers[i], 0, pktsizeB);
+        codebuffers[i] = (char *)calloc(pktSizeBytes, sizeof(char));
+        memset(codebuffers[i], 0, pktSizeBytes);
     }
 
     double initEncodeTime=0, initDecodeTime=0;
@@ -118,7 +127,7 @@ int main(int argc, char** argv) {
     encodeTime -= getCurrentTime();
     for (int taskid = 0; taskid < encodetasks.size(); taskid++) {
         ECTask* compute = encodetasks[taskid];
-        compute->dump();
+        // compute->dump();
 
         vector<int> children = compute->getChildren();
         unordered_map<int, vector<int>> coefMap = compute->getCoefMap();
@@ -135,7 +144,7 @@ int main(int argc, char** argv) {
             // create buffers to support shortening
             if (child >= n * w && encodeBufMap.find(child) == encodeBufMap.end()) {
                 shortening_free_list.push_back(child);
-                char* slicebuf = (char *) calloc(pktsizeB, sizeof(char));
+                char* slicebuf = (char *) calloc(pktSizeBytes, sizeof(char));
                 encodeBufMap[child] = slicebuf;
             }
 
@@ -146,7 +155,7 @@ int main(int argc, char** argv) {
             int target = it.first;
             char* codebuf; 
             if (encodeBufMap.find(target) == encodeBufMap.end()) {
-                codebuf = (char *)calloc(pktsizeB, sizeof(char));
+                codebuf = (char *)calloc(pktSizeBytes, sizeof(char));
                 encodeBufMap.insert(make_pair(target, codebuf));
             } else {
                 codebuf = encodeBufMap[target];
@@ -159,7 +168,11 @@ int main(int argc, char** argv) {
             }
             codeBufIdx++;
         }
-        Computation::Multi(code, data, matrix, row, col, pktsizeB, "Isal", fw);
+        double timex = getCurrentTime();
+        Computation::Multi(code, data, matrix, row, col, pktSizeBytes, "Isal", fw);
+        double timey = getCurrentTime();
+        cout << 1.0 * (timey - timex) / 1e6 << endl;
+        cout << "called " << row << " " << col << " " << pktSizeBytes << endl;
 
         free(matrix);
         free(data);
@@ -206,7 +219,7 @@ int main(int argc, char** argv) {
     cout << endl;
 
     for(int i=0; i<failsymbols.size(); i++) {
-        char* tmpbuf = (char*)calloc(pktsizeB, sizeof(char));
+        char* tmpbuf = (char*)calloc(pktSizeBytes, sizeof(char));
         repairbuf[failsymbols[i]] = tmpbuf;
     }
 
@@ -289,7 +302,7 @@ int main(int argc, char** argv) {
             // create buffers to support shortening
             if (child >= n * w && decodeBufMap.find(child) == decodeBufMap.end()) {
                 shortening_free_list.push_back(child);
-                char* slicebuf = (char *) calloc(pktsizeB, sizeof(char));
+                char* slicebuf = (char *) calloc(pktSizeBytes, sizeof(char));
                 decodeBufMap[child] = slicebuf;
             }
 
@@ -308,7 +321,7 @@ int main(int argc, char** argv) {
             int target = it.first;
             char* codebuf; 
             if (decodeBufMap.find(target) == decodeBufMap.end()) {
-                codebuf = (char*)calloc(pktsizeB, sizeof(char));
+                codebuf = (char*)calloc(pktSizeBytes, sizeof(char));
                 decodeBufMap.insert(make_pair(target, codebuf));
             } else {
                 codebuf = decodeBufMap[target];
@@ -321,7 +334,7 @@ int main(int argc, char** argv) {
             }
             codeBufIdx++;
         }
-        Computation::Multi(code, data, matrix, row, col, pktsizeB, "Isal", fw);
+        Computation::Multi(code, data, matrix, row, col, pktSizeBytes, "Isal", fw);
         free(matrix);
         free(data);
         free(code);
@@ -438,9 +451,9 @@ int main(int argc, char** argv) {
         int diff = 0;
 
         if (failed_node < k) {
-            diff = memcmp(decodeBufMap[failidx], databuffers[failidx], pktsizeB * sizeof(char));
+            diff = memcmp(decodeBufMap[failidx], databuffers[failidx], pktSizeBytes * sizeof(char));
         } else {
-            diff = memcmp(decodeBufMap[failidx], codebuffers[failidx - n_data_symbols], pktsizeB * sizeof(char));
+            diff = memcmp(decodeBufMap[failidx], codebuffers[failidx - n_data_symbols], pktSizeBytes * sizeof(char));
         }
         if (diff != 0) {
             printf("error: failed to decode data of symbol %d!!!!\n", i);
@@ -450,6 +463,6 @@ int main(int argc, char** argv) {
     }
 
     // print encode and decode time
-    printf("Code: %s, encode throughput: %f MiB/s, encode time: %f\n", codeName.c_str(), 1.0 * pktsizeB * k * w / encodeTime, encodeTime / 1000000.0);
-    printf("Code: %s, decode throughput: %f MiB/s, decode time: %f\n", codeName.c_str(), 1.0 * pktsizeB * failed_ids.size() * w / decodeTime, decodeTime / 1000000.0);
+    printf("Code: %s, code data: %llu, encode throughput: %f MiB/s, encode time: %f\n", codeName.c_str(), pktSizeBytes * k * w, 1.0 * pktSizeBytes * k * w / encodeTime, encodeTime / 1000000.0);
+    printf("Code: %s, code data: %llu, decode throughput: %f MiB/s, decode time: %f\n", codeName.c_str(), pktSizeBytes * failed_ids.size(), 1.0 * pktSizeBytes * failed_ids.size() * w / decodeTime, decodeTime / 1000000.0);
 }
