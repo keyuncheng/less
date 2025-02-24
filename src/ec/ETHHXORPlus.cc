@@ -471,16 +471,6 @@ void ETHHXORPlus::Place(vector<vector<int>>& group) {
     return;
 }
 
-vector<int> ETHHXORPlus::getNodeSubPackets(int nodeid) {
-    vector<int> symbols;
-    for (int i = 0; i < _layout.size(); i++) {
-        symbols.push_back(_layout[i][nodeid]);
-    }
-
-    return symbols;
-}
-
-
 vector<vector<int>> ETHHXORPlus::GetSubPackets() {
     return _layout;
 }

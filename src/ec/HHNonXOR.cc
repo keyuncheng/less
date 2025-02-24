@@ -823,15 +823,6 @@ void HHNonXOR::DecodeMultiple(vector<int> from, vector<int> to, ECDAG *ecdag) {
     }
 }
 
-vector<int> HHNonXOR::getNodeSubPackets(int nodeid) {
-    vector<int> symbols;
-    for (int i = 0; i < _w; i++) {
-        symbols.push_back(_layout[i][nodeid]);
-    }
-
-    return symbols;
-}
-
 vector<vector<int>> HHNonXOR::GetSubPackets() {
     return _layout;
 }

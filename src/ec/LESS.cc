@@ -978,15 +978,6 @@ uint32_t LESS::polynomialAssignment(uint32_t x, uint32_t f, int fw)
     return fx;
 }
 
-vector<int> LESS::getNodeSubPackets(int nodeid) {
-    vector<int> symbols;
-    for (int i = 0; i < _w; i++) {
-        symbols.push_back(_layout[i][nodeid]);
-    }
-
-    return symbols;
-}
-
 vector<vector<int>> LESS::GetSubPackets() {
     return _layout;
 }

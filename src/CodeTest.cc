@@ -32,8 +32,14 @@ using namespace std;
 
 void usage()
 {
-    // printf("usage: ./CodeTest code_name n k w blockSizeBytes disk_seek_time_ms disk_bdwt_MBps failed_ids\n");
-    printf("usage: ./CodeTest code_name n k w blockSizeBytes <failed_ids>\n");
+    printf("usage: ./CodeTest code_name n k w blockSizeBytes <failed_block_ids>\n");
+    printf("code_name: RSCONV, HHXORPlus, HTEC, BUTTERFLY, Clay, ETRSConv, ETHTEC, ETHHXORPlus, LESS\n");
+    printf("n: number of blocks\n");
+    printf("k: number of data blocks\n");
+    printf("w: sub-packetization\n");
+    printf("blockSizeBytes: size of each block in bytes\n");
+    printf("failed_block_ids: list of failed block ids\n");
+    printf("Example: ./CodeTest RSCONV 10 6 4 1024 1 2 3\n");
 }
 
 double getCurrentTime()
@@ -45,7 +51,6 @@ double getCurrentTime()
 
 int main(int argc, char **argv)
 {
-
     if (argc < 7)
     {
         usage();
@@ -56,8 +61,9 @@ int main(int argc, char **argv)
     int n = atoi(argv[2]);
     int k = atoi(argv[3]);
     int w = atoi(argv[4]);
-    unsigned long long blockSizeBytes = atoi(argv[5]);
 
+    // block size: round up to the nearest multiple of 16 * w (for Jerasure)
+    unsigned long long blockSizeBytes = atoi(argv[5]);
     if (blockSizeBytes % (16 * w) != 0)
     {
         int nearestBS = (int)ceil(1.0 * blockSizeBytes / (16 * w)) * 16 * w;
@@ -65,35 +71,19 @@ int main(int argc, char **argv)
         blockSizeBytes = nearestBS;
     }
 
-    unsigned long long pktSizeBytes = blockSizeBytes / w;
-
-    string ecid = codeName + "_" + to_string(n) + "_" + to_string(k) + "_" + to_string(w);
-
-    vector<int> failed_ids;
+    vector<int> failedIds;
     for (int i = 6; i < argc; i++)
     {
-        int failed_id = atoi(argv[i]);
-        if (failed_id >= n)
+        int failedId = atoi(argv[i]);
+        if (failedId >= n)
         {
-            cout << "error: failed_id " << failed_id << " is larger than n " << n << endl;
-            return 1;
+            printf("error: invalid failed block: %d\n", failedId);
+            return -1;
         }
-        failed_ids.push_back(failed_id);
+        failedIds.push_back(failedId);
     }
 
-    // double disk_seek_time_ms = stod(argv[5]);
-    // double disk_bdwt_MBps = stod(argv[6]);
-
-    string confpath = "./conf/sysSetting.xml";
-    Config *conf = new Config(confpath);
-
-    // cout << "Loaded EC Schemes:" << endl;
-    // for (auto item : conf->_ecPolicyMap) {
-    //     cout << item.first << endl;
-    // }
-
-    ECPolicy *ecpolicy = conf->_ecPolicyMap[ecid];
-    ECBase *ec = ecpolicy->createECClass();
+    unsigned long long pktSizeBytes = blockSizeBytes / w;
 
     // field width (special setting for LESS)
     int fw = 8; // default fw
@@ -102,10 +92,21 @@ int main(int argc, char **argv)
         uint32_t e, f;
         if (LESS::getAvailPrimElements(n, k, w, fw, e, f) == false)
         {
-            cout << "LESS::getAvailPrimElements() failed to find primitive element" << endl;
+            printf("LESS::getAvailPrimElements() failed to find primitive element\n");
             exit(1);
         }
     }
+
+    // double disk_seek_time_ms = stod(argv[5]);
+    // double disk_bdwt_MBps = stod(argv[6]);
+
+    // get ecId in OpenEC
+    string confpath = "./conf/sysSetting.xml";
+    Config *conf = new Config(confpath);
+
+    string ecId = codeName + "_" + to_string(n) + "_" + to_string(k) + "_" + to_string(w);
+    ECPolicy *ecPolicy = conf->_ecPolicyMap[ecId];
+    ECBase *ec = ecPolicy->createECClass();
 
     /**
      * @brief Encoding
@@ -117,248 +118,236 @@ int main(int argc, char **argv)
     // mt19937 rdGenerator(RANDOM_SEED);
     mt19937 rdGenerator(rd());
 
-    int n_data_symbols = k * w;
-    int n_code_symbols = (n - k) * w;
+    int numDataSymbols = k * w;
+    int numCodeSymbols = (n - k) * w;
 
-    // 0. prepare data buffers
-    char **databuffers = (char **)calloc(n_data_symbols, sizeof(char *));
-    for (int i = 0; i < n_data_symbols; i++)
+    // prepare buffers for data and parity blocks
+    char **dataPtrs = new char *[numDataSymbols];
+    char **codePtrs = new char *[numCodeSymbols];
+
+    for (int i = 0; i < numDataSymbols; i++)
     {
-        databuffers[i] = (char *)calloc(pktSizeBytes, sizeof(char));
-        // memset(databuffers[i], (char)i, pktSizeBytes);
-        generateRandomInts(rdGenerator, databuffers[i], pktSizeBytes, CHAR_MIN, CHAR_MAX);
+        dataPtrs[i] = new char[pktSizeBytes];
+        generateRandomInts(rdGenerator, dataPtrs[i], pktSizeBytes, CHAR_MIN, CHAR_MAX);
     }
 
-    // 1. prepare code buffers
-    char **codebuffers = (char **)calloc(n_code_symbols, sizeof(char *));
-    for (int i = 0; i < n_code_symbols; i++)
+    for (int i = 0; i < numCodeSymbols; i++)
     {
-        codebuffers[i] = (char *)calloc(pktSizeBytes, sizeof(char));
-        memset(codebuffers[i], 0, pktSizeBytes);
+        codePtrs[i] = new char[pktSizeBytes];
+        memset(codePtrs[i], 0, pktSizeBytes);
     }
 
-    double initEncodeTime = 0, initDecodeTime = 0;
-    double encodeTime = 0, decodeTime = 0;
+    /**
+     * @brief Encoding
+     */
+    // start encoding
+    double encodeTime = getCurrentTime();
 
     // init encoding
-    initEncodeTime -= getCurrentTime();
-
-    ECDAG *encdag = ec->Encode();
-    vector<ECTask *> encodetasks;
-    unordered_map<int, char *> encodeBufMap;
-    vector<int> toposeq = encdag->toposort();
-    for (int i = 0; i < toposeq.size(); i++)
+    ECDAG *encDAG = ec->Encode();
+    vector<ECTask *> encTasks;
+    vector<int> encTopoSeq = encDAG->toposort();
+    for (int i = 0; i < encTopoSeq.size(); i++)
     {
-        ECNode *curnode = encdag->getNode(toposeq[i]);
-        curnode->parseForClient(encodetasks);
+        ECNode *curNode = encDAG->getNode(encTopoSeq[i]);
+        curNode->parseForClient(encTasks);
     }
-    for (int i = 0; i < n_data_symbols; i++)
-        encodeBufMap.insert(make_pair(i, databuffers[i]));
-    for (int i = 0; i < n_code_symbols; i++)
-        encodeBufMap.insert(make_pair(n_data_symbols + i, codebuffers[i]));
-    initEncodeTime += getCurrentTime();
-    initEncodeTime /= 1000000;
 
-    // perform encoding
-    encodeTime -= getCurrentTime();
+    // encoding buffers
+    unordered_map<int, char *> encBufMap;
+    for (int i = 0; i < numDataSymbols; i++)
+    {
+        encBufMap.insert(make_pair(i, dataPtrs[i]));
+    }
+
+    for (int i = 0; i < numCodeSymbols; i++)
+    {
+        encBufMap.insert(make_pair(numDataSymbols + i, codePtrs[i]));
+    }
 
     // free list to support shortening
-    vector<int> shortening_free_list;
-    for (int taskid = 0; taskid < encodetasks.size(); taskid++)
+    vector<int> shorteningFreeList;
+    for (int taskId = 0; taskId < encTasks.size(); taskId++)
     {
-        ECTask *compute = encodetasks[taskid];
-        // compute->dump();
+        ECTask *computeTask = encTasks[taskId];
+        // computeTask->dump();
 
-        vector<int> children = compute->getChildren();
-        unordered_map<int, vector<int>> coefMap = compute->getCoefMap();
+        vector<int> children = computeTask->getChildren();
+        unordered_map<int, vector<int>> coefMap = computeTask->getCoefMap();
         int col = children.size();
         int row = coefMap.size();
 
-        vector<int> targets;
-        int *matrix = (int *)calloc(row * col, sizeof(int));
-        char **data = (char **)calloc(col, sizeof(char *));
-        char **code = (char **)calloc(row, sizeof(char *));
+        // assign data and code buffers for encoding
+        int *matrix = new int[row * col];
+        char **data = new char *[col];
+        char **code = new char *[row];
         for (int bufIdx = 0; bufIdx < children.size(); bufIdx++)
         {
             int child = children[bufIdx];
 
             // create buffers to support shortening
-            if (child >= n * w && encodeBufMap.find(child) == encodeBufMap.end())
+            if (child >= n * w && encBufMap.find(child) == encBufMap.end())
             {
-                shortening_free_list.push_back(child);
-                char *slicebuf = (char *)calloc(pktSizeBytes, sizeof(char));
-                encodeBufMap[child] = slicebuf;
+                shorteningFreeList.push_back(child);
+                char *tmpBuf = new char[pktSizeBytes];
+                encBufMap[child] = tmpBuf;
             }
 
-            data[bufIdx] = encodeBufMap[child];
+            data[bufIdx] = encBufMap[child];
         }
         int codeBufIdx = 0;
         for (auto it : coefMap)
         {
-            int target = it.first;
-            char *codebuf;
-            if (encodeBufMap.find(target) == encodeBufMap.end())
+            int codeId = it.first;
+            char *codeBuf;
+            if (encBufMap.find(codeId) == encBufMap.end())
             {
-                codebuf = (char *)calloc(pktSizeBytes, sizeof(char));
-                encodeBufMap.insert(make_pair(target, codebuf));
+                codeBuf = new char[pktSizeBytes];
+                encBufMap.insert(make_pair(codeId, codeBuf));
             }
             else
             {
-                codebuf = encodeBufMap[target];
+                codeBuf = encBufMap[codeId];
             }
-            code[codeBufIdx] = codebuf;
-            targets.push_back(target);
-            vector<int> curcoef = it.second;
+            code[codeBufIdx] = codeBuf;
+            vector<int> codeCoef = it.second;
             for (int j = 0; j < col; j++)
             {
-                matrix[codeBufIdx * col + j] = curcoef[j];
+                matrix[codeBufIdx * col + j] = codeCoef[j];
             }
             codeBufIdx++;
         }
         Computation::Multi(code, data, matrix, row, col, pktSizeBytes, "Isal", fw);
 
-        free(matrix);
-        free(data);
-        free(code);
+        delete[] matrix;
+        delete[] data;
+        delete[] code;
     }
 
     // free buffers in shortening free list
-    for (auto pkt_idx : shortening_free_list)
+    for (auto pktIdx : shorteningFreeList)
     {
-        free(encodeBufMap[pkt_idx]);
+        delete[] encBufMap[pktIdx];
     }
-    shortening_free_list.clear();
+    shorteningFreeList.clear();
 
-    encodeTime += getCurrentTime();
-    encodeTime /= 1000000;
+    // end encoding
+    encodeTime = (getCurrentTime() - encodeTime) / 1000000;
 
-    // check encoded data
-    for (int i = 0; i < n_data_symbols; i++)
+    // check coded data
+    printf("Check coded data:\n");
+    printf("========================\n");
+    for (int i = 0; i < numDataSymbols; i++)
     {
-        char *curbuf = (char *)databuffers[i];
-        cout << "dataidx = " << i << ", value = " << (int)curbuf[0] << endl;
+        char *curbuf = (char *)dataPtrs[i];
+        printf("dataIdx = %d, value = %d\n", i, curbuf[0]);
     }
-    for (int i = 0; i < n_code_symbols; i++)
+    for (int i = 0; i < numCodeSymbols; i++)
     {
-        char *curbuf = (char *)codebuffers[i];
-        cout << "codeidx = " << n_data_symbols + i << ", value = " << (int)curbuf[0] << endl;
+        char *curbuf = (char *)codePtrs[i];
+        printf("codeIdx = %d, value = %d\n", numDataSymbols + i, curbuf[0]);
     }
-    cout << "========================" << endl;
+    printf("========================\n");
 
     /**
      * @brief Decoding
-     *
      */
 
-    ECPolicy *ecpolicy1 = conf->_ecPolicyMap[ecid];
-    ECBase *ec1 = ecpolicy->createECClass();
+    vector<int> failedSymbols;
+    unordered_map<int, char *> decodeBuf;
 
-    vector<int> failsymbols;
-    unordered_map<int, char *> repairbuf;
-
-    cout << "failed nodes: ";
-    for (auto failnode : failed_ids)
+    printf("Failed blocks: ");
+    for (auto failedId : failedIds)
     {
-        cout << failnode << " ";
-        vector<int> failed_symbols_node = ec1->getNodeSubPackets(failnode);
-        for (auto symbol : failed_symbols_node)
+        printf("%d ", failedId);
+        for (int i = 0; i < w; i++)
         {
-            failsymbols.push_back(symbol);
+            failedSymbols.push_back(failedId * w + i);
         }
     }
-    cout << endl;
+    printf("\n");
 
-    for (int i = 0; i < failsymbols.size(); i++)
+    for (int i = 0; i < failedSymbols.size(); i++)
     {
-        char *tmpbuf = (char *)calloc(pktSizeBytes, sizeof(char));
-        repairbuf[failsymbols[i]] = tmpbuf;
+        char *tmpBuf = new char[pktSizeBytes];
+        decodeBuf[failedSymbols[i]] = tmpBuf;
     }
 
-    vector<int> availsymbols;
+    vector<int> availSymbols;
     for (int i = 0; i < n * w; i++)
     {
-        if (find(failsymbols.begin(), failsymbols.end(), i) == failsymbols.end())
-            availsymbols.push_back(i);
+        if (find(failedSymbols.begin(), failedSymbols.end(), i) == failedSymbols.end())
+        {
+            availSymbols.push_back(i);
+        }
     }
 
-    cout << "failed symbols: ";
-    for (int i = 0; i < failsymbols.size(); i++)
-    {
-        cout << failsymbols[i] << " ";
-    }
-    cout << endl;
+    // start decoding
+    double decodeTime = getCurrentTime();
 
-    cout << "available symbols:";
-    for (int i = 0; i < availsymbols.size(); i++)
-    {
-        cout << availsymbols[i] << " ";
-    }
-    cout << endl;
-
-    // init decoding
-    initDecodeTime -= getCurrentTime();
-
-    ECDAG *decdag = ec1->Decode(availsymbols, failsymbols);
-    vector<ECTask *> decodetasks;
+    ECDAG *decDAG = ec->Decode(availSymbols, failedSymbols);
+    vector<ECTask *> decodeTasks;
     unordered_map<int, char *> decodeBufMap;
-    vector<int> dectoposeq = decdag->toposort();
-    for (int i = 0; i < dectoposeq.size(); i++)
+    vector<int> decTopoSeq = decDAG->toposort();
+    for (int i = 0; i < decTopoSeq.size(); i++)
     {
-        ECNode *curnode = decdag->getNode(dectoposeq[i]);
-        curnode->parseForClient(decodetasks);
+        ECNode *curNode = decDAG->getNode(decTopoSeq[i]);
+        curNode->parseForClient(decodeTasks);
     }
-    for (int i = 0; i < n_data_symbols; i++)
+    for (int i = 0; i < numDataSymbols; i++)
     {
-        if (find(failsymbols.begin(), failsymbols.end(), i) == failsymbols.end())
-            decodeBufMap.insert(make_pair(i, databuffers[i]));
+        if (find(failedSymbols.begin(), failedSymbols.end(), i) == failedSymbols.end())
+        {
+            decodeBufMap.insert(make_pair(i, dataPtrs[i]));
+        }
         else
-            decodeBufMap.insert(make_pair(i, repairbuf[i]));
+        {
+            decodeBufMap.insert(make_pair(i, decodeBuf[i]));
+        }
     }
-    for (int i = 0; i < n_code_symbols; i++)
-        if (find(failsymbols.begin(), failsymbols.end(), n_data_symbols + i) == failsymbols.end())
-            decodeBufMap.insert(make_pair(n_data_symbols + i, codebuffers[i]));
+    for (int i = 0; i < numCodeSymbols; i++)
+        if (find(failedSymbols.begin(), failedSymbols.end(), numDataSymbols + i) == failedSymbols.end())
+        {
+            decodeBufMap.insert(make_pair(numDataSymbols + i, codePtrs[i]));
+        }
         else
-            decodeBufMap.insert(make_pair(i, repairbuf[n_data_symbols + i]));
-
-    initDecodeTime += getCurrentTime();
-    initDecodeTime /= 1000000;
-
-    // perform decoding
-    decodeTime -= getCurrentTime();
+        {
+            decodeBufMap.insert(make_pair(i, decodeBuf[numDataSymbols + i]));
+        }
 
     /**
      * @brief record number of disk seeks and number of sub-packets to read for every node
-     * @disk_read_pkts_map <node> sub-packets read in each node
-     * @disk_read_info_map <node_id, <num_disk_seeks, num_pkts_read>>
+     * @diskReadSymbolsMap <node> sub-packets read in each node
+     * @diskReadInfoMap <nodeId, <number of disk seeks, number of sub-blocks read>>
      *
      */
-    map<int, vector<int>> disk_read_pkts_map;
-    map<int, pair<int, int>> disk_read_info_map;
+    map<int, vector<int>> diskReadSymbolsMap;
+    map<int, pair<int, int>> diskReadInfoMap;
 
-    int sum_packets_read = 0;
-    double norm_repair_bandwidth = 0;
+    int sumPktsRead = 0;
+    double normRepairBW = 0;
 
     // init the map
-    for (int node_id = 0; node_id < n; node_id++)
+    for (int nodeId = 0; nodeId < n; nodeId++)
     {
-        disk_read_pkts_map[node_id].clear();
-        disk_read_info_map[node_id] = make_pair(0, 0);
+        diskReadSymbolsMap[nodeId].clear();
+        diskReadInfoMap[nodeId] = make_pair(0, 0);
     }
 
-    for (int taskid = 0; taskid < decodetasks.size(); taskid++)
+    for (int taskId = 0; taskId < decodeTasks.size(); taskId++)
     {
-        ECTask *compute = decodetasks[taskid];
-        // compute->dump();
+        ECTask *computeTask = decodeTasks[taskId];
+        // computeTask->dump();
 
-        vector<int> children = compute->getChildren();
-        unordered_map<int, vector<int>> coefMap = compute->getCoefMap();
+        vector<int> children = computeTask->getChildren();
+        unordered_map<int, vector<int>> coefMap = computeTask->getCoefMap();
         int col = children.size();
         int row = coefMap.size();
 
-        vector<int> targets;
-        int *matrix = (int *)calloc(row * col, sizeof(int));
-        char **data = (char **)calloc(col, sizeof(char *));
-        char **code = (char **)calloc(row, sizeof(char *));
+        // assign data and code buffers for encoding
+        int *matrix = new int[row * col];
+        char **data = new char *[col];
+        char **code = new char *[row];
         for (int bufIdx = 0; bufIdx < children.size(); bufIdx++)
         {
             int child = children[bufIdx];
@@ -366,18 +355,18 @@ int main(int argc, char **argv)
             // create buffers to support shortening
             if (child >= n * w && decodeBufMap.find(child) == decodeBufMap.end())
             {
-                shortening_free_list.push_back(child);
-                char *slicebuf = (char *)calloc(pktSizeBytes, sizeof(char));
-                decodeBufMap[child] = slicebuf;
+                shorteningFreeList.push_back(child);
+                char *tmpBuf = new char[pktSizeBytes];
+                decodeBufMap[child] = tmpBuf;
             }
 
             if (child < n * w)
             {
-                int node_id = child / w;
-                vector<int> &read_pkts = disk_read_pkts_map[node_id];
-                if (find(read_pkts.begin(), read_pkts.end(), child) == read_pkts.end())
+                int nodeId = child / w;
+                vector<int> &readPkts = diskReadSymbolsMap[nodeId];
+                if (find(readPkts.begin(), readPkts.end(), child) == readPkts.end())
                 {
-                    read_pkts.push_back(child);
+                    readPkts.push_back(child);
                 }
             }
 
@@ -386,153 +375,47 @@ int main(int argc, char **argv)
         int codeBufIdx = 0;
         for (auto it : coefMap)
         {
-            int target = it.first;
-            char *codebuf;
-            if (decodeBufMap.find(target) == decodeBufMap.end())
+            int codeId = it.first;
+            char *codeBuf;
+            if (decodeBufMap.find(codeId) == decodeBufMap.end())
             {
-                codebuf = (char *)calloc(pktSizeBytes, sizeof(char));
-                decodeBufMap.insert(make_pair(target, codebuf));
+                codeBuf = new char[pktSizeBytes];
+                decodeBufMap.insert(make_pair(codeId, codeBuf));
             }
             else
             {
-                codebuf = decodeBufMap[target];
+                codeBuf = decodeBufMap[codeId];
             }
-            code[codeBufIdx] = codebuf;
-            targets.push_back(target);
-            vector<int> curcoef = it.second;
+            code[codeBufIdx] = codeBuf;
+            vector<int> codeCoef = it.second;
             for (int j = 0; j < col; j++)
             {
-                matrix[codeBufIdx * col + j] = curcoef[j];
+                matrix[codeBufIdx * col + j] = codeCoef[j];
             }
             codeBufIdx++;
         }
         Computation::Multi(code, data, matrix, row, col, pktSizeBytes, "Isal", fw);
-        free(matrix);
-        free(data);
-        free(code);
+        delete[] matrix;
+        delete[] data;
+        delete[] code;
     }
 
     // free buffers in shortening free list
-    for (auto pkt_idx : shortening_free_list)
+    for (auto pktIdx : shorteningFreeList)
     {
-        free(decodeBufMap[pkt_idx]);
+        delete[] decodeBufMap[pktIdx];
     }
-    shortening_free_list.clear();
+    shorteningFreeList.clear();
 
-    decodeTime += getCurrentTime();
-    decodeTime /= 1000000;
+    decodeTime = (getCurrentTime() - decodeTime) / 1000000;
 
-    /**
-     * @brief record the disk_read_info_map
-     */
-    for (auto item : disk_read_pkts_map)
+    // debug decoding
+    for (int i = 0; i < failedSymbols.size(); i++)
     {
-        vector<int> &read_pkts = item.second;
-        sort(read_pkts.begin(), read_pkts.end());
-    }
-
-    for (int node_id = 0; node_id < n; node_id++)
-    {
-        vector<int> &list = disk_read_pkts_map[node_id];
-
-        // we first transfer items in list %w
-        vector<int> offset_list;
-        for (int i = 0; i < list.size(); i++)
-        {
-            offset_list.push_back(list[i] % w);
-        }
-        sort(offset_list.begin(), offset_list.end()); // sort in ascending order
-        reverse(offset_list.begin(), offset_list.end());
-
-        // create consecutive read list
-        int num_of_cons_reads = 0;
-        vector<int> cons_list;
-        vector<vector<int>> cons_read_list; // consecutive read list
-        while (offset_list.empty() == false)
-        {
-            int offset = offset_list.back();
-            offset_list.pop_back();
-
-            if (cons_list.empty() == true)
-            {
-                cons_list.push_back(offset);
-            }
-            else
-            {
-                // it's consecutive
-                if (cons_list.back() + 1 == offset)
-                {
-                    cons_list.push_back(offset); // at to the back of prev cons_list
-                }
-                else
-                {
-                    cons_read_list.push_back(cons_list); // commits prev cons_list
-                    cons_list.clear();
-                    cons_list.push_back(offset); // at to the back of new cons_list
-                }
-            }
-        }
-        if (cons_list.empty() == false)
-        {
-            cons_read_list.push_back(cons_list);
-        }
-
-        // printf("node id: %d, contiguous reads (of sub-packets):\n", node_id);
-        // for (auto cons_list : cons_read_list) {
-        //     for (auto offset : cons_list) {
-        //     printf("%d ", offset);
-        //     }
-        //     printf("\n");
-        // }
-
-        // update disk_read_info_map
-        disk_read_info_map[node_id].first = cons_read_list.size();
-        disk_read_info_map[node_id].second = disk_read_pkts_map[node_id].size();
-
-        // update stats
-        sum_packets_read += disk_read_pkts_map[node_id].size();
-    }
-
-    // calculate norm repair bandwidth (against RS code)
-    norm_repair_bandwidth = sum_packets_read * 1.0 / (k * w);
-
-    printf("disk read info:\n");
-    for (int node_id = 0; node_id < n; node_id++)
-    {
-        printf("node_id: %d, num_disk_seeks: %d, num_pkts_read: %d, pkts: ", node_id, disk_read_info_map[node_id].first, disk_read_info_map[node_id].second);
-        // printf("%d, %d\n", disk_read_info_map[node_id].first, disk_read_info_map[node_id].second);
-        for (auto pkt : disk_read_pkts_map[node_id])
-        {
-            printf("%d ", pkt);
-        }
-        printf("\n");
-    }
-    printf("packets read: %d / %d, norm repair bandwidth: %f\n", sum_packets_read, k * w, norm_repair_bandwidth);
-
-    // // calculate straggler info
-    // int straggler_node_id = -1;
-    // double straggler_disk_io_time_s = 0;
-
-    // for (int node_id = 0; node_id < n; node_id++) {
-    //     double node_disk_io_time_s = 1.0 * disk_read_info_map[node_id].first * disk_seek_time_ms / 1000 +
-    //         1.0 * disk_read_info_map[node_id].second * conf->_pktSize / 1048576 / w / disk_bdwt_MBps;
-
-    //     printf("%f\n", node_disk_io_time_s);
-    //     if (node_disk_io_time_s > straggler_disk_io_time_s) {
-    //         straggler_disk_io_time_s = node_disk_io_time_s;
-    //         straggler_node_id = node_id;
-    //     }
-    // }
-
-    // printf("straggler node_id: %d, num_seeks: %d, num_sub_pkts_read: %d, disk_io_time_s: %f\n",
-    //  straggler_node_id, disk_read_info_map[straggler_node_id].first, disk_read_info_map[straggler_node_id].second, straggler_disk_io_time_s);
-
-    // debug decode
-    for (int i = 0; i < failsymbols.size(); i++)
-    {
-        int failidx = failsymbols[i];
+        int failidx = failedSymbols[i];
         char *curbuf = decodeBufMap[failidx];
-        cout << "failidx = " << failidx << ", value = " << (int)curbuf[0] << endl;
+
+        printf("failedIdx = %d, decoded value = %d\n", failidx, (char)curbuf[0]);
 
         int failed_node = failidx / w;
 
@@ -540,23 +423,139 @@ int main(int argc, char **argv)
 
         if (failed_node < k)
         {
-            diff = memcmp(decodeBufMap[failidx], databuffers[failidx], pktSizeBytes * sizeof(char));
+            diff = memcmp(decodeBufMap[failidx], dataPtrs[failidx], pktSizeBytes * sizeof(char));
         }
         else
         {
-            diff = memcmp(decodeBufMap[failidx], codebuffers[failidx - n_data_symbols], pktSizeBytes * sizeof(char));
+            diff = memcmp(decodeBufMap[failidx], codePtrs[failidx - numDataSymbols], pktSizeBytes * sizeof(char));
         }
         if (diff != 0)
         {
-            printf("error: failed to decode data of symbol %d!!!!\n", i);
-        }
-        else
-        {
-            printf("decoded data of symbol %d.\n", i);
+            printf("error: failed to decode data for symbol %d!!!!\n", i);
         }
     }
 
+    /**
+     * @brief record the diskReadInfoMap
+     */
+    for (auto item : diskReadSymbolsMap)
+    {
+        vector<int> &readPkts = item.second;
+        sort(readPkts.begin(), readPkts.end());
+    }
+
+    for (int nodeId = 0; nodeId < n; nodeId++)
+    {
+        vector<int> &list = diskReadSymbolsMap[nodeId];
+
+        // we first transfer items in list %w
+        vector<int> offsetList;
+        for (int i = 0; i < list.size(); i++)
+        {
+            offsetList.push_back(list[i] % w);
+        }
+        sort(offsetList.begin(), offsetList.end()); // sort in ascending order
+        reverse(offsetList.begin(), offsetList.end());
+
+        // create consecutive read list
+        int numOfConsReads = 0;
+        vector<int> consList;
+        vector<vector<int>> consReadList; // consecutive read list
+        while (offsetList.empty() == false)
+        {
+            int offset = offsetList.back();
+            offsetList.pop_back();
+
+            if (consList.empty() == true)
+            {
+                consList.push_back(offset);
+            }
+            else
+            {
+                // it's consecutive
+                if (consList.back() + 1 == offset)
+                {
+                    consList.push_back(offset); // at to the back of prev consList
+                }
+                else
+                {
+                    consReadList.push_back(consList); // commits prev consList
+                    consList.clear();
+                    consList.push_back(offset); // at to the back of new consList
+                }
+            }
+        }
+        if (consList.empty() == false)
+        {
+            consReadList.push_back(consList);
+        }
+
+        printf("node id: %d, contiguous reads (of sub-blocks): ", nodeId);
+
+        bool printGap = false;
+        for (auto consList : consReadList)
+        {
+            for (auto offset : consList)
+            {
+                printf("%d ", offset);
+            }
+            if (printGap == false)
+            {
+                printGap = true;
+            }
+            else
+            {
+                printf(" || ");
+            }
+        }
+        printf("\n");
+
+        // update diskReadInfoMap
+        diskReadInfoMap[nodeId].first = consReadList.size();
+        diskReadInfoMap[nodeId].second = diskReadSymbolsMap[nodeId].size();
+
+        // update stats
+        sumPktsRead += diskReadSymbolsMap[nodeId].size();
+    }
+
+    // calculate norm repair bandwidth (against RS code)
+    normRepairBW = sumPktsRead * 1.0 / (k * w);
+
+    printf("disk read info:\n");
+    for (int nodeId = 0; nodeId < n; nodeId++)
+    {
+        printf("nodeId: %d, number of disk seeks: %d, number of sub-blocks read: %d, sub-blocks: ", nodeId, diskReadInfoMap[nodeId].first, diskReadInfoMap[nodeId].second);
+        // printf("%d, %d\n", diskReadInfoMap[nodeId].first, diskReadInfoMap[nodeId].second);
+        for (auto pkt : diskReadSymbolsMap[nodeId])
+        {
+            printf("%d ", pkt);
+        }
+        printf("\n");
+    }
+
+    // // calculate straggler info
+    // int straggler_nodeId = -1;
+    // double straggler_disk_io_time_s = 0;
+
+    // for (int nodeId = 0; nodeId < n; nodeId++) {
+    //     double node_disk_io_time_s = 1.0 * diskReadInfoMap[nodeId].first * disk_seek_time_ms / 1000 +
+    //         1.0 * diskReadInfoMap[nodeId].second * conf->_pktSize / 1048576 / w / disk_bdwt_MBps;
+
+    //     printf("%f\n", node_disk_io_time_s);
+    //     if (node_disk_io_time_s > straggler_disk_io_time_s) {
+    //         straggler_disk_io_time_s = node_disk_io_time_s;
+    //         straggler_nodeId = nodeId;
+    //     }
+    // }
+
+    // printf("straggler nodeId: %d, num_seeks: %d, num_sub_pkts_read: %d, disk_io_time_s: %f\n",
+    //  straggler_nodeId, diskReadInfoMap[straggler_nodeId].first, diskReadInfoMap[straggler_nodeId].second, straggler_disk_io_time_s);
+
+    delete conf;
+
+    printf("Total sub-blocks read: %d / %d, normalized repair bandwidth: %f\n", sumPktsRead, k * w, normRepairBW);
+
     // print encode and decode time
-    printf("Code: %s, data volume: %llu MiB, encode throughput: %f MiB/s, encode time: %f\n", codeName.c_str(), blockSizeBytes * k / 1048576, 1.0 * blockSizeBytes * k / 1048576 / encodeTime, encodeTime);
-    printf("Code: %s, decode data volume: %llu MiB, decode throughput: %f MiB/s, decode time: %f\n", codeName.c_str(), blockSizeBytes * failed_ids.size() / 1048576, 1.0 * blockSizeBytes * failed_ids.size() / 1048576 / decodeTime, decodeTime);
+    printf("Code: %s, encode throughput: %f MiB/s (%llu MiB in %f seconds)\n", codeName.c_str(), 1.0 * blockSizeBytes * k / 1048576 / encodeTime, blockSizeBytes * k / 1048576, encodeTime);
+    printf("Code: %s, decode throughput: %f MiB/s (%llu MiB in %f seconds)\n", codeName.c_str(), 1.0 * blockSizeBytes * k / 1048576 / decodeTime, blockSizeBytes * k / 1048576, decodeTime);
 }

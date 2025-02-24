@@ -280,15 +280,7 @@ public:
     // parameter key for multiple code instances
     const static char *_targetWKey;                        // key of target sub-packetization in parameters
     const static char *_preceedWKey;                       // key of total sub-packetization of preceeding code instance in parameters
-
-    /**
-     * @brief Get sub-packets in nodeid
-     * 
-     * @param nodeid 
-     * @return vector<int> 
-     */
-    vector<int> getNodeSubPackets(int nodeid);
-
+    
     /**
      * @brief Get all sub-packets
      * N1 N2 ... Nn

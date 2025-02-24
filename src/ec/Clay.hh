@@ -94,14 +94,6 @@ public:
      * @return vector<vector<int>> 
      */
     vector<vector<int>> GetSubPackets();
-
-    /**
-     * @brief Get sub-packets in nodeid
-     * 
-     * @param nodeid 
-     * @return vector<int> 
-     */
-    vector<int> getNodeSubPackets(int nodeid);
 };
 
 #endif

@@ -823,15 +823,6 @@ void HHXORPlus::DecodeMultiple(vector<int> from, vector<int> to, ECDAG *ecdag) {
     }
 }
 
-vector<int> HHXORPlus::getNodeSubPackets(int nodeid) {
-    vector<int> symbols;
-    for (int i = 0; i < _w; i++) {
-        symbols.push_back(_layout[i][nodeid]);
-    }
-
-    return symbols;
-}
-
 vector<vector<int>> HHXORPlus::GetSubPackets() {
     return _layout;
 }

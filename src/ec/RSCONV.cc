@@ -121,14 +121,3 @@ vector<vector<int>> RSCONV::GetSubPackets() {
 
     return layout;
 }
-
-vector<int> RSCONV::getNodeSubPackets(int nodeid) {
-    vector<vector<int>> layout = GetSubPackets();
-
-    vector<int> symbols;
-    for (int i = 0; i < _w; i++) {
-        symbols.push_back(layout[i][nodeid]);
-    }
-
-    return symbols;
-}

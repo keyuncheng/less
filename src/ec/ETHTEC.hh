@@ -140,14 +140,6 @@ public:
     static int ParityToVirtualNode(int n, int k, int w, int parityIndex); 
 
     /**
-     * @brief Get sub-packets in nodeid
-     * 
-     * @param nodeid 
-     * @return vector<int> 
-     */
-    vector<int> getNodeSubPackets(int nodeid);
-
-    /**
      * @brief Get all sub-packets
      * N1 N2 ... Nn
      * 0 2 4 6 8 ...

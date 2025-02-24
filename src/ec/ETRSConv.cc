@@ -873,15 +873,6 @@ ECDAG *ETRSConv::DecodeMultiple(vector<int> from, vector<int> to) {
 void ETRSConv::Place(vector<vector<int>>& group) {
 }
 
-vector<int> ETRSConv::getNodeSubPackets(int nodeid) {
-    vector<int> symbols;
-    for (int i = 0; i < _layout.size(); i++) {
-        symbols.push_back(_layout[i][nodeid]);
-    }
-
-    return symbols;
-}
-
 vector<vector<int>> ETRSConv::GetSubPackets() {
     return _layout;
 }

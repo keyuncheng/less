@@ -30,14 +30,6 @@ public:
    * @return vector<vector<int>> 
    */
   virtual vector<vector<int>> GetSubPackets() = 0;
-
-  /**
-   * @brief Get sub-packets in nodeid
-   * 
-   * @param nodeid 
-   * @return vector<int> 
-   */
-  virtual vector<int> getNodeSubPackets(int nodeid) = 0;
 };
 
 #endif

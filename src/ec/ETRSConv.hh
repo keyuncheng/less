@@ -56,14 +56,6 @@ public:
     void Place(vector<vector<int>>& group);
 
     /**
-     * @brief Get sub-packets in nodeid
-     * 
-     * @param nodeid 
-     * @return vector<int> 
-     */
-    vector<int> getNodeSubPackets(int nodeid);
-
-    /**
      * @brief Get all sub-packets
      * 
      * 0 2 4 6 8 ...

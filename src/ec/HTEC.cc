@@ -973,17 +973,6 @@ void HTEC::Partition::Print() const {
     }
 }
 
-vector<int> HTEC::getNodeSubPackets(int nodeid) {
-    vector<vector<int>> layout = GetSubPackets();
-
-    vector<int> symbols;
-    for (int i = 0; i < _w; i++) {
-        symbols.push_back(layout[i][nodeid]);
-    }
-
-    return symbols;
-}
-
 vector<vector<int>> HTEC::GetSubPackets() {
     int symbol_id = 0;
     vector<vector<int>> layout(_w, vector<int>());
