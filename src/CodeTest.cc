@@ -133,11 +133,7 @@ int main(int argc, char **argv)
     for (int i = 0; i < numDataSymbols; i++)
     {
         dataPtrs[i] = new char[pktSizeBytes];
-        for (int j = 0; j < pktSizeBytes; j++)
-        {
-            dataPtrs[i][j] = i;
-        }
-        // generateRandomInts(rdGenerator, dataPtrs[i], pktSizeBytes, CHAR_MIN, CHAR_MAX);
+        generateRandomInts(rdGenerator, dataPtrs[i], pktSizeBytes, CHAR_MIN, CHAR_MAX);
     }
 
     for (int i = 0; i < numCodeSymbols; i++)
@@ -199,6 +195,7 @@ int main(int argc, char **argv)
             {
                 shorteningFreeList.push_back(child);
                 char *tmpBuf = new char[pktSizeBytes];
+                memset(tmpBuf, 0, pktSizeBytes * sizeof(char));
                 encBufMap[child] = tmpBuf;
             }
 
@@ -212,6 +209,7 @@ int main(int argc, char **argv)
             if (encBufMap.find(codeId) == encBufMap.end())
             {
                 codeBuf = new char[pktSizeBytes];
+                memset(codeBuf, 0, pktSizeBytes * sizeof(char));
                 encBufMap.insert(make_pair(codeId, codeBuf));
             }
             else
@@ -286,6 +284,7 @@ int main(int argc, char **argv)
     for (int i = 0; i < failedSymbols.size(); i++)
     {
         char *tmpBuf = new char[pktSizeBytes];
+        memset(tmpBuf, 0, pktSizeBytes * sizeof(char));
         decodeBuf[failedSymbols[i]] = tmpBuf;
     }
 
@@ -358,6 +357,7 @@ int main(int argc, char **argv)
             {
                 shorteningFreeList.push_back(child);
                 char *tmpBuf = new char[pktSizeBytes];
+                memset(tmpBuf, 0, pktSizeBytes * sizeof(char));
                 decodeBufMap[child] = tmpBuf;
             }
 
@@ -382,6 +382,7 @@ int main(int argc, char **argv)
             if (decodeBufMap.find(codeId) == decodeBufMap.end())
             {
                 codeBuf = new char[pktSizeBytes];
+                memset(codeBuf, 0, pktSizeBytes * sizeof(char));
                 decodeBufMap.insert(make_pair(codeId, codeBuf));
             }
             else
