@@ -82,6 +82,7 @@ int main(int argc, char **argv)
         }
         failedIds.push_back(failedId);
     }
+    sort(failedIds.begin(), failedIds.end());
 
     printf("Testing code: %s, n = %d, k = %d, w = %d, block size = %llu Bytes, failedIds: ", codeName.c_str(), n, k, w, blockSizeBytes);
     for (int i = 0; i < failedIds.size(); i++)
@@ -132,7 +133,11 @@ int main(int argc, char **argv)
     for (int i = 0; i < numDataSymbols; i++)
     {
         dataPtrs[i] = new char[pktSizeBytes];
-        generateRandomInts(rdGenerator, dataPtrs[i], pktSizeBytes, CHAR_MIN, CHAR_MAX);
+        for (int j = 0; j < pktSizeBytes; j++)
+        {
+            dataPtrs[i][j] = i;
+        }
+        // generateRandomInts(rdGenerator, dataPtrs[i], pktSizeBytes, CHAR_MIN, CHAR_MAX);
     }
 
     for (int i = 0; i < numCodeSymbols; i++)
@@ -397,15 +402,22 @@ int main(int argc, char **argv)
         delete[] code;
     }
 
+    // free buffers in shortening free list
+    for (auto pktIdx : shorteningFreeList)
+    {
+        delete[] decodeBufMap[pktIdx];
+    }
+    shorteningFreeList.clear();
+
     decodeTime = (getCurrentTime() - decodeTime) / 1000000;
 
     // debug decoding
     for (int i = 0; i < failedSymbols.size(); i++)
     {
         int failedIdx = failedSymbols[i];
-        char *curbuf = decodeBufMap[failedIdx];
+        char *curBuf = decodeBufMap[failedIdx];
 
-        printf("failedIdx = %d, decoded value = %d\n", failedIdx, (char)curbuf[0]);
+        printf("failedIdx = %d, decoded value = %d\n", failedIdx, (char)curBuf[0]);
 
         int failedNodeId = failedIdx / w;
 
@@ -424,13 +436,6 @@ int main(int argc, char **argv)
             printf("error: failed to decode data for symbol %d!!!!\n", i);
         }
     }
-
-    // free buffers in shortening free list
-    for (auto pktIdx : shorteningFreeList)
-    {
-        delete[] decodeBufMap[pktIdx];
-    }
-    shorteningFreeList.clear();
 
     /**
      * @brief Disk read info (record the non-contiguous reads)
