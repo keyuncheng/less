@@ -37,7 +37,7 @@ void usage()
     printf("n: number of blocks\n");
     printf("k: number of data blocks\n");
     printf("w: sub-packetization\n");
-    printf("blockSizeBytes: size of each block in bytes\n");
+    printf("blockSizeBytes: size of each block in Bytes\n");
     printf("failed_block_ids: list of failed block ids\n");
     printf("Example: ./CodeTest RSCONV 10 6 4 1024 1 2 3\n");
 }
@@ -83,6 +83,13 @@ int main(int argc, char **argv)
         failedIds.push_back(failedId);
     }
 
+    printf("Testing code: %s, n = %d, k = %d, w = %d, block size = %llu Bytes, failedIds: ", codeName.c_str(), n, k, w, blockSizeBytes);
+    for (int i = 0; i < failedIds.size(); i++)
+    {
+        printf("%d ", failedIds[i]);
+    }
+    printf("\n");
+
     unsigned long long pktSizeBytes = blockSizeBytes / w;
 
     // field width (special setting for LESS)
@@ -96,9 +103,6 @@ int main(int argc, char **argv)
             exit(1);
         }
     }
-
-    // double disk_seek_time_ms = stod(argv[5]);
-    // double disk_bdwt_MBps = stod(argv[6]);
 
     // get ecId in OpenEC
     string confpath = "./conf/sysSetting.xml";
@@ -186,7 +190,7 @@ int main(int argc, char **argv)
             int child = children[bufIdx];
 
             // create buffers to support shortening
-            if (child >= n * w && encBufMap.find(child) == encBufMap.end())
+            if (child >= (numDataSymbols + numCodeSymbols) && encBufMap.find(child) == encBufMap.end())
             {
                 shorteningFreeList.push_back(child);
                 char *tmpBuf = new char[pktSizeBytes];
@@ -256,30 +260,28 @@ int main(int argc, char **argv)
     vector<int> failedSymbols;
     unordered_map<int, char *> decodeBuf;
 
-    printf("Failed blocks: ");
     for (auto failedId : failedIds)
     {
-        printf("%d ", failedId);
         for (int i = 0; i < w; i++)
         {
             failedSymbols.push_back(failedId * w + i);
         }
     }
-    printf("\n");
-
-    for (int i = 0; i < failedSymbols.size(); i++)
-    {
-        char *tmpBuf = new char[pktSizeBytes];
-        decodeBuf[failedSymbols[i]] = tmpBuf;
-    }
 
     vector<int> availSymbols;
-    for (int i = 0; i < n * w; i++)
+    for (int i = 0; i < numDataSymbols + numCodeSymbols; i++)
     {
         if (find(failedSymbols.begin(), failedSymbols.end(), i) == failedSymbols.end())
         {
             availSymbols.push_back(i);
         }
+    }
+
+    // create buffers to repair failed symbols
+    for (int i = 0; i < failedSymbols.size(); i++)
+    {
+        char *tmpBuf = new char[pktSizeBytes];
+        decodeBuf[failedSymbols[i]] = tmpBuf;
     }
 
     // start decoding
@@ -316,22 +318,16 @@ int main(int argc, char **argv)
         }
 
     /**
-     * @brief record number of disk seeks and number of sub-packets to read for every node
-     * @diskReadSymbolsMap <node> sub-packets read in each node
-     * @diskReadInfoMap <nodeId, <number of disk seeks, number of sub-blocks read>>
-     *
+     * @brief record non-contiguous reads
+     * @diskReadSymbolMap <nodeId, <sub-packet ids>>
+     * @diskReadNonContiMap <nodeId, [[contiguous sub-packets], [contiguous sub-packets]]>
      */
     map<int, vector<int>> diskReadSymbolsMap;
-    map<int, pair<int, int>> diskReadInfoMap;
 
-    int sumPktsRead = 0;
-    double normRepairBW = 0;
-
-    // init the map
+    // init the maps
     for (int nodeId = 0; nodeId < n; nodeId++)
     {
         diskReadSymbolsMap[nodeId].clear();
-        diskReadInfoMap[nodeId] = make_pair(0, 0);
     }
 
     for (int taskId = 0; taskId < decodeTasks.size(); taskId++)
@@ -353,14 +349,17 @@ int main(int argc, char **argv)
             int child = children[bufIdx];
 
             // create buffers to support shortening
-            if (child >= n * w && decodeBufMap.find(child) == decodeBufMap.end())
+            if (child >= numDataSymbols + numCodeSymbols && decodeBufMap.find(child) == decodeBufMap.end())
             {
                 shorteningFreeList.push_back(child);
                 char *tmpBuf = new char[pktSizeBytes];
                 decodeBufMap[child] = tmpBuf;
             }
 
-            if (child < n * w)
+            data[bufIdx] = decodeBufMap[child];
+
+            // record the retrieved packets
+            if (child < numDataSymbols + numCodeSymbols)
             {
                 int nodeId = child / w;
                 vector<int> &readPkts = diskReadSymbolsMap[nodeId];
@@ -369,8 +368,6 @@ int main(int argc, char **argv)
                     readPkts.push_back(child);
                 }
             }
-
-            data[bufIdx] = decodeBufMap[child];
         }
         int codeBufIdx = 0;
         for (auto it : coefMap)
@@ -400,34 +397,27 @@ int main(int argc, char **argv)
         delete[] code;
     }
 
-    // free buffers in shortening free list
-    for (auto pktIdx : shorteningFreeList)
-    {
-        delete[] decodeBufMap[pktIdx];
-    }
-    shorteningFreeList.clear();
-
     decodeTime = (getCurrentTime() - decodeTime) / 1000000;
 
     // debug decoding
     for (int i = 0; i < failedSymbols.size(); i++)
     {
-        int failidx = failedSymbols[i];
-        char *curbuf = decodeBufMap[failidx];
+        int failedIdx = failedSymbols[i];
+        char *curbuf = decodeBufMap[failedIdx];
 
-        printf("failedIdx = %d, decoded value = %d\n", failidx, (char)curbuf[0]);
+        printf("failedIdx = %d, decoded value = %d\n", failedIdx, (char)curbuf[0]);
 
-        int failed_node = failidx / w;
+        int failedNodeId = failedIdx / w;
 
+        // compare decoded data with the original data
         int diff = 0;
-
-        if (failed_node < k)
+        if (failedNodeId < k)
         {
-            diff = memcmp(decodeBufMap[failidx], dataPtrs[failidx], pktSizeBytes * sizeof(char));
+            diff = memcmp(decodeBufMap[failedIdx], dataPtrs[failedIdx], pktSizeBytes * sizeof(char));
         }
         else
         {
-            diff = memcmp(decodeBufMap[failidx], codePtrs[failidx - numDataSymbols], pktSizeBytes * sizeof(char));
+            diff = memcmp(decodeBufMap[failedIdx], codePtrs[failedIdx - numDataSymbols], pktSizeBytes * sizeof(char));
         }
         if (diff != 0)
         {
@@ -435,127 +425,115 @@ int main(int argc, char **argv)
         }
     }
 
-    /**
-     * @brief record the diskReadInfoMap
-     */
-    for (auto item : diskReadSymbolsMap)
+    // free buffers in shortening free list
+    for (auto pktIdx : shorteningFreeList)
     {
-        vector<int> &readPkts = item.second;
-        sort(readPkts.begin(), readPkts.end());
+        delete[] decodeBufMap[pktIdx];
     }
+    shorteningFreeList.clear();
 
+    /**
+     * @brief Disk read info (record the non-contiguous reads)
+     */
+    int numAccessedNodes = 0;
+    int sumPktsRead = 0;
+    int maxPktsReadNode = 0;
+    int minPktsReadNode = INT_MAX;
+    int sumNonContAccess = 0;
+    int maxNonContAccessNode = 0;
+    int minNonContAccessNode = INT_MAX;
+    double normRepairBW = 0;
+    printf("Disk read information:\n");
     for (int nodeId = 0; nodeId < n; nodeId++)
     {
-        vector<int> &list = diskReadSymbolsMap[nodeId];
+        // disk read list
+        vector<int> &diskReadList = diskReadSymbolsMap[nodeId];
 
-        // we first transfer items in list %w
-        vector<int> offsetList;
-        for (int i = 0; i < list.size(); i++)
+        if (diskReadList.size() == 0)
         {
-            offsetList.push_back(list[i] % w);
+            continue;
         }
-        sort(offsetList.begin(), offsetList.end()); // sort in ascending order
-        reverse(offsetList.begin(), offsetList.end());
-
-        // create consecutive read list
-        int numOfConsReads = 0;
-        vector<int> consList;
-        vector<vector<int>> consReadList; // consecutive read list
-        while (offsetList.empty() == false)
+        sort(diskReadList.begin(), diskReadList.end());
+        
+        // accessed this node
+        numAccessedNodes++;
+        if (diskReadList.size() > maxPktsReadNode)
         {
-            int offset = offsetList.back();
-            offsetList.pop_back();
+            maxPktsReadNode = diskReadList.size();
+        }
+        if (diskReadList.size() < minPktsReadNode)
+        {
+            minPktsReadNode = diskReadList.size();
+        }
 
-            if (consList.empty() == true)
+        // non-contigous disk read list
+        vector<vector<int>> nonContDiskReadList;
+
+        // convert diskReadList to non-contiguous read list
+        for (int i = 0; i < diskReadList.size(); i++)
+        {
+            if (i == 0)
             {
-                consList.push_back(offset);
+                nonContDiskReadList.push_back({diskReadList[i]});
             }
             else
             {
-                // it's consecutive
-                if (consList.back() + 1 == offset)
+                if (diskReadList[i] == diskReadList[i - 1] + 1)
                 {
-                    consList.push_back(offset); // at to the back of prev consList
+                    nonContDiskReadList.back().push_back(diskReadList[i]);
                 }
                 else
                 {
-                    consReadList.push_back(consList); // commits prev consList
-                    consList.clear();
-                    consList.push_back(offset); // at to the back of new consList
+                    nonContDiskReadList.push_back({diskReadList[i]});
                 }
             }
         }
-        if (consList.empty() == false)
+        sumNonContAccess += nonContDiskReadList.size();
+
+        if (nonContDiskReadList.size() > maxNonContAccessNode)
         {
-            consReadList.push_back(consList);
+            maxNonContAccessNode = nonContDiskReadList.size();
+        }
+        if (nonContDiskReadList.size() < minNonContAccessNode)
+        {
+            minNonContAccessNode = nonContDiskReadList.size();
         }
 
-        printf("node id: %d, contiguous reads (of sub-blocks): ", nodeId);
+        printf("NodeId: %d, number of read sub-packets: %d; number of non-contiguous accesses: %d, access pattern: ", nodeId, (int)diskReadList.size(), (int)nonContDiskReadList.size());
 
         bool printGap = false;
-        for (auto consList : consReadList)
+        for (auto consList : nonContDiskReadList)
         {
-            for (auto offset : consList)
-            {
-                printf("%d ", offset);
-            }
             if (printGap == false)
             {
                 printGap = true;
             }
             else
             {
-                printf(" || ");
+                printf("- ");
+            }
+            for (auto pktId : consList)
+            {
+                printf("%d ", pktId);
             }
         }
         printf("\n");
-
-        // update diskReadInfoMap
-        diskReadInfoMap[nodeId].first = consReadList.size();
-        diskReadInfoMap[nodeId].second = diskReadSymbolsMap[nodeId].size();
 
         // update stats
         sumPktsRead += diskReadSymbolsMap[nodeId].size();
     }
 
     // calculate norm repair bandwidth (against RS code)
-    normRepairBW = sumPktsRead * 1.0 / (k * w);
-
-    printf("disk read info:\n");
-    for (int nodeId = 0; nodeId < n; nodeId++)
-    {
-        printf("nodeId: %d, number of disk seeks: %d, number of sub-blocks read: %d, sub-blocks: ", nodeId, diskReadInfoMap[nodeId].first, diskReadInfoMap[nodeId].second);
-        // printf("%d, %d\n", diskReadInfoMap[nodeId].first, diskReadInfoMap[nodeId].second);
-        for (auto pkt : diskReadSymbolsMap[nodeId])
-        {
-            printf("%d ", pkt);
-        }
-        printf("\n");
-    }
-
-    // // calculate straggler info
-    // int straggler_nodeId = -1;
-    // double straggler_disk_io_time_s = 0;
-
-    // for (int nodeId = 0; nodeId < n; nodeId++) {
-    //     double node_disk_io_time_s = 1.0 * diskReadInfoMap[nodeId].first * disk_seek_time_ms / 1000 +
-    //         1.0 * diskReadInfoMap[nodeId].second * conf->_pktSize / 1048576 / w / disk_bdwt_MBps;
-
-    //     printf("%f\n", node_disk_io_time_s);
-    //     if (node_disk_io_time_s > straggler_disk_io_time_s) {
-    //         straggler_disk_io_time_s = node_disk_io_time_s;
-    //         straggler_nodeId = nodeId;
-    //     }
-    // }
-
-    // printf("straggler nodeId: %d, num_seeks: %d, num_sub_pkts_read: %d, disk_io_time_s: %f\n",
-    //  straggler_nodeId, diskReadInfoMap[straggler_nodeId].first, diskReadInfoMap[straggler_nodeId].second, straggler_disk_io_time_s);
+    normRepairBW = sumPktsRead * 1.0 / (numDataSymbols);
 
     delete conf;
 
-    printf("Total sub-blocks read: %d / %d, normalized repair bandwidth: %f\n", sumPktsRead, k * w, normRepairBW);
-
-    // print encode and decode time
+    // print encode and decode stats
     printf("Code: %s, encode throughput: %f MiB/s (%llu MiB in %f seconds)\n", codeName.c_str(), 1.0 * blockSizeBytes * k / 1048576 / encodeTime, blockSizeBytes * k / 1048576, encodeTime);
     printf("Code: %s, decode throughput: %f MiB/s (%llu MiB in %f seconds)\n", codeName.c_str(), 1.0 * blockSizeBytes * k / 1048576 / decodeTime, blockSizeBytes * k / 1048576, decodeTime);
+    
+    // print repair stats
+    printf("Repair degree (number of accessed nodes): %d\n", numAccessedNodes);
+    printf("Repair bandwidth: total packets read: %d / %d, average per node: %f (min: %d; max: %d), normalized repair bandwidth (w.t. RS): %f\n", sumPktsRead, numDataSymbols, 1.0 * sumPktsRead / numAccessedNodes, minPktsReadNode, maxPktsReadNode, normRepairBW);
+    printf("Repair access: total non-contiguous accesses: %d, average per node: %f (min: %d, max: %d)\n", sumNonContAccess, 1.0 * sumNonContAccess / numAccessedNodes, minNonContAccessNode, maxNonContAccessNode);
 }
