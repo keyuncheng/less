@@ -358,7 +358,7 @@ ECDAG *LESS::Encode()
         vector<int> data;
         vector<int> codes;
 
-        // code: the last _n
+        // codes: the esId-th sub-blocks of the _m parity blocks
         for (int nodeId = _k; nodeId < _n; nodeId++)
         {
             codes.push_back(_layout[alpha][nodeId]);
