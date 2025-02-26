@@ -212,7 +212,8 @@ LESS::LESS(int n, int k, int w, int opt, vector<string> param)
     //     cout << endl;
     // }
 
-    // Step 4: construct encoding matrix for each extended sub-stripe
+    // Step 4: construct parity check matrix for each extended sub-stripe
+    // we also construct generator matrix for the first alpha extended sub-stripes
     for (int esId = 0; esId < _numGroups; esId++)
     {
         vector<int> &symbolGroup = _symbolGroups[esId];
@@ -251,34 +252,45 @@ LESS::LESS(int n, int k, int w, int opt, vector<string> param)
         cout << "LESS::LESS() Parity-check matrix for extended sub-stripe " << esId << ":" << endl;
         jerasure_print_matrix(_ES2pcMatrixMap[esId], _m, as_n, _fw);
 
-        // obtain encoding matrix for the extended sub-stripe
-        int *from = new int[as_n];
-        int *to = new int[as_n];
-        memset(from, 0, as_n * sizeof(int));
-        memset(to, 0, as_n * sizeof(int));
-        // the first symbols are data symbols, the last symbols are parity symbols
-        for (int i = 0; i < as_n; i++)
+        if (esId < _w)
         {
-            if (i < as_k)
-            {
-                from[i] = 1;
-            }
-            else
-            {
-                to[i] = 1;
-            }
-        }
-        int *encodeMatrix4SubStripe = new int[as_k * _m];
-        if (getGenMatrixFromPCMatrix(as_n, as_k, _fw, pcMatrix4SubStripe, encodeMatrix4SubStripe, from, to) == false)
-        {
-            cout << "LESS::LESS() failed to obtain encoding matrix for extended sub-stripe " << esId << endl;
-            exit(-1);
-        }
-        _ES2encodeMatrixMap[esId] = encodeMatrix4SubStripe;
+            // obtain encoding matrix for the extended sub-stripe
+            int *from = new int[as_n];
+            int *to = new int[as_n];
+            memset(from, 0, as_n * sizeof(int));
+            memset(to, 0, as_n * sizeof(int));
 
-        // // print encoding matrix for extended sub-stripe
-        // cout << "LESS::LESS() Encoding matrix for extended sub-stripe " << esId << ":" << endl;
-        // jerasure_print_matrix(_ES2encodeMatrixMap[esId], _m, as_k, _fw);
+            // codes: the esId-th sub-blocks of the _m parity blocks
+            vector<int> codes;
+            for (int nodeId = _k; nodeId < _n; nodeId++)
+            {
+                codes.push_back(_layout[esId][nodeId]);
+            }
+
+            for (int i = 0; i < as_n; i++)
+            {
+                if (find(codes.begin(), codes.end(), symbolGroup[i]) != codes.end())
+                {
+                    to[i] = 1;
+                }
+                else
+                {
+                    from[i] = 1;
+                }
+            }
+
+            int *encodeMatrix4SubStripe = new int[as_k * _m];
+            if (getGenMatrixFromPCMatrix(as_n, as_k, _fw, pcMatrix4SubStripe, encodeMatrix4SubStripe, from, to) == false)
+            {
+                cout << "LESS::LESS() failed to obtain encoding matrix for extended sub-stripe " << esId << endl;
+                exit(-1);
+            }
+            _ES2encodeMatrixMap[esId] = encodeMatrix4SubStripe;
+
+            // // print encoding matrix for extended sub-stripe
+            // cout << "LESS::LESS() Encoding matrix for extended sub-stripe " << esId << ":" << endl;
+            // jerasure_print_matrix(_ES2encodeMatrixMap[esId], _m, as_k, _fw);
+        }
     }
 
     /**
