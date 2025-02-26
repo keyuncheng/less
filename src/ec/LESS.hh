@@ -25,19 +25,15 @@ private:
     int *_pcMatrix; // parity check matrix
 
     /**
-     * @brief Implementation 2: use extended sub-stripes to construct the code
+     * @brief Implementation 2: use augmented sub-stripes to construct the code
      * 
      */
-    vector<vector<int>> _nodeGroups; // node groups: _numGroups
-    vector<vector<int>> _symbolGroups; // symbol groups: _numGroups, each corresponds to one extended sub-stripe
+    vector<vector<int>> _nodeGroups; // node groups (with _numGroups)
+    vector<vector<int>> _symbolGroups; // symbol groups (with _numGroups)
     vector<vector<int>> _coefs4Symbols; // coefficient for each symbol for encoding
     vector<int> _nodePermutation; // node permutation
 
     map<int, int> _elementMap; // element map (for debugging)
-
-    map<int, int *> _ES2pcMatrixMap; // map: parity check matrix of each extended sub-stripe
-    
-    map<int, int *> _ES2encodeMatrixMap; // map: encoding matrix of each extended sub-stripe
 
     void genParityCheckMatrix();
     void genEncodingMatrix();
@@ -47,10 +43,8 @@ private:
     ECDAG *decodeMultipleWithSubStripes(vector<int> &availSymbols, vector<int> &failedSymbols);
     ECDAG *decodeMultipleWithPCMatrix(vector<int> &availSymbols, vector<int> &failedSymbols);
 
-    // get primitive elements power
-    void getPrimElementsPower(int order, int e, int fw);
-    // convert parity check matrix to encoding matrix
-    bool convertPCMatrix2EncMatrix(int n, int k, int w); 
+    void getPrimElementsPower(int order, int e, int fw); // get primitive elements power
+    bool convertPCMatrix2EncMatrix(int n, int k, int w); // convert parity check matrix to encoding matrix
     /**
      * @brief convert parity check matrix to generator matrix, based on the
      * avialable ndoes and failed nodes
@@ -68,15 +62,14 @@ private:
     bool getGenMatrixFromPCMatrix(int n, int k, int fw, const int* pcMatrix, int *genMatrix, const int* from, const int* to);
 
     void initLayout(); // init code layout
+    int getRepairBandwidth(int failedNode); // get repair bandwidth
+    vector<int> getHelperNodes(int failedNode); // get helper nodes
+    int *getRepairMatrix(int failedNode); // get repair matrix for single node failure
 
 public:
 
     LESS(int n, int k, int w, int opt, vector<string> param);
     ~LESS();
-
-    ECDAG* Encode();
-    ECDAG* Decode(vector<int> from, vector<int> to);
-    void Place(vector<vector<int>>& group);
 
     /**
      * @brief Get Available Prim Elements for LESS with (n,k,w).
@@ -110,6 +103,18 @@ public:
      * @return uint32_t 
      */
     static uint32_t polynomialAssignment(uint32_t x, uint32_t f, int fw);
+
+    ECDAG* Encode();
+    ECDAG* Decode(vector<int> from, vector<int> to);
+    void Place(vector<vector<int>>& group);
+
+    /**
+     * @brief Get sub-packets in nodeid
+     * 
+     * @param nodeid 
+     * @return vector<int> 
+     */
+    vector<int> getNodeSubPackets(int nodeid);
 
     /**
      * @brief Get all sub-packets

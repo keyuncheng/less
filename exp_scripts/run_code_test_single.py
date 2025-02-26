@@ -189,7 +189,9 @@ def main():
 
         # Repair bandwidth
         OverallRepairBW = SumNumRetSubPkts / SumNumTotalSubPkts
-        OverallAvgRetSubPktsPerNode = SumAvgRetSubPktsPerNode / maxBlockId
+        OverallAvgRetSubPktsPerNode = SumAvgRetSubPktsPerNode / codeW / maxBlockId
+        AllMinRetSubPktNode = AllMinRetSubPktNode / codeW
+        AllMaxRetSubPktNode = AllMaxRetSubPktNode / codeW
 
         # Repair access
         OverallNonContAccess = SunNumNonContAccess / maxBlockId
@@ -203,7 +205,7 @@ def main():
 
         # print stats
         print("Code: {}, Repair bandwidth: {} / {} (normalized: {}), average per node: {} (min: {}, max: {})".format(codeId, SumNumRetSubPkts / maxBlockId / codeW, SumNumTotalSubPkts / maxBlockId / codeW, OverallRepairBW, OverallAvgRetSubPktsPerNode, AllMinRetSubPktNode, AllMaxRetSubPktNode))
-        print("Code: {}, Repair access: {} (normalized: {}), average per node: {} (min: {}, max: {})".format(codeId, SunNumNonContAccess / maxBlockId, OverallNonContAccess, OverallAvgNonContAccessPerNode, AllMinNonContAccessNode, AllMaxNonContAccessNode))
+        print("Code: {}, Repair access: {}, average per node: {} (min: {}, max: {})".format(codeId, OverallNonContAccess, OverallAvgNonContAccessPerNode, AllMinNonContAccessNode, AllMaxNonContAccessNode))
         print("Code: {}, Repair degree: {}".format(codeId, OverallRepairDegree))
             
 
