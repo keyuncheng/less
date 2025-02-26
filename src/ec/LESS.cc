@@ -841,7 +841,32 @@ ECDAG *LESS::decodeMultipleWithSubStripes(vector<int> &availSymbols, vector<int>
     memset(from, 0, as_n * sizeof(int));
     memset(to, 0, as_n * sizeof(int));
 
-    for (int i = 0, count = 0; i < as_n; i++)
+    // // arbitrary select as_k blocks for help
+    // for (int i = 0, count = 0; i < as_n; i++)
+    // {
+    //     int symbol = symbolGroup[i];
+    //     int symbolNodeId = symbol / _w;
+    //     if (find(failedNodes.begin(), failedNodes.end(), symbolNodeId) != failedNodes.end())
+    //     {
+    //         // failed node
+    //         to[i] = 1;
+    //         codes.push_back(symbol);
+    //     }
+    //     else
+    //     {
+    //         if (count < as_k)
+    //         {
+    //             // available node
+    //             from[i] = 1;
+    //             data.push_back(symbol);
+    //             count++;
+    //         }
+    //     }
+    // }
+
+    // sort the nodes in descending order of available sub-packets
+    vector<vector<int>> helperNodesSubPkts(_n, vector<int>());
+    for (int i = 0; i < as_n; i++)
     {
         int symbol = symbolGroup[i];
         int symbolNodeId = symbol / _w;
@@ -853,15 +878,40 @@ ECDAG *LESS::decodeMultipleWithSubStripes(vector<int> &availSymbols, vector<int>
         }
         else
         {
-            if (count < as_k)
+            // available node
+            helperNodesSubPkts[symbolNodeId].push_back(symbol);
+        }
+    }
+
+    // sort helperNodesSubPkts in descending order of sub-packets
+    sort(helperNodesSubPkts.begin(), helperNodesSubPkts.end(), [](const vector<int> &a, const vector<int> &b)
+         { return a.size() > b.size(); });
+
+    // choose the first as_k blocks from the sorted list
+    for (int i = 0; i < helperNodesSubPkts.size(); i++)
+    {
+        vector<int> &subPkts = helperNodesSubPkts[i];
+        if (subPkts.empty())
+        {
+            continue;
+        }
+        for (auto symbol : subPkts)
+        {
+            if (data.size() < as_k)
             {
-                // available node
-                from[i] = 1;
+                // find the index in the symbolGroup
+                auto it = find(symbolGroup.begin(), symbolGroup.end(), symbol);
+                int idx = distance(symbolGroup.begin(), it);
+                from[idx] = 1;
                 data.push_back(symbol);
-                count++;
+            }
+            else
+            {
+                break;
             }
         }
     }
+    sort(data.begin(), data.end());
 
     // construct parity check matrix for the extended sub-stripe
     int *pcMatrix4SubStripe = _ES2pcMatrixMap[residingGroupId];
