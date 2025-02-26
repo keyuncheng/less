@@ -540,6 +540,6 @@ int main(int argc, char **argv)
     
     // print repair stats
     printf("Repair degree (number of accessed nodes): %d\n", numAccessedNodes);
-    printf("Repair bandwidth: total packets read: %d / %d, average per node: %f (min: %d; max: %d), normalized repair bandwidth (w.t. RS): %f\n", sumPktsRead, numDataSymbols, 1.0 * sumPktsRead / numAccessedNodes, minPktsReadNode, maxPktsReadNode, normRepairBW);
+    printf("Repair bandwidth: total packets read: %d / %d, average per node: %f (min: %d, max: %d), normalized repair bandwidth (w.t. RS): %f\n", sumPktsRead, numDataSymbols, 1.0 * sumPktsRead / numAccessedNodes, minPktsReadNode, maxPktsReadNode, normRepairBW);
     printf("Repair access: total non-contiguous accesses: %d, average per node: %f (min: %d, max: %d)\n", sumNonContAccess, 1.0 * sumNonContAccess / numAccessedNodes, minNonContAccessNode, maxNonContAccessNode);
 }
