@@ -5,6 +5,7 @@ import argparse
 import sys
 import subprocess
 import re
+from itertools import combinations
 
 # import common configs
 import common
@@ -18,7 +19,7 @@ def parse_args(cmd_args):
     argParser.add_argument("-f", type=str, required=True, help="code test file (.txt): each line represents a code name with parameters")
     
     # Input parameters: -f code test file
-    argParser.add_argument("-m", type=str, required=True, help="metric (1) adrc: average degraded read cost; (2) arc: average repair cost")
+    argParser.add_argument("-n", type=str, required=True, help="number of failures")
     
     args = argParser.parse_args(cmd_args)
     return args
@@ -65,7 +66,7 @@ def main():
 
     # Input parameters: codeTestListFile
     codeTestListFile = args.f
-    metric = args.m
+    numFailures = int(args.n)
     codeList = getCodeList(codeTestListFile)
 
     startExpTime = time.time()
@@ -102,15 +103,15 @@ def main():
         AllMinNonContAccessNode = codeW
         AllMaxNonContAccessNode = 0
 
-        maxBlockId = codeN
-        # degraded read cost
-        if metric == "adrc":
-            maxBlockId = codeK
-        # 
-        elif metric == "arc":
-            maxBlockId = codeN
-        for failedNodeId in range(maxBlockId):
-            cmd = "source {} && cd {} && ./{} {} {} {} {} {} {}".format("~/.zshrc", common.BUILD_DIR, common.CODE_TEST_BIN, codeName, codeN, codeK, codeW, DEFAULT_BLOCK_SIZE, failedNodeId)
+
+        # enumerate all combinations of numFailures from 0 to codeN - 1
+        numCombs = 0
+        for index, failedIds in enumerate(combinations(range(codeN), numFailures)):
+            numCombs += 1
+            failedIds = " ".join([str(x) for x in failedIds])
+            # print(index, failedIds)
+
+            cmd = "source {} && cd {} && ./{} {} {} {} {} {} {}".format("~/.zshrc", common.BUILD_DIR, common.CODE_TEST_BIN, codeName, codeN, codeK, codeW, DEFAULT_BLOCK_SIZE, failedIds)
             msg, success = execCmd(cmd, printCmd=False, printOutputs=False)
 
             if "error" in msg:
@@ -185,14 +186,17 @@ def main():
         # Repair access
 
         # validate if results are correct
-        if sum(repairBWTotalStats) != maxBlockId * codeW * codeK:
-            print("Error: invalid number of total subpackets: {} != {}".format(sum(repairBWTotalStats), int(maxBlockId * codeW * codeK)))
+        if sum(repairBWTotalStats) != numCombs * codeK * codeW:
+            print("Error: invalid number of total subpackets: {} != {}".format(sum(repairBWTotalStats), int(numCombs * codeW * codeK)))
             exit(-1)
 
+        print("Repair bandwidth stats:", repairBWStats)
+        print("Percents of combinations with repair bandwidth reduction: {}".format(sum([1 for x in repairBWStats if x < codeK * codeW]) / numCombs))
+
         # print stats
-        print("Code: {}, Repair degree: {} (min: {}, max: {})".format(codeId, sum(repairDegStats) / maxBlockId, min(repairDegStats), max(repairDegStats)))
-        print("Code: {}, Repair bandwidth: {} / {} (min: {}, max: {}), normalized: {}, average transferred blocks per node: {} (min: {}, max: {})".format(codeId, sum(repairBWStats) / codeW / maxBlockId, sum(repairBWTotalStats) / codeW / maxBlockId, min(repairBWStats) / codeW, max(repairBWStats) / codeW,                                  sum(repairBWStats) / sum(repairBWTotalStats), sum(repairTransferNodeStats) / codeW / maxBlockId, AllMinRetSubPktNode / codeW, AllMaxRetSubPktNode / codeW))
-        print("Code: {}, Repair access: {} (min: {}, max: {}), average per node: {} (min: {}, max: {})".format(codeId, sum(nonContIOStats) / maxBlockId, min(nonContIOStats), max(nonContIOStats), sum(nonContIONodeStats) / maxBlockId, AllMinNonContAccessNode, AllMaxNonContAccessNode))
+        print("Code: {}, Repair degree: {} (min: {}, max: {})".format(codeId, sum(repairDegStats) / numCombs, min(repairDegStats), max(repairDegStats)))
+        print("Code: {}, Repair bandwidth: {} / {} (min: {}, max: {}), normalized: {}, average transferred blocks per node: {} (min: {}, max: {})".format(codeId, sum(repairBWStats) / codeW / numCombs, sum(repairBWTotalStats) / codeW / numCombs, min(repairBWStats) / codeW, max(repairBWStats) / codeW,                                  sum(repairBWStats) / sum(repairBWTotalStats), sum(repairTransferNodeStats) / codeW / numCombs, AllMinRetSubPktNode / codeW, AllMaxRetSubPktNode / codeW))
+        print("Code: {}, Repair access: {} (min: {}, max: {}), average per node: {} (min: {}, max: {})".format(codeId, sum(nonContIOStats) / numCombs, min(nonContIOStats), max(nonContIOStats), sum(nonContIONodeStats) / numCombs, AllMinNonContAccessNode, AllMaxNonContAccessNode))
         
             
 
