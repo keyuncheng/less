@@ -1,7 +1,7 @@
 #!/usr/bin/expect -f
 # usage: set mutual password-less ssh connection on all nodes
 
-source "./config.sh"
+source "./load_eval_settings.sh"
 
 # create id_rsa
 if [ ! -f ~/.ssh/id_rsa ];then
@@ -11,20 +11,18 @@ if [ ! -f ~/.ssh/id_rsa ];then
 fi
 
 for idx in $(seq 0 $((num_nodes-1))); do
-    ip=${ip_list[$idx]}
-    user=${user_list[$idx]}
-    passwd=${passwd_list[$idx]}
+    node_ip=${ip_list[$idx]}
     
     expect << EOF
 
     # remove key
     set timeout 2
-    spawn ssh-keygen -f "/home/$user/.ssh/known_hosts" -R $ip
+    spawn ssh-keygen -f "/home/$user_name/.ssh/known_hosts" -R $node_ip
     expect eof
 
     # set ssh-copy-id 
     set timeout 2
-    spawn ssh-copy-id -f $user@$ip
+    spawn ssh-copy-id -f $user_name@$ip
     expect {
         "*yes/no" { send "yes\n"; exp_continue }
         "*password" { send "$passwd\n"; exp_continue }

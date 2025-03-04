@@ -1,18 +1,16 @@
 #!/usr/bin/expect -f
 # usage: set login for all nodes
 
-source "./config.sh"
+source "./load_eval_settings.sh"
 
 for idx in $(seq 0 $((num_nodes-1))); do
-    ip=${ip_list[$idx]}
-    user=${user_list[$idx]}
-    passwd=${passwd_list[$idx]}
+    node_ip=${node_ip_list[$idx]}
     
     expect << EOF
    
     # ssh 
     set timeout 5
-    spawn ssh -t $root_user_name@$ip 
+    spawn ssh -t $root_user_name@$node_ip 
     expect {
         "*yes/no" { send "yes\n"; exp_continue }
         "*password" { send "$root_user_passwd\n"; exp_continue }
@@ -20,11 +18,11 @@ for idx in $(seq 0 $((num_nodes-1))); do
 
     # adduser
     set timeout 5
-    send "sudo adduser $user\n" 
+    send "sudo adduser $user_name\n" 
     expect {
         "*already exists" {exit 0}
         "*password for" {send "$root_user_passwd\n"; exp_continue}
-        "*New password" {send "$passwd\n"; exp_continue}
+        "*New password" {send "$user_passwd\n"; exp_continue}
         "*Retype new password" {send "$passwd\n"; exp_continue}
         "*Full Name" {send "\n"; exp_continue}
         "*Room Number" {send "\n"; exp_continue}
@@ -36,7 +34,7 @@ for idx in $(seq 0 $((num_nodes-1))); do
     
     # add sudo privilege
     set timeout 1
-    send "sudo usermod -aG sudo $user\n"
+    send "sudo usermod -aG sudo $user_name\n"
 
     set timeout 1
     send "exit\n"

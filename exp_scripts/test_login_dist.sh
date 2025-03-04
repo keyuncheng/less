@@ -1,20 +1,18 @@
 #!/usr/bin/expect -f
 # usage: test ssh connection on all nodes
 
-source "./config.sh"
+source "./load_eval_settings.sh"
 
 for idx in $(seq 0 $((num_nodes-1))); do
-    ip=${ip_list[$idx]}
-    user=${user_list[$idx]}
-    passwd=${passwd_list[$idx]}
+    node_ip=${node_ip_list[$idx]}
     
     expect << EOF
     
     set timeout 5
-    spawn ssh $user@$ip "echo success"
+    spawn ssh $user_name@$node_ip "echo success"
     expect {
         "*yes/no" { send "yes\n"; exp_continue }
-        "*password" { send "$passwd\n" }
+        "*password" { send "$user_passwd\n" }
     }
      
 EOF

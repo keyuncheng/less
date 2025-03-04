@@ -1,11 +1,14 @@
-# Scripts for experiments in distributed settings
-TO be updated
+# Evaluation Scripts
 
-login.txt: logins for nodes. Format: <ip> <username> <password>
-config.sh: configuration file
-set_login.sh: create user on each node; set root privilege
-test_login.sh: test ssh connection on each node
-set_ssh.sh: setup ssh passwordless connection on each node
+eval_settings.ini: evaluation settings file
+node_list.txt: node IP 
+code_test_list.txt: erasure codes to test in (n,k,w) tuple
+load_eval_settings.sh: load eval_settings.ini into bash
+set_login_dist.sh: create user and set root privilege on each node
+test_login_dist.sh: test ssh connection on each node
+set_ssh_dist.sh: setup ssh password-less connection on each node
+
+
 run_cmd_dist.sh: run command on each node
 run_script_dist.sh: run script on each node
 install.sh: install packages
