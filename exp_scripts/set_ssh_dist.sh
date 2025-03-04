@@ -22,10 +22,10 @@ for idx in $(seq 0 $((num_nodes-1))); do
 
     # set ssh-copy-id 
     set timeout 2
-    spawn ssh-copy-id -f $user_name@$ip
+    spawn ssh-copy-id -f $user_name@$node_ip
     expect {
         "*yes/no" { send "yes\n"; exp_continue }
-        "*password" { send "$passwd\n"; exp_continue }
+        "*password" { send "$user_passwd\n"; exp_continue }
     }
 
 EOF
