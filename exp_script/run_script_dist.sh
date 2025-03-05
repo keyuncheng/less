@@ -11,8 +11,8 @@ fi
 script=$1
 args=${@:2}
 
-if [ ! -f "$script_dir/$script" ]; then
-    echo "script $script does not exist"
+if [ ! -f "$exp_script_dir/$script" ]; then
+    echo "script $script does not exist in directory $exp_script_dir"
     exit 1
 fi
 
@@ -20,6 +20,6 @@ for idx in $(seq 0 $((num_nodes-1))); do
     node_ip=${node_ip_list[$idx]}
     
     # run script with bash
-    echo ssh -n $user_name@$node_ip "cd $script_dir && bash $script $args"
-    ssh -n $user_name@$node_ip "cd $script_dir && bash $script $args"
+    echo ssh -n $user_name@$node_ip "cd $exp_script_dir && bash $script $args"
+    ssh -n $user_name@$node_ip "cd $exp_script_dir && bash $script $args"
 done
