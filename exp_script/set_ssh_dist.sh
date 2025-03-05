@@ -11,7 +11,7 @@ if [ ! -f ~/.ssh/id_rsa ];then
 fi
 
 for idx in $(seq 0 $((num_nodes-1))); do
-    node_ip=${ip_list[$idx]}
+    node_ip=${node_ip_list[$idx]}
     
     expect << EOF
 
