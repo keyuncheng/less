@@ -1,5 +1,5 @@
 #!/usr/bin/expect -f
-# usage: set login for all nodes
+# usage: create user and set root privilege on each node
 
 source "./load_eval_settings.sh"
 

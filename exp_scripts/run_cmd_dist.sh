@@ -1,18 +1,16 @@
 #!/bin/bash
 # usage: run command on all nodes
 
-source "./config.sh"
-
-cur_dir=`pwd`
+source "./load_eval_settings.sh"
 
 # execute command
 for idx in $(seq 0 $((num_nodes-1))); do
-    ip=${ip_list[$idx]}
-    user=${user_list[$idx]}
-    passwd=${passwd_list[$idx]}
+    node_ip=${node_ip_list[$idx]}
     
-    echo ssh -n $user@$ip "echo $passwd | sudo -S apt-get -y install expect"
-    ssh -n $user@$ip "echo $passwd | sudo -S apt-get -y install expect"
-    # ssh -n $user@$ip "rm -rf /home/kycheng/hadoop-3.3.4/etc/hadoop/hadoop"
-    # ssh -n $user@$ip "echo $HADOOP_HOME"
+    # install expect
+    echo ssh -n $user_name@$node_ip "echo $user_passwd | sudo -S apt-get -y install expect"
+    ssh -n $user_name@$node_ip "echo $user_passwd | sudo -S apt-get -y install expect"
+    
+    # ssh -n $user_name@$node_ip "rm -rf /home/kycheng/hadoop-3.3.4/etc/hadoop/hadoop"
+    # ssh -n $user_name@$node_ip "echo $HADOOP_HOME"
 done

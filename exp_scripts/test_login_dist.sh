@@ -1,5 +1,5 @@
 #!/usr/bin/expect -f
-# usage: test ssh connection on all nodes
+# usage: test ssh connection on each node
 
 source "./load_eval_settings.sh"
 

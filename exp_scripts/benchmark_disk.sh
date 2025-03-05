@@ -1,11 +1,17 @@
 #!/bin/bash
+# benchmark disk throughput and IOPS
 # Credit:
 # https://cloud.google.com/compute/docs/disks/benchmarking-pd-performance
+
+source "./load_eval_settings.sh"
 
 if [ "$#" != "1" ]; then
     echo "Usage: $0 test_dir" >&2
     exit 1
 fi
+
+# install fio
+sudo apt-get install -y fio
 
 TEST_DIR=$1
 mkdir -p $TEST_DIR

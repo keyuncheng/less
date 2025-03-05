@@ -1,5 +1,5 @@
 #!/usr/bin/expect -f
-# usage: set mutual password-less ssh connection on all nodes
+# setup ssh password-less connection on each node
 
 source "./load_eval_settings.sh"
 

@@ -1,6 +1,7 @@
 #!/bin/bash
-# usage: configuration files
+# usage: load eval_settings.ini into bash variables
 
+home_dir=$(echo ~)
 proj_dir=$(dirname "$(pwd)")
 build_dir=${proj_dir}/build
 conf_dir=${build_dir}/conf
@@ -27,7 +28,6 @@ echo "root_user_name:" $root_user_name
 echo "root_user_passwd:" $root_user_passwd
 echo "user_name:" $user_name
 echo "user_passwd:" $user_passwd
-
 
 # get node list
 node_ip_list=()

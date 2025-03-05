@@ -1,20 +1,22 @@
 #!/bin/bash
-# usage: test bandwidth between current node and all nodes
+# usage: benchmark bandwidth between current node and other nodes
 
-source "./config.sh"
+source "./load_eval_settings.sh"
 
-cur_ip=$(ifconfig | grep '192.168.10' | head -1 | sed "s/ *inet [addr:]*\([^ ]*\).*/\1/")
+if [ "$#" != "1" ]; then
+	echo "Usage: $0 node_ip" >&2
+    exit 1
+fi
+
+node_ip=$1
 
 iperf -s &
 
 for idx in $(seq 0 $((num_nodes-1))); do
-    ip=${ip_list[$idx]}
-    user=${user_list[$idx]}
-    passwd=${passwd_list[$idx]}
+    node_ip=${node_ip_list[$idx]}
 
-    echo Current Node: ${cur_ip}
-    
-    ssh $user@$ip iperf -c ${cur_ip}
+    echo Current Node: ${node_ip}
+    ssh $user_name@$ip iperf -c ${node_ip}
 done
 
 killall iperf
