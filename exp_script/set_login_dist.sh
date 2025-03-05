@@ -23,7 +23,7 @@ for idx in $(seq 0 $((num_nodes-1))); do
         "*already exists" {exit 0}
         "*password for" {send "$root_user_passwd\n"; exp_continue}
         "*New password" {send "$user_passwd\n"; exp_continue}
-        "*Retype new password" {send "$passwd\n"; exp_continue}
+        "*Retype new password" {send "$user_passwd\n"; exp_continue}
         "*Full Name" {send "\n"; exp_continue}
         "*Room Number" {send "\n"; exp_continue}
         "*Work Phone" {send "\n"; exp_continue}
