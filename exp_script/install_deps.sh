@@ -2,11 +2,7 @@
 # usage: install packages locally
 # NOTE: please ensure all packages are downloaded accordingly
 
-username=kycheng
-passwd=kycheng
-
-home_dir=/home/$username
-pkg_dir=$home_dir/packages
+source "./load_eval_settings.sh"
 
 if [ -d $pkg_dir ];then
     echo "package directory $pkg_dir exist, continue"
@@ -21,7 +17,7 @@ fi
 set timeout -1 
 spawn sudo apt-get -y install iproute2 net-tools fio lshw iperf python2.7
 expect {
-    "*password" { send "$passwd\n"; exp_continue }
+    "*password" { send "$user_passwd\n"; exp_continue }
     "*continue?" { send "Y\n"; exp_continue }
 }
 EOF
@@ -33,7 +29,7 @@ EOF
 set timeout -1 
 spawn sudo apt-get -y install build-essential cmake g++
 expect {
-    "*password" { send "$passwd\n"; exp_continue }
+    "*password" { send "$user_passwd\n"; exp_continue }
     "*continue?" { send "Y\n"; exp_continue }
 }
 EOF
@@ -50,7 +46,7 @@ make
 set timeout -1 
 spawn sudo make install
 expect {
-    "*password" { send "$passwd\n"; exp_continue }
+    "*password" { send "$user_passwd\n"; exp_continue }
 }
 EOF
 )
@@ -59,7 +55,7 @@ cd utils
 set timeout -1 
 spawn sudo ./install_server.sh
 expect {
-    "*password" { send "$passwd\n"; exp_continue }
+    "*password" { send "$user_passwd\n"; exp_continue }
     "*redis port" { send "\n"; exp_continue }
     "*redis config file" { send "\n"; exp_continue }
     "*redis log file" { send "\n"; exp_continue }
@@ -73,7 +69,7 @@ EOF
 set timeout -1 
 spawn sudo service redis_6379 stop
 expect {
-    "*password" { send "$passwd\n"; exp_continue }
+    "*password" { send "$user_passwd\n"; exp_continue }
 }
 EOF
 )
@@ -83,7 +79,7 @@ spawn bash -c {
 sudo sed -i 's/bind 127.0.0.*/bind 0.0.0.0/g' /etc/redis/6379.conf
 }
 expect {
-    "*password" { send "$passwd\n"; exp_continue }
+    "*password" { send "$user_passwd\n"; exp_continue }
 }
 EOF
 )
@@ -91,7 +87,7 @@ EOF
 set timeout -1 
 spawn sudo service redis_6379 start
 expect {
-    "*password" { send "$passwd\n"; exp_continue }
+    "*password" { send "$user_passwd\n"; exp_continue }
 }
 EOF
 )
@@ -107,7 +103,7 @@ make
 set timeout -1 
 spawn sudo make install
 expect {
-    "*password" { send "$passwd\n"; exp_continue }
+    "*password" { send "$user_passwd\n"; exp_continue }
 }
 EOF
 )
@@ -118,7 +114,7 @@ EOF
 set timeout -1 
 spawn sudo apt-get -y install unzip libtool autoconf yasm nasm
 expect {
-    "*password" { send "$passwd\n"; exp_continue }
+    "*password" { send "$user_passwd\n"; exp_continue }
     "*continue?" { send "Y\n"; exp_continue }
 }
 EOF
@@ -136,7 +132,7 @@ make
 set timeout -1 
 spawn sudo make install
 expect {
-    "*password" { send "$passwd\n"; exp_continue }
+    "*password" { send "$user_passwd\n"; exp_continue }
 }
 EOF
 )
@@ -156,7 +152,7 @@ make
 set timeout -1 
 spawn sudo make install
 expect {
-    "*password" { send "$passwd\n"; exp_continue }
+    "*password" { send "$user_passwd\n"; exp_continue }
 }
 EOF
 )
@@ -167,7 +163,7 @@ EOF
 set timeout -1 
 spawn sudo apt-get -y install openjdk-8-jdk maven
 expect {
-    "*password" { send "$passwd\n"; exp_continue }
+    "*password" { send "$user_passwd\n"; exp_continue }
     "*continue?" { send "Y\n"; exp_continue }
 }
 EOF
@@ -188,7 +184,7 @@ echo -e 'export PATH=$MAVEN_HOME/bin:$JAVA_HOME/bin:$PATH' >> $home_dir/.bashrc
 set timeout -1 
 spawn sudo apt-get -y install zlib1g-dev libssl-dev doxygen protobuf-compiler libprotobuf-dev libprotoc-dev libsasl2-dev libgsasl7-dev libuuid1 libfuse-dev
 expect {
-    "*password" { send "$passwd\n"; exp_continue }
+    "*password" { send "$user_passwd\n"; exp_continue }
     "*continue?" { send "Y\n"; exp_continue }
 }
 EOF

@@ -2,17 +2,20 @@
 # usage: load eval_settings.ini into bash variables
 
 home_dir=$(echo ~)
+pkg_dir=${home_dir}/packages
 proj_dir=$(dirname "$(pwd)")
-build_dir=${proj_dir}/build
-conf_dir=${build_dir}/conf
+conf_dir=${proj_dir}/conf
+conf_filename=sysSetting.xml
 src_dir=${proj_dir}/src
-script_dir=${proj_dir}/exp_scripts
-INI_FILE=${script_dir}/eval_settings.ini
-node_list_file=${script_dir}/node_list.txt
+oec_script_dir=${proj_dir}/script
+exp_script_dir=${proj_dir}/exp_script
+hadoop_home_dir=$(echo $HADOOP_HOME)
+hdfs_config_dir=${proj_dir}/hdfs3.3.4-integration/conf
+INI_FILE=${exp_script_dir}/eval_settings.ini
+node_list_file=${exp_script_dir}/node_list.txt
 
 # print dir
 echo "proj_dir:" $proj_dir
-echo "build_dir:" $build_dir
 echo "conf_dir:" $conf_dir
 
 # root user

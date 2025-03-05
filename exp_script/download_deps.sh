@@ -1,14 +1,9 @@
 #!/bin/bash
-# usage: download packages locally
+# usage: download dependencies
 
-username=kycheng
-passwd=kycheng
+source "./load_eval_settings.sh"
 
-home_dir=/home/$username
-pkg_dir=$home_dir/packages
-
-mkdir -p $pkg_dir
-cd $pkg_dir
+mkdir -p $pkg_dir && cd $pkg_dir
 
 # dependencies (redis v3.2.8)
 wget https://download.redis.io/releases/redis-3.2.8.tar.gz

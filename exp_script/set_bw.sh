@@ -11,13 +11,12 @@ fi
 node_ip=$1
 upload_bw_Kbps=$2
 
-
 wondershaper_dir=$home_dir/wondershaper
 
 # node_ip=$(ifconfig | grep '192.168.10' | head -1 | sed "s/ *inet [addr:]*\([^ ]*\).*/\1/")
-cur_dev=$(ifconfig | grep -B1 $node_ip | grep -o "^\w*")
+node_dev=$(ifconfig | grep -B1 $node_ip | grep -o "^\w*")
 
-cd $wondershaper_dir && echo $user_passwd | sudo -S ./wondershaper -a $cur_dev -u $upload_bw_Kbps
+cd $wondershaper_dir && echo $user_passwd | sudo -S ./wondershaper -a $node_dev -u $upload_bw_Kbps
 cd -
 
-echo enable bandwidth setting: $node_ip $cur_dev $upload_bw_Kbps Kbps
+echo enable bandwidth setting: $node_ip $node_dev $upload_bw_Kbps Kbps
