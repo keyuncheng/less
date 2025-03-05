@@ -12,8 +12,8 @@ src_file=$1
 dst_dir=$2
 
 # copy file/dir
-for idx in $(seq 0 $((num_nodes-1))); do
-    node_ip=${node_node_ip_list[$idx]}
+for idx in $(seq 1 $((num_nodes-1))); do
+    node_ip=${node_ip_list[$idx]}
     
     echo rsync -av --delete --recursive $src_file $user_name@$node_ip:$dst_dir
     rsync -av --delete --recursive $src_file $user_name@$node_ip:$dst_dir

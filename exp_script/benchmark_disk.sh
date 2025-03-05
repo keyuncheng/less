@@ -11,7 +11,7 @@ if [ "$#" != "1" ]; then
 fi
 
 # install fio
-sudo apt-get install -y fio
+echo $user_passwd | sudo -S apt-get install -y fio
 
 TEST_DIR=$1
 mkdir -p $TEST_DIR
