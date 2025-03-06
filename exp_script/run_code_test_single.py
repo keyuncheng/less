@@ -11,7 +11,7 @@ import common
 
 DEFAULT_BLOCK_SIZE = 1048576
 
-def parse_args(cmd_args):
+def parseArgs(cmdArgs):
     argParser = argparse.ArgumentParser(description="run code test") 
 
     # Input parameters: -f code test file
@@ -20,7 +20,7 @@ def parse_args(cmd_args):
     # Input parameters: -f code test file
     argParser.add_argument("-m", type=str, required=True, help="metric (1) adrc: average degraded read cost; (2) arc: average repair cost")
     
-    args = argParser.parse_args(cmd_args)
+    args = argParser.parse_args(cmdArgs)
     return args
 
 def execCmd(cmd, exec=True, timeout=None, printCmd=True, printOutputs=True):
@@ -31,8 +31,8 @@ def execCmd(cmd, exec=True, timeout=None, printCmd=True, printOutputs=True):
     if exec == True:
         with subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE) as p:
             try:
-                return_str, stderr = p.communicate(timeout=timeout)
-                msg = return_str.decode().strip()
+                retStr, stderr = p.communicate(timeout=timeout)
+                msg = retStr.decode().strip()
                 success=True
             except Exception as e:
                 print(e)
@@ -59,7 +59,7 @@ def getCodeList(codeTestListFile):
 
 
 def main():
-    args = parse_args(sys.argv[1:])
+    args = parseArgs(sys.argv[1:])
     if not args:
         exit()
 
