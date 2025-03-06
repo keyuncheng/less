@@ -19,7 +19,7 @@ rm -f hs_err*
 for idx in $(seq 0 $((num_nodes-1))); do
     node_ip=${node_ip_list[$idx]}
     
-    ssh -n $user_name@$node_ip "cd ${proj_dir}; rm -f agent_output hs_err*"
+    ssh -n $user_name@$node_ip "bash -c 'cd ${proj_dir}; rm -f agent_output hs_err*'"
 done
 
 # restart HDFS
