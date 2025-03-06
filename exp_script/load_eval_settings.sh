@@ -15,6 +15,9 @@ INI_FILE=${exp_script_dir}/eval_settings.ini
 node_list_file=${exp_script_dir}/node_list.txt
 ip_prefix=192.168.10
 
+# load source 
+source $home_dir/.bashrc
+
 # print dir
 echo "proj_dir:" $proj_dir
 echo "conf_dir:" $conf_dir

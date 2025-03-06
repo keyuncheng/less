@@ -18,7 +18,7 @@ for idx in $(seq 0 $((num_nodes-1))); do
 
     # compile OEC
     set timeout -1
-    send "cd $proj_dir && rm -rf CMakeCache.txt && rm -rf CMakeFiles/ && cmake . -DFS_TYPE:STRING=HDFS3 && make"
+    send "cd $proj_dir && rm -rf CMakeCache.txt && rm -rf CMakeFiles/ && cmake . -DFS_TYPE:STRING=HDFS3 && make\n"
     expect eof
 
     set timeout 1
