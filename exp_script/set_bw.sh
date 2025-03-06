@@ -3,17 +3,16 @@
 
 source "./load_eval_settings.sh"
 
-if [ "$#" != "2" ]; then
-	echo "Usage: $0 node_ip upload_bw (Kbps)" >&2
+if [ "$#" != "1" ]; then
+	echo "Usage: $0 upload_bw (Kbps)" >&2
     exit 1
 fi
 
-node_ip=$1
-upload_bw_Kbps=$2
+upload_bw_Kbps=$1
 
 wondershaper_dir=$home_dir/wondershaper
 
-# node_ip=$(ifconfig | grep '192.168.10' | head -1 | sed "s/ *inet [addr:]*\([^ ]*\).*/\1/")
+node_ip=$(ifconfig | grep $ip_prefix | head -1 | sed "s/ *inet [addr:]*\([^ ]*\).*/\1/")
 node_dev=$(ifconfig | grep -B1 $node_ip | grep -o "^\w*")
 
 cd $wondershaper_dir && echo $user_passwd | sudo -S ./wondershaper -a $node_dev -u $upload_bw_Kbps

@@ -19,3 +19,7 @@ wget https://github.com/intel/isa-l/archive/refs/tags/v2.30.0.tar.gz -O isa-l-2.
 
 # dependencies (Hadoop 3.3.4)
 wget https://archive.apache.org/dist/hadoop/common/hadoop-3.3.4/hadoop-3.3.4-src.tar.gz
+
+# benchmark (wondershaper)
+cd $home_dir
+git clone https://github.com/magnific0/wondershaper.git
