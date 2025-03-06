@@ -74,7 +74,7 @@ def main():
 
     # generate OpenEC configs with codeList
     print("Generate OpenEC configs")
-    genOECConfigScript = os.path.join(common.SCRIPT_DIR, "gen_oec_config.py")
+    genOECConfigScript = os.path.join(common.EXP_SCRIPT_DIR, "gen_oec_config.py")
     cmd = "python3 {} -f {}".format(genOECConfigScript, common.EVAL_SETTING_FILE)
     execCmd(cmd)
 
@@ -110,7 +110,7 @@ def main():
         elif metric == "arc":
             maxBlockId = codeN
         for failedNodeId in range(maxBlockId):
-            cmd = "source {} && cd {} && ./{} {} {} {} {} {} {}".format("~/.zshrc", common.BUILD_DIR, common.CODE_TEST_BIN, codeName, codeN, codeK, codeW, DEFAULT_BLOCK_SIZE, failedNodeId)
+            cmd = "source {} && cd {} && ./{} {} {} {} {} {} {}".format("~/.zshrc", common.BUILD_DIR, "CodeTest", codeName, codeN, codeK, codeW, DEFAULT_BLOCK_SIZE, failedNodeId)
             msg, success = execCmd(cmd, printCmd=False, printOutputs=False)
 
             if "error" in msg:

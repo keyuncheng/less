@@ -13,7 +13,6 @@ hadoop_home_dir=$(echo $HADOOP_HOME)
 hdfs_config_dir=${proj_dir}/hdfs3.3.4-integration/conf
 INI_FILE=${exp_script_dir}/eval_settings.ini
 node_list_file=${exp_script_dir}/node_list.txt
-ip_prefix=192.168.10
 
 # load source 
 source $home_dir/.bashrc
@@ -39,6 +38,13 @@ echo "root_user_name:" $root_user_name
 echo "root_user_passwd:" $root_user_passwd
 echo "user_name: "$user_name
 echo "user_passwd:" $user_passwd
+
+# ip_prefix
+ip_prefix=$(grep '^ip_prefix = ' "$INI_FILE" | cut -d '=' -f2)
+ip_prefix=$(echo "$ip_prefix" | xargs)
+
+# print ip_prefix
+echo "ip_prefix:" $ip_prefix
 
 # get node list
 node_ip_list=()

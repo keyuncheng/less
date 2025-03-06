@@ -10,7 +10,7 @@
     * clear_bw.sh: clear bandwidth limit on a node
     * benchmark_bw_dist.sh: benchmark bandwidth between current node and other
       nodes
-    * benchmark_disk.sh: benchmark disk throughput and IOPS
+    * benchmark_disk.sh: benchmark disk throughput and IOPS on a node
     * run_cmd_dist.sh: run command on each node
     * run_script_dist.sh: run script on each node
     * download_deps.sh: download dependencies on a node
@@ -20,14 +20,15 @@
     * update_ip.sh: update IP in configuration files on a node
     * update_sizes.sh: update block and packet sizes in configuration files on
       a node
-    * compile_oec.sh: compile OpenEC
-    * compile_oec_dist.sh: compile OpenEC on each node
-    * compile_hdfs.sh: compile HDFS. Perquisite: OpenEC is compiled
+    * update_hdfs_conf.sh: update HDFS configuration files on a node
+    * compile_hdfs3.sh: compile HDFS
+    * compile_oec.sh: compile OpenEC on a node
     * restart_hdfs.sh: reset and restart HDFS
     * restart_oec.sh restart OpenEC
     * gen_oec_config.py: generate OpenEC config on a node
     * run_code_test_single.py: run single failure erasure code test
     * run_code_test_multiple.py: run multiple failure erasure code test
+    * run_testbed_single.py: run single failure testbed experiment
 
 * Files:
     * eval_settings.ini: evaluation settings file
