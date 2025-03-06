@@ -30,15 +30,15 @@ root_user_passwd=$(echo "$root_user_passwd" | xargs)
 
 # user
 user_name=$(grep '^user_name = ' "$INI_FILE" | cut -d '=' -f2)
-user_passwd=$(echo "$user_name" | xargs)
+user_name=$(echo "$user_name" | xargs)
 user_passwd=$(grep '^user_passwd = ' "$INI_FILE" | cut -d '=' -f2)
 user_passwd=$(echo "$user_passwd" | xargs)
 
 # print user
-echo "root_user_name: " $root_user_name
-echo "root_user_passwd: " $root_user_passwd
-echo "user_name: " $user_name
-echo "user_passwd: " $user_passwd
+echo "root_user_name:" $root_user_name
+echo "root_user_passwd:" $root_user_passwd
+echo "user_name: "$user_name
+echo "user_passwd:" $user_passwd
 
 # get node list
 node_ip_list=()
