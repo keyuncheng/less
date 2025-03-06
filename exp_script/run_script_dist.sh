@@ -20,6 +20,6 @@ for idx in $(seq 0 $((num_nodes-1))); do
     node_ip=${node_ip_list[$idx]}
     
     # run script with bash
-    echo ssh -n $user_name@$node_ip "cd $exp_script_dir && bash $script $args"
-    ssh -n $user_name@$node_ip "cd $exp_script_dir && bash $script $args"
+    echo ssh -n $user_name@$node_ip "cd $exp_script_dir && bash -i $script $args"
+    ssh -n $user_name@$node_ip "cd $exp_script_dir && bash -i $script $args"
 done

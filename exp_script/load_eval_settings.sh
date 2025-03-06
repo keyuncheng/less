@@ -13,6 +13,7 @@ hadoop_home_dir=$(echo $HADOOP_HOME)
 hdfs_config_dir=${proj_dir}/hdfs3.3.4-integration/conf
 INI_FILE=${exp_script_dir}/eval_settings.ini
 node_list_file=${exp_script_dir}/node_list.txt
+ip_prefix=192.168.10
 
 # print dir
 echo "proj_dir:" $proj_dir
