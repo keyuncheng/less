@@ -46,7 +46,7 @@ def main():
 
     print("log directory: {}".format(logDir))
 
-    results = {}
+    results = []
 
     for i in range(ecn):
         resultFileName = "{}/block_{}.txt".format(logDir, i)
