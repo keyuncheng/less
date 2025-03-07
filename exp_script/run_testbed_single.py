@@ -134,7 +134,7 @@ def readFileBlock(userName, agentIp, projDir, readFileName, numRuns):
         numSuccessReads += 1
         readTimeList.append(readTime)
 
-        time.sleep(1)
+        time.sleep(2)
 
     if numSuccessReads == numRuns:
         return readTimeList, True
@@ -215,7 +215,7 @@ def main():
     execCmd(cmd, exec=True)
 
     # update configurations
-    cmd = "cd {} && bash -i update_configs_dist.sh {} {}".format(common.EXP_SCRIPT_DIR, openec.block_size_byte, openec.packet_size_byte)
+    cmd = "cd {} && bash -i update_conf_dist.sh {} {}".format(common.EXP_SCRIPT_DIR, openec.block_size_byte, openec.packet_size_byte)
     execCmd(cmd, exec=True)
 
     # restart hdfs and openec
@@ -241,22 +241,22 @@ def main():
         # generate input file on the first data node
         inputFileSizeMiB = blockSizeMiB * eck
         inputFileName = "{}/{}MiB".format(common.PROJ_DIR, inputFileSizeMiB)
-        cmd = "ssh {}@{} \"test -f {} && echo yes || echo no\"".format(cluster.user_name, cluster.nodeIps[0], inputFileName)
+        cmd = "ssh {}@{} \"test -f {} && echo yes || echo no\"".format(cluster.user_name, cluster.nodeIps[cluster.agent_ids[0]], inputFileName)
         retVal, success = execCmd(cmd, exec=True)
         if "yes" in retVal:
             print("Input file exists: {}; skip generating".format(inputFileName))
         else:
             print("Input file not exists: {}; generate".format(inputFileName))
-            cmd = "ssh {}@{} \"dd if=/dev/urandom of={} bs={}MiB count={} iflag=fullblock\"".format(cluster.user_name, cluster.nodeIps[0], inputFileName, blockSizeMiB, eck)
+            cmd = "ssh {}@{} \"dd if=/dev/urandom of={} bs={}MiB count={} iflag=fullblock\"".format(cluster.user_name, cluster.nodeIps[cluster.agent_ids[0]], inputFileName, blockSizeMiB, eck)
             execCmd(cmd, exec=True)
 
         # write n stripes on the first data node
         for blockId in range(ecn):
             print("Write {}-th stripe for code {}".format(blockId, codeId))
             stripeName = "_".join(["Stripe", str(blockId), codeId])
-            cmd = "ssh {}@{} \"cd {} && ./OECClient write {} {} {} online {}\"".format(cluster.user_name, cluster.nodeIps[0], common.PROJ_DIR, inputFileName, "/" + stripeName, codeId, inputFileSizeMiB)
+            cmd = "ssh {}@{} \"cd {} && ./OECClient write {} {} {} online {}\"".format(cluster.user_name, cluster.nodeIps[cluster.agent_ids[0]], common.PROJ_DIR, inputFileName, "/" + stripeName, codeId, inputFileSizeMiB)
             execCmd(cmd, exec=True)
-            time.sleep(1)
+            time.sleep(2)
 
         # reset network bandwidth
         cmd = "cd {} && bash run_script_dist.sh clear_bw.sh".format(common.EXP_SCRIPT_DIR)
