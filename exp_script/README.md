@@ -29,6 +29,7 @@
     * run_code_test_single.py: run single failure erasure code test
     * run_code_test_multiple.py: run multiple failure erasure code test
     * run_testbed_single.py: run single failure testbed experiment
+    * extract_testbed_logs.py: extract logs from testbed experiment
 
 * Files:
     * eval_settings.ini: evaluation settings file

@@ -298,7 +298,7 @@ def main():
             # save results
             resultSaveFolder = "{}/eval_results/single/{}/bw{}Gbps_blk{}MiB_pkt{}KiB".format(common.PROJ_DIR, codeId, int(cluster.bandwidth_kbps / 1024 / 1024), blockSizeMiB, packetSizeKiB)
             Path(resultSaveFolder).mkdir(parents=True, exist_ok=True)
-            resultSavePath = resultSaveFolder + "/block_{}.json".format(blockId)
+            resultSavePath = resultSaveFolder + "/block_{}.txt".format(blockId)
             with open(resultSavePath, 'w',encoding='utf8') as f:
                 f.write(" ".join(str(item) for item in readTimeList) + "\n")
             print("results for code {} block {}: {}".format(codeId, blockId, " ".join(str(item) for item in readTimeList)))    
