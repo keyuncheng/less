@@ -91,7 +91,11 @@ def findBlockAndAddr(stripeName, blockId):
 
 def deleteBlockFile(hadoopDir, nodeIp, blockName = "*"):
     print("Start to delete block: " + nodeIp + ", block: " + blockName)
-    delete_cmd = "ssh " + nodeIp + " \"cd {}/dfs/data/current/BP-*/current/finalized/subdir0/subdir0/ && rm blk_{}\"".format(hadoopDir, blockName)
+    
+    locate_cmd = "ssh " + nodeIp + " \"find {}/dfs/data/ -name blk_{}\"".format(hadoopDir, blockName)
+    retVal, success = execCmd(locate_cmd, exec=True)
+
+    delete_cmd = "ssh " + nodeIp + " \"rm {}\"".format(retVal)
     execCmd(delete_cmd, exec=True)
 
     print("Delete block finished: " + nodeIp + ", block: " + blockName)
