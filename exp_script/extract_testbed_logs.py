@@ -66,6 +66,7 @@ def main():
     resultsUpper = results_std_t[0] + results_std_t[1]
 
     print("Results: {} {} {}".format(resultsAvg, resultsLower, resultsUpper))
-    
+    print("Raw: {}".format(results))    
+
 if __name__ == '__main__':
     main()
