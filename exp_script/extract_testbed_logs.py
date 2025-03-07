@@ -13,6 +13,7 @@ import re
 def parseArgs(cmd_args):
     arg_parser = argparse.ArgumentParser(description="extract logs from testbed experiments")
     arg_parser.add_argument("-ecn", type=int, required=True, help="ecn")
+    arg_parser.add_argument("-r", type=int, required=True, help="number of runs")
     arg_parser.add_argument("-d", type=str, required=True, help="log directory. The directory contains <ecn> .txt files for the testbed experiments")
     
     args = arg_parser.parse_args(cmd_args)
@@ -41,12 +42,13 @@ def main():
 
     # read bandwidth
     ecn = args.ecn
+    numRuns = args.r
     logDir = args.d 
     logDir = Path(logDir).resolve()
 
     print("log directory: {}".format(logDir))
 
-    results = []
+    results = [[] for i in range(numRuns)]
 
     for i in range(ecn):
         resultFileName = "{}/block_{}.txt".format(logDir, i)
@@ -56,9 +58,13 @@ def main():
                 resultRawStr += line
             # split by spaces
             blkResults = [float(item) for item in resultRawStr.strip().split(" ")]
-            avgResult = sum(blkResults) / len(blkResults) / 1000
-        
-        results.append(avgResult)
+            if len(blkResults) != numRuns:
+                print("error: insufficient number of runs for {}".format(resultFileName))
+            for j in range(numRuns):
+                results[j].append(blkResults[j])
+
+    results = [sum(item) / len(item) / 1000 for item in results]
+    avgResult = sum(results) / len(results)
 
     results_std_t = student_t_dist(results)
     resultsAvg = results_std_t[0]
