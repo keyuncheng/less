@@ -110,7 +110,7 @@ def main():
         elif metric == "arc":
             maxBlockId = codeN
         for failedNodeId in range(maxBlockId):
-            cmd = "source {} && cd {} && ./{} {} {} {} {} {} {}".format("~/.zshrc", common.BUILD_DIR, "CodeTest", codeName, codeN, codeK, codeW, DEFAULT_BLOCK_SIZE, failedNodeId)
+            cmd = "source {} && cd {} && ./{} {} {} {} {} {} {}".format("~/.zshrc", common.PROJ_DIR, "CodeTest", codeName, codeN, codeK, codeW, DEFAULT_BLOCK_SIZE, failedNodeId)
             msg, success = execCmd(cmd, printCmd=False, printOutputs=False)
 
             if "error" in msg:

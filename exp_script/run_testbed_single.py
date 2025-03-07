@@ -51,98 +51,96 @@ class DictToObject:
         for key, value in dictionary.items():
             setattr(self, key, value)
 
-def findBlockAndAddr(stripe_name, blockId):
-    oec_block_name = "/{}_oecobj_{}".format(stripe_name, blockId)
-    find_node_ip_and_block_cmd = "hdfs fsck {} -files -blocks -locations | grep Datanode".format(oec_block_name)
+def findBlockAndAddr(stripeName, blockId):
     
-    node_ip = "undefined_ip"
-    block_name = "blk_undefined"
+    nodeIp = "undefined_ip"
+    blockName = "undefined_blk"
+    oecBlockName = "/{}_oecobj_{}".format(stripeName, blockId)
     
-    find_ip_result, success = execCmd(find_node_ip_and_block_cmd, exec=True)
+    # call hdfs fsck to check the availability of the block
+    cmd = "hdfs fsck {} -files -blocks -locations | grep Datanode".format(oecBlockName)
+    findBlkResult, success = execCmd(cmd, exec=False)
+
     if not success:
-        print("Error finding block for stripe_name: {}".format(oec_block_name))
-        return node_ip, block_name
+        print("Error finding block for stripeName: {}".format(oecBlockName))
+        return nodeIp, blockName
 
     try:
-        find_ip_result.index("blk_")
+        findBlkResult.index("blk_")
     except ValueError:
-        print("oec_object {} not found in HDFS!".format(oec_block_name))
-        return node_ip, block_name
+        print("oec_object {} not found in HDFS!".format(oecBlockName))
+        return nodeIp, blockName
 
-    block_begin = find_ip_result.index("blk_") + len("blk_")
-    block_end = find_ip_result.index("len=")
-    block_meta = find_ip_result[block_begin:block_end]
-    block_split = block_meta.split("_")
-    block_name = block_split[0]
+    # find block name
+    blockBegin = findBlkResult.index("blk_") + len("blk_")
+    blockEnd = findBlkResult.index("len=")
+    blockMeta = findBlkResult[blockBegin:blockEnd]
+    blockMetaSplit = blockMeta.split("_")
+    blockName = blockMetaSplit[0]
 
-    ip_begin = find_ip_result.index("WithStorage[") + len("WithStorage[")
-    ip_end = find_ip_result.index(",DS")
-    ip_origin = find_ip_result[ip_begin:ip_end]
-    ip_split = ip_origin.split(":")
-    node_ip = ip_split[0]
-    print("found block for stripe_name: {}: {} {}".format(oec_block_name, node_ip, block_name))
-    return node_ip, block_name
+    # find node ip
+    ipBegin = findBlkResult.index("WithStorage[") + len("WithStorage[")
+    ipEnd = findBlkResult.index(",DS")
+    ipOrigin = findBlkResult[ipBegin:ipEnd]
+    ipOriginSplit = ipOrigin.split(":")
+    nodeIp = ipOriginSplit[0]
 
-def deleteBlockFile(hdfs_dir, node_ip, block_name = "*"):
-    print("Start to delete block: " + node_ip + ", block: " + block_name)
-    delete_cmd = "ssh " + node_ip + " \"cd {}/dfs/data/current/BP-*/current/finalized/subdir0/subdir0/ && rm blk_{}\"".format(hdfs_dir, block_name)
-    execCmd(delete_cmd, exec=True)
+    print("found block for stripeName: {}: {} {}".format(oecBlockName, nodeIp, blockName))
 
-    time.sleep(2)
-    print("Delete block finished: " + node_ip + ", block: " + block_name)
+    return nodeIp, blockName
+
+def deleteBlockFile(hadoopDir, nodeIp, blockName = "*"):
+    print("Start to delete block: " + nodeIp + ", block: " + blockName)
+    delete_cmd = "ssh " + nodeIp + " \"cd {}/dfs/data/current/BP-*/current/finalized/subdir0/subdir0/ && rm blk_{}\"".format(hadoopDir, blockName)
+    execCmd(delete_cmd, exec=False)
+
+    time.sleep(1)
+    print("Delete block finished: " + nodeIp + ", block: " + blockName)
 
 def checkHDFSBlocks():
-    hdfs_check_blocks_cmd="hdfs fsck -list-corruptfileblocks"
-    retVal, success = execCmd(hdfs_check_blocks_cmd, exec=True)
+    cmd = "hdfs fsck -list-corruptfileblocks"
+    retVal, success = execCmd(cmd, exec=False)
     print(retVal)
 
 
-def readFileBlock(user_name, agent_ip, oec_dir, filename, num_runs):
-    print("Start to read file {} for {} runs".format(filename, num_runs))
+def readFileBlock(userName, agentIp, projDir, readFileName, numRuns):
+    print("Start to read file {} for {} runs".format(readFileName, numRuns))
 
-    num_success_reads = 0
+    numSuccessReads = 0
 
-    read_time_list = []
-    for i in range(num_runs):
-        read_cmd = "ssh {}@{} \"cd {} && ./OECClient read {} {}\"".format(user_name, agent_ip, oec_dir, "/" + filename, filename)
-        retVal, success = execCmd(read_cmd, exec=True, timeout=300)
+    readTimeList = []
+    for i in range(numRuns):
+        read_cmd = "ssh {}@{} \"cd {} && ./OECClient read {} {}\"".format(userName, agentIp, projDir, "/" + readFileName, readFileName)
+        retVal, success = execCmd(read_cmd, exec=False, timeout=300)
 
         if not success:
-            print("Error: timeout reading object {} for the {}-th run".format(filename, i))
+            print("Error: timeout reading object {} for the {}-th run".format(readFileName, i))
             break
 
-        read_time = -1
+        readTime = -1
 
         try:
             retVal.index("duration:")
         except ValueError:
-            print("Error reading object {}".format(filename))
+            print("Error reading object {}".format(readFileName))
             continue
 
         match = re.search(r".*read.overall.duration: (\d+\.\d+|\d+)", retVal)
         if not match or not match.groups():
-            print("Error matching the results {}".format(filename))
+            print("Error matching the results {}".format(readFileName))
             continue
         # print(line)
-        read_time = float(match.group(1))
+        readTime = float(match.group(1))
 
-        # begin_p = retVal.index("duration:") + len("duration:") + 1
-        # end_p = retVal.index("\n")
-
-        # if end_p - begin_p <= 0:
-        #     print("Error: read file failed")
-        # else:
-        #     read_time = float(retVal[begin_p:end_p])
-
-        num_success_reads += 1
-        read_time_list.append(read_time)
+        numSuccessReads += 1
+        readTimeList.append(readTime)
 
         time.sleep(1)
 
-    if num_success_reads == num_runs:
-        return read_time_list, True
+    if numSuccessReads == numRuns:
+        return readTimeList, True
     else:
-        return read_time_list, False
+        return readTimeList, False
 
 
 def main():
@@ -155,11 +153,11 @@ def main():
     # Input parameters: exp_settings_file
     evalSettingsFile = args.f
 
-    # 0. Load configurations
+    # Load configurations
     configsRaw = MyConfigParser()
     configsRaw.read(evalSettingsFile)
 
-    # 0.1 parse configurations
+    # parse configurations
     configs = DictToObject({section: dict(configsRaw[section]) for section in configsRaw.sections()})
 
     # experiments
@@ -186,14 +184,14 @@ def main():
     cluster.agent_ids = list(map(int, cluster.agent_ids.split(',')))
     # load nodes
     cluster.nodeIps=[]
-    # load node_ips
+    # load node IP
     with open(cluster.node_list_file, 'r') as f:
         for line in f.readlines():
             if len(line.strip()) == 0:
                 continue
-            # format: node_ip
-            node_ip = line.strip()
-            cluster.nodeIps.append(node_ip)
+            # format: nodeIp
+            nodeIp = line.strip()
+            cluster.nodeIps.append(nodeIp)
     cluster.num_nodes=len(cluster.nodeIps)
 
     # openec configs
@@ -252,7 +250,7 @@ def main():
             cmd = "ssh {}@{} \"dd if=/dev/urandom of={} bs={}MiB count={} iflag=fullblock\"".format(cluster.user_name, cluster.nodeIps[0], inputFileName, blockSizeMiB, eck)
             execCmd(cmd, exec=False)
 
-        # write data on the first data node
+        # write n stripes on the first data node
         for blockId in range(ecn):
             print("Write {}-th stripe for code {}".format(blockId, codeId))
             stripeName = "_".join(["Stripe", str(blockId), codeId])
@@ -260,15 +258,14 @@ def main():
             execCmd(cmd, exec=False)
             # time.sleep(1)
 
-        # clear network bandwidth
+        # reset network bandwidth
         cmd = "cd {} && bash run_script_dist.sh clear_bw.sh".format(common.EXP_SCRIPT_DIR)
         execCmd(cmd, exec=False)
 
-        # set network bandwidth
         cmd = "cd {} && bash run_script_dist.sh set_bw.sh {}".format(common.EXP_SCRIPT_DIR, cluster.bandwidth_kbps)
         execCmd(cmd, exec=False)
 
-        # TBD: resume here
+        # repair the i-th block in the i-th stripe
         for blockId in range(ecn):
             print("Start evaluating code {}, repair block {}".format(codeId, blockId))
 
@@ -299,7 +296,7 @@ def main():
             resultSavePath = resultSaveFolder + "block_{}.json".format(blockId)
             with open(resultSavePath, 'w',encoding='utf8') as f:
                 f.write(" ".join(str(item) for item in readTimeList) + "\n")
-            print("result for code {} block {}: {}".format(codeId, blockId, " ".join(str(item) for item in readTimeList)))    
+            print("results for code {} block {}: {}".format(codeId, blockId, " ".join(str(item) for item in readTimeList)))    
             print("save {} result in {}".format(codeId, resultSavePath))
 
             # increment blockId
