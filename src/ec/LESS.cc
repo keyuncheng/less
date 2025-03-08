@@ -287,6 +287,9 @@ LESS::LESS(int n, int k, int w, int opt, vector<string> param)
             }
             _ES2encodeMatrixMap[esId] = encodeMatrix4SubStripe;
 
+            delete[] from;
+            delete[] to;
+
             // // print encoding matrix for extended sub-stripe
             // cout << "LESS::LESS() Encoding matrix for extended sub-stripe " << esId << ":" << endl;
             // jerasure_print_matrix(_ES2encodeMatrixMap[esId], _m, as_k, _fw);
@@ -950,6 +953,10 @@ ECDAG *LESS::decodeMultipleWithSubStripes(vector<int> &availSymbols, vector<int>
         vector<int> coef(decodeMatrix4SubStripe + i * as_k, decodeMatrix4SubStripe + (i + 1) * as_k);
         ecdag->Join(code, data, coef);
     }
+
+    delete[] from;
+    delete[] to;
+    delete[] decodeMatrix4SubStripe;
 
     return ecdag;
 }
