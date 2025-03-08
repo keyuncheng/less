@@ -14,6 +14,9 @@ import re
 # import common configs
 import common
 
+# add bandwidth range
+bwList = [2097152, 5242880, 10485760]
+
 
 def parseArgs(cmd_args):
     argParser = argparse.ArgumentParser(description="run testbed experiment for single block failure repair") 
@@ -226,8 +229,8 @@ def main():
     cmd = "cd {} && bash restart_oec.sh".format(common.EXP_SCRIPT_DIR)
     execCmd(cmd, exec=True)
 
-    time.sleep(1)
-    
+    time.sleep(1) 
+  
     for code_params in exp.codes:
         codeName = code_params[0]
         ecn = int(code_params[1])
@@ -262,13 +265,6 @@ def main():
             execCmd(cmd, exec=True)
             time.sleep(10)
 
-        # reset network bandwidth
-        cmd = "cd {} && bash run_script_dist.sh clear_bw.sh".format(common.EXP_SCRIPT_DIR)
-        execCmd(cmd, exec=True)
-
-        cmd = "cd {} && bash run_script_dist.sh set_bw.sh {}".format(common.EXP_SCRIPT_DIR, cluster.bandwidth_kbps)
-        execCmd(cmd, exec=True)
-
         # repair the i-th block in the i-th stripe
         blockId = 0
         while blockId < ecn:
@@ -286,23 +282,36 @@ def main():
             # check if the block is corrupted
             checkHDFSBlocks()
 
-            # degraded read file
-            readFileName = "{}_{}".format(stripeName, blockId)
-            readTimeList, success = readFileBlock(cluster.user_name, nodeIp, common.PROJ_DIR, readFileName, exp.num_runs)
+            # loop bandwidth list
+            for clusterBW in bwList:
+                # reset network bandwidth
+                cmd = "cd {} && bash run_script_dist.sh clear_bw.sh".format(common.EXP_SCRIPT_DIR)
+                execCmd(cmd, exec=True)
+    
+                cmd = "cd {} && bash run_script_dist.sh set_bw.sh {}".format(common.EXP_SCRIPT_DIR, clusterBW)
+                execCmd(cmd, exec=True)
 
-            # # if not success, retry experiment for this block
-            # if not success:
-            #     print("Warning: read file block failed, retry experiment for block {}\n\n".format(blockId))
-            #     continue
+                # degraded read file
+                readFileName = "{}_{}".format(stripeName, blockId)
+                readTimeList, success = readFileBlock(cluster.user_name, nodeIp, common.PROJ_DIR, readFileName, exp.num_runs)
+    
+                # # if not success, retry experiment for this block
+                # if not success:
+                #     print("Warning: read file block failed, retry experiment for block {}\n\n".format(blockId))
+                #     continue
+    
+                # save results
+                resultSaveFolder = "{}/eval_results/single/{}/bw{}Gbps_blk{}MiB_pkt{}KiB".format(common.PROJ_DIR, codeId, int(clusterBW / 1024 / 1024), blockSizeMiB, packetSizeKiB)
+                Path(resultSaveFolder).mkdir(parents=True, exist_ok=True)
+                resultSavePath = resultSaveFolder + "/block_{}.txt".format(blockId)
+                with open(resultSavePath, 'w',encoding='utf8') as f:
+                    f.write(" ".join(str(item) for item in readTimeList) + "\n")
+                print("results for code {} block {}: {}".format(codeId, blockId, " ".join(str(item) for item in readTimeList)))    
+                print("save {} result in {}".format(codeId, resultSavePath))
 
-            # save results
-            resultSaveFolder = "{}/eval_results/single/{}/bw{}Gbps_blk{}MiB_pkt{}KiB".format(common.PROJ_DIR, codeId, int(cluster.bandwidth_kbps / 1024 / 1024), blockSizeMiB, packetSizeKiB)
-            Path(resultSaveFolder).mkdir(parents=True, exist_ok=True)
-            resultSavePath = resultSaveFolder + "/block_{}.txt".format(blockId)
-            with open(resultSavePath, 'w',encoding='utf8') as f:
-                f.write(" ".join(str(item) for item in readTimeList) + "\n")
-            print("results for code {} block {}: {}".format(codeId, blockId, " ".join(str(item) for item in readTimeList)))    
-            print("save {} result in {}".format(codeId, resultSavePath))
+                # clear network bandwidth
+                cmd = "cd {} && bash run_script_dist.sh clear_bw.sh".format(common.EXP_SCRIPT_DIR)
+                execCmd(cmd, exec=True)
 
             # increment blockId
             blockId += 1
@@ -310,10 +319,6 @@ def main():
             print("Finished evaluation for code {}, block {}\n".format(codeId, blockId))
 
         print("Finished evaluating code {}\n".format(codeId))
-
-        # clear network bandwidth
-        cmd = "cd {} && bash run_script_dist.sh clear_bw.sh".format(common.EXP_SCRIPT_DIR)
-        execCmd(cmd, exec=True)
 
     end_exp_time = time.time()
     print("Evaluation finished, used time: {} (s)".format(str(end_exp_time - startExpTime)))
