@@ -36,5 +36,6 @@ os.system("redis-cli flushall")
 
 for slave in slavelist:
     print "stop slave on " + slave
+    os.system("ssh " + slave + " \"killall OECClient \"")
     os.system("ssh " + slave + " \"killall OECAgent \"")
     os.system("ssh " + slave + " \"redis-cli flushall \"")
