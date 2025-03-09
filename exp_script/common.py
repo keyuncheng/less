@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+HOME_DIR = str(Path.home())
 EXP_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJ_DIR = os.path.dirname(EXP_SCRIPT_DIR)
 BUILD_DIR = os.path.join(PROJ_DIR, "build")
