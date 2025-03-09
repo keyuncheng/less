@@ -10,12 +10,13 @@ import numpy as np
 import math
 import configparser
 import re
+from scipy.stats import t
 
 # import common configs
 import common
 
 numRuns = 10
-codeParams=[("RSCode, 9, 6, 1"),("RSCode, 14, 10, 1"),("RSCode, 16, 12, 1"),("LESS, 9, 6, 2"),("LESS, 9, 6, 3"),("LESS, 14, 10, 2"),("LESS, 14, 10, 3"),("LESS, 14, 10, 4"),("LESS, 16, 12, 2"),("LESS, 16, 12, 3"),("LESS, 16, 12, 4")]
+codeParams=[("RSCode", 9, 6, 1),("RSCode", 14, 10, 1),("RSCode", 16, 12, 1),("LESS", 9, 6, 2),("LESS", 9, 6, 3),("LESS", 14, 10, 2),("LESS", 14, 10, 3),("LESS", 14, 10, 4),("LESS", 16, 12, 2),("LESS", 16, 12, 3),("LESS", 16, 12, 4)]
 evalBlockSizeBytes=[131072, 262144, 524288, 1048576, 2097152]
 
 RAW_LIB_DIR=common.HOME_DIR + "/array-code"
@@ -35,7 +36,7 @@ def execCmd(cmd, exec=True, timeout=None):
             except Exception as e:
                 print(e)
                 p.terminate()
-        print(msg)
+        # print(msg)
     return msg, success
 
 def student_t_dist(samples_arr, ci=0.95):
@@ -75,12 +76,12 @@ def main():
             encodingThroughputList = []
             encodingTimeList = []
             for i in range(numRuns):
-                cmd = "cd {} && ./CodeTest {} {} {} {}".format(common.RAW_LIB_BUILD_DIR, codeName, str(codeN), str(codeK), str(codeAlpha), blockSizeBytes)
+                cmd = "cd {} && ./CodeTest {} {} {} {} {}".format(RAW_LIB_BUILD_DIR, codeName, codeN, codeK, codeAlpha, blockSizeBytes)
                 retVal, success = execCmd(cmd, exec=True)
                 # extract Encoding throughput from retVal
                 # format: Encoding throughput: 1464.843750 MiB/s, time:
                 # 0.000004
-                resultToken = "Encoding throughput: "
+                resultToken = "Encoding throughput:"
                 for line in retVal.split("\n"):
                     line = line.strip()
                     if line.startswith(resultToken):
@@ -102,7 +103,7 @@ def main():
             resultsUpper = results_std_t[0] + results_std_t[1]
 
             print("Results for {}: {} {} {}".format(codeParam, resultsAvg, resultsLower, resultsUpper))
-
+            print("Raw results: {}".format(encodingThroughputList))
             time.sleep(1)
 
     end_exp_time = time.time()
