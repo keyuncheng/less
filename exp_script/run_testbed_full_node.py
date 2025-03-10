@@ -121,6 +121,9 @@ def main():
     print(vars(cluster))
     print(vars(openec))
 
+    cmd = "pkill -9 -f \"get_full_node_recovery_time.sh\""
+    execCmd(cmd, exec=True)
+
     # clear network bandwidth
     cmd = "cd {} && bash run_script_dist.sh clear_bw.sh".format(common.EXP_SCRIPT_DIR)
     execCmd(cmd, exec=True)
@@ -181,6 +184,7 @@ def main():
             print("Remove all blocks on the 2nd data node")
             nodeIp = cluster.nodeIps[cluster.agent_ids[1]]
             cmd = "ssh {}@{} \"rm -rf {}/dfs/data/*\"".format(cluster.user_name, nodeIp, common.HADOOP_DIR)
+            execCmd(cmd, exec=True)
             time.sleep(30)
 
             # check if the block is corrupted
@@ -194,22 +198,41 @@ def main():
             execCmd(cmd, exec=True)
 
             # monitor the coordinator output and fetch the recovery time
-            cmd = "bash get_full_node_recovery_time.sh"
-            retVal, success = execCmd(cmd, exec=True, timeout=300)
+            monitorCmd = "bash get_full_node_recovery_time.sh"
+            msg = ""
+            timeout = 300
+            try:
+                proc = subprocess.Popen(f"{monitorCmd}", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-            # full node repair
-            print("Start full node repair")
-            cmd = "ssh {}@{} \"cd {} && ./OECClient startRepair".format(cluster.user_name, nodeIp, common.PROJ_DIR)
-            execCmd(cmd, exec=True)
+                # full node repair
+                print("Start full node repair")
+                cmd = "ssh {}@{} \"cd {} && ./OECClient startRepair\"".format(cluster.user_name, nodeIp, common.PROJ_DIR)
+                execCmd(cmd, exec=True)
 
-
-            # save results
-            resultSaveFolder = "{}/eval_results/full-node/{}/bw{}Gbps_blk{}MiB_pkt{}KiB".format(common.PROJ_DIR, codeId, int(cluster.bandwidth_kbps / 1024 / 1024), blockSizeMiB, packetSizeKiB)
-            Path(resultSaveFolder).mkdir(parents=True, exist_ok=True)
-            resultSavePath = resultSaveFolder + "/recovery_run_{}.txt".format(runId)
-            with open(resultSavePath, 'w',encoding='utf8') as f:
-                f.write(retVal + "\n")   
-            print("save {} result in {}".format(codeId, resultSavePath))
+                # Check periodically if the background process is still
+                # running
+                pid = proc.pid
+                print("waiting for the results, pid: {}".format(pid))
+                
+                # Once the process has finished, read the output
+                retStr, stderr = proc.communicate()
+                msg = retStr.decode().strip()
+                success = True
+            except Exception as e:
+                print(f"Error executing command: {e}")
+                msg = str(e)
+                success = False
+            
+            if success:
+                # save results
+                resultSaveFolder = "{}/eval_results/full-node/{}/bw{}Gbps_blk{}MiB_pkt{}KiB".format(common.PROJ_DIR, codeId, int(cluster.bandwidth_kbps / 1024 / 1024), blockSizeMiB, packetSizeKiB)
+                Path(resultSaveFolder).mkdir(parents=True, exist_ok=True)
+                resultSavePath = resultSaveFolder + "/recovery_run_{}.txt".format(runId)
+                with open(resultSavePath, 'w',encoding='utf8') as f:
+                    f.write(msg + "\n")   
+                print("save {} result in {}".format(codeId, resultSavePath))
+            else:
+                print("Error waiting for the full-node recovery result: {}".format(msg))
 
             # clear network bandwidth
             cmd = "cd {} && bash run_script_dist.sh clear_bw.sh".format(common.EXP_SCRIPT_DIR)
@@ -224,5 +247,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 

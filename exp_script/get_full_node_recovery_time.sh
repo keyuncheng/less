@@ -6,7 +6,9 @@ source "./load_eval_settings.sh"
 LOG_FILE=${proj_dir}/coor_output
 START_PATTERN="StripeStore::scanning repair queue"
 END_PATTERN="Coordinator::repair for "
-TARGET_COUNT=20
+full_node_num_stripes=$(grep '^full_node_num_stripes = ' "$INI_FILE" | cut -d '=' -f2)
+full_node_num_stripes=$(echo "$full_node_num_stripes" | xargs)
+TARGET_COUNT=$((full_node_num_stripes))
 COUNT=0
 START_TIME=""
 END_TIME=""
