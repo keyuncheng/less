@@ -182,8 +182,9 @@ def main():
 
             # remove all blocks on the 2nd data node
             print("Remove all blocks on the 2nd data node")
+            # nodeIp = cluster.nodeIps[cluster.agent_ids[1]]
             nodeIp = cluster.nodeIps[cluster.agent_ids[1]]
-            cmd = "ssh {}@{} \"rm -rf {}/dfs/data/*\"".format(cluster.user_name, nodeIp, common.HADOOP_DIR)
+            cmd = "ssh {}@{} \"rm -rf {}/dfs/data/current/BP*/current/finalized/*/*/blk_*\"".format(cluster.user_name, nodeIp, common.HADOOP_DIR)
             execCmd(cmd, exec=True)
             time.sleep(30)
 
