@@ -19,6 +19,7 @@
 #include "../protocol/AGCommand.hh"
 #include "../protocol/CoorCommand.hh"
 #include "../util/RedisUtil.hh"
+#include "../util/ThreadPool.hh"
 
 class OECWorker {
   private: 

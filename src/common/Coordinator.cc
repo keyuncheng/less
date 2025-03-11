@@ -1,4 +1,5 @@
 #include "Coordinator.hh"
+#include "../util/ThreadPool.hh"
 
 Coordinator::Coordinator(Config *conf, StripeStore *ss) : _conf(conf)
 {
@@ -24,6 +25,8 @@ Coordinator::~Coordinator()
 
 void Coordinator::doProcess()
 {
+  ThreadPool threadPool(100);
+
   redisReply *rReply;
   while (true)
   {
@@ -44,58 +47,65 @@ void Coordinator::doProcess()
       char *reqStr = rReply->element[1]->str;
       CoorCommand *coorCmd = new CoorCommand(reqStr);
       coorCmd->dump();
-      int type = coorCmd->getType();
-      switch (type)
-      {
-      case 0:
-        registerFile(coorCmd);
-        break;
-      case 1:
-        getLocation(coorCmd);
-        break;
-      case 2:
-        finalizeFile(coorCmd);
-        break;
-      case 3:
-        getFileMeta(coorCmd);
-        break;
-      case 4:
-        offlineEnc(coorCmd);
-        break;
-      case 5:
-        offlineDegradedInst(coorCmd);
-        break;
-      case 6:
-        reportLost(coorCmd);
-        break;
-      case 7:
-        setECStatus(coorCmd);
-        break;
-      case 8:
-        repairReqFromSS(coorCmd);
-        break;
-      case 9:
-        onlineDegradedInst(coorCmd);
-        break;
-      case 11:
-        reportRepaired(coorCmd);
-        break;
-      case 12:
-        coorBenchmark(coorCmd);
-        break;
+      // int type = coorCmd->getType();
+      
+      // Dispatch command processing in a new thread
+      // std::thread([this, coorCmd]() {  
+      threadPool.enqueueTask([this, coorCmd]() {  
+          switch (coorCmd->getType())
+          {
+          case 0:
+            registerFile(coorCmd);
+            break;
+          case 1:
+            getLocation(coorCmd);
+            break;
+          case 2:
+            finalizeFile(coorCmd);
+            break;
+          case 3:
+            getFileMeta(coorCmd);
+            break;
+          case 4:
+            offlineEnc(coorCmd);
+            break;
+          case 5:
+            offlineDegradedInst(coorCmd);
+            break;
+          case 6:
+            reportLost(coorCmd);
+            break;
+          case 7:
+            setECStatus(coorCmd);
+            break;
+          case 8:
+            repairReqFromSS(coorCmd);
+            break;
+          case 9:
+            onlineDegradedInst(coorCmd);
+            break;
+          case 11:
+            reportRepaired(coorCmd);
+            break;
+          case 12:
+            coorBenchmark(coorCmd);
+            break;
 
-      // Keyun: for ET
-      case 21:
-        getHDFSMeta(coorCmd);
-        break;
-      case 22:
-        offlineDegradedET(coorCmd);
-        break;
+          // Keyun: for ET
+          case 21:
+            getHDFSMeta(coorCmd);
+            break;
+          case 22:
+            offlineDegradedET(coorCmd);
+            break;
 
-      default:
-        break;
-      }
-      delete coorCmd;
+          default:
+            cerr << "Unknown CoorCommand type: " << coorCmd->getType() << endl;
+	    break;
+          }
+          delete coorCmd;
+       });  // Detach the thread so it runs independently
+       // }).detach();  // Detach the thread so it runs independently
     }
     // free reply object
     freeReplyObject(rReply);
@@ -1581,6 +1591,7 @@ void Coordinator::repairReqFromSS(CoorCommand *coorCmd)
   SSEntry *ssentry = _stripeStore->getEntryFromObj(objname);
   int redundancy = ssentry->getType();
 
+  printf("redundancy: %d\n", redundancy);
   if (redundancy == 0)
   {
     // return recoveryOnline(objname);
@@ -1904,16 +1915,26 @@ void Coordinator::recoveryOnlineHCIP(string lostobj)
     string objname = stripeobjs[i];
     SSEntry *curssentry = _stripeStore->getEntryFromObj(objname);
     unsigned int loc;
-    if (integrity[i] == 1)
-      loc = curssentry->getLocOfObj(objname);
-    else
-      loc = 0;
+    // if (integrity[i] == 1)
+    //   loc = curssentry->getLocOfObj(objname);
+    // else
+    //   loc = 0;
+    // 
+    loc = curssentry->getLocOfObj(objname); 
+    
     pair<string, unsigned int> curpair = make_pair(objname, loc);
 
     objlist.insert(make_pair(sid, curpair));
     sid2ip.insert(make_pair(sid, loc));
     stripeips.push_back(loc);
+    
+    printf("sid2ip: %d, %s\n", sid, RedisUtil::ip2Str(loc).c_str());
   }
+
+  printf("failed idx: %d, IP: %s\n", lostidx, RedisUtil::ip2Str(sid2ip[lostidx]).c_str());
+  
+
+
 
   // we need to update the location for lostobj
   vector<vector<int>> group;
@@ -1927,48 +1948,52 @@ void Coordinator::recoveryOnlineHCIP(string lostobj)
       idx2group.insert(make_pair(idx, item));
     }
   }
-  // relocate
-  vector<unsigned int> placedIps;
-  vector<int> placedIdx;
-  for (int i = 0; i < ecn; i++)
-  {
-    if (integrity[i] == 1)
-    {
-      placedIdx.push_back(i);
-      placedIps.push_back(stripeips[i]);
-    }
-    else
-    {
-      vector<int> colocWith;
-      if (idx2group.find(i) != idx2group.end())
-        colocWith = idx2group[i];
-      vector<unsigned int> candidates = getCandidates(placedIps, placedIdx, colocWith);
-      // we need to remove remaining ips in candidates
-      for (int j = i + 1; j < ecn; j++)
-      {
-        if (integrity[j] == 1)
-        {
-          unsigned int toremove = stripeips[j];
-          vector<unsigned int>::iterator position = find(candidates.begin(), candidates.end(), toremove);
-          if (position != candidates.end())
-            candidates.erase(position);
-        }
-      }
-      // now we choose a loc from candidates
-      unsigned int curip = chooseFromCandidates(candidates, _conf->_repair_policy, "repair");
-      // update placedIps, placedIdx
-      placedIps.push_back(curip);
-      placedIdx.push_back(i);
-      // update sid2ip, objlist, stripeips
-      sid2ip[i] = curip;
-      objlist[i].second = curip;
-      stripeips[i] = curip;
-      // we need to update the location in SSEntry
-      string objname = objlist[i].first;
-      SSEntry *curssentry = _stripeStore->getEntryFromObj(objname);
-      curssentry->updateObjLoc(objname, curip);
-    }
-  }
+
+  // Keyun (fix): no need to relocate
+
+  // // relocate
+  // vector<unsigned int> placedIps;
+  // vector<int> placedIdx;
+  // for (int i = 0; i < ecn; i++)
+  // {
+  //   if (integrity[i] == 1)
+  //   {
+  //     placedIdx.push_back(i);
+  //     placedIps.push_back(stripeips[i]);
+  //   }
+  //   else
+  //   {
+  //     vector<int> colocWith;
+  //     if (idx2group.find(i) != idx2group.end())
+  //       colocWith = idx2group[i];
+  //     vector<unsigned int> candidates = getCandidates(placedIps, placedIdx, colocWith);
+  //     // we need to remove remaining ips in candidates
+  //     for (int j = i + 1; j < ecn; j++)
+  //     {
+  //       if (integrity[j] == 1)
+  //       {
+  //         unsigned int toremove = stripeips[j];
+  //         vector<unsigned int>::iterator position = find(candidates.begin(), candidates.end(), toremove);
+  //         if (position != candidates.end())
+  //           candidates.erase(position);
+  //       }
+  //     }
+  //     // now we choose a loc from candidates
+  //     unsigned int curip = chooseFromCandidates(candidates, _conf->_repair_policy, "repair");
+
+  //     // update placedIps, placedIdx
+  //     placedIps.push_back(curip);
+  //     placedIdx.push_back(i);
+  //     // update sid2ip, objlist, stripeips
+  //     sid2ip[i] = curip;
+  //     objlist[i].second = curip;
+  //     stripeips[i] = curip;
+  //     // we need to update the location in SSEntry
+  //     string objname = objlist[i].first;
+  //     SSEntry *curssentry = _stripeStore->getEntryFromObj(objname);
+  //     curssentry->updateObjLoc(objname, curip);
+  //   }
+  // }
 
   vector<int> toposeq = ecdag->toposort();
 
@@ -1990,6 +2015,13 @@ void Coordinator::recoveryOnlineHCIP(string lostobj)
     {
       curip = sid2ip[lostidx];
     }
+
+    // put all intermediate symbols to the failed node
+    if (find(availcidx.begin(), availcidx.end(), cidx) == availcidx.end())
+    {
+      curip = sid2ip[lostidx];
+    }
+
     printf("after: fixed IP: %d, %s\n", cidx, RedisUtil::ip2Str(curip).c_str());
 
     cid2ip.insert(make_pair(cidx, curip));
@@ -2356,7 +2388,7 @@ void Coordinator::recoveryOfflineHCIP(string lostobj)
     {
       integrity.push_back(1);
     }
-  }
+  }  
 
   // prepare availcidx and toreccidx
   int ecn = ecpolicy->getN();
@@ -2404,8 +2436,12 @@ void Coordinator::recoveryOfflineHCIP(string lostobj)
     objlist.insert(make_pair(sid, curpair));
     sid2ip.insert(make_pair(sid, loc));
     stripeips.push_back(loc);
+
+    printf("sid2ip: %d, %s\n", sid, RedisUtil::ip2Str(loc).c_str());
   }
 
+  printf("failed idx: %d, IP: %s\n", lostidx, RedisUtil::ip2Str(sid2ip[lostidx]).c_str());
+  
   // we need to update the location for lostobj
   vector<vector<int>> group;
   ec->Place(group);
@@ -2481,6 +2517,9 @@ void Coordinator::recoveryOfflineHCIP(string lostobj)
     {
       curip = sid2ip[lostidx];
     }
+    
+    curip = sid2ip[lostidx];
+    
     printf("after: fixed IP: %d, %s\n", cidx, RedisUtil::ip2Str(curip).c_str());
 
     cid2ip.insert(make_pair(cidx, curip));

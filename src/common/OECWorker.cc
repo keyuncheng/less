@@ -28,6 +28,8 @@ OECWorker::~OECWorker() {
 }
 
 void OECWorker::doProcess() {
+  ThreadPool threadPool(100);
+      
   redisReply* rReply;
   while (true) {
     cout << "OECWorker::doProcess" << endl;  
@@ -46,23 +48,44 @@ void OECWorker::doProcess() {
       int type = agCmd->getType();
       cout << "OECWorker::doProcess() receive a request of type " << type << endl;
       //agCmd->dump();
-      switch (type) {
-        case 0: clientWrite(agCmd); break;
-        case 1: clientRead(agCmd); break;
-        case 2: readDisk(agCmd); break;
-        case 3: fetchCompute(agCmd); break;
-        case 5: persist(agCmd); break;
-//        case 6: readDiskList(agCmd); break;
-        case 7: readFetchCompute(agCmd); break;
+      
+      // switch (type) {
+      //   case 0: clientWrite(agCmd); break;
+      //   case 1: clientRead(agCmd); break;
+      //   case 2: readDisk(agCmd); break;
+      //   case 3: fetchCompute(agCmd); break;
+      //   case 5: persist(agCmd); break;
+//    //     case 6: readDiskList(agCmd); break;
+      //   case 7: readFetchCompute(agCmd); break;
 
-        // Keyun: for Shortening
-        case 12: readDiskForShortening(agCmd); break;
-        default:break;
-      }
-//      gettimeofday(&time2, NULL);
-//      cout << "OECWorker::doProcess().duration = " << RedisUtil::duration(time1, time2) << endl;
-      // delete agCmd
-      delete agCmd;
+      //   // Keyun: for Shortening
+      //   case 12: readDiskForShortening(agCmd); break;
+      //   default:break;
+      // }
+//    //   gettimeofday(&time2, NULL);
+//    //   cout << "OECWorker::doProcess().duration = " << RedisUtil::duration(time1, time2) << endl;
+      // // delete agCmd
+      // delete agCmd;
+      //
+
+      // Dispatch command processing in a new thread
+      // std::thread([this, agCmd]() {
+      threadPool.enqueueTask([this, agCmd]() {
+        switch (agCmd->getType()) {
+          case 0: clientWrite(agCmd); break;
+          case 1: clientRead(agCmd); break;
+          case 2: readDisk(agCmd); break;
+          case 3: fetchCompute(agCmd); break;
+          case 5: persist(agCmd); break;
+          case 7: readFetchCompute(agCmd); break;
+          case 12: readDiskForShortening(agCmd); break;
+          default:
+            cerr << "Unknown AGCommand type: " << agCmd->getType() << endl;
+            break;
+        }
+        delete agCmd;  // Clean up inside the thread
+      });
+      // }).detach();  
     }
     // free reply object
     freeReplyObject(rReply); 
@@ -1202,6 +1225,7 @@ void OECWorker::fetchWorker(BlockingQueue<OECDataPacket*>* fetchQueue,
     gettimeofday(&t1, NULL);
     redisGetReply(fetchCtx, (void**)&rReply);
     gettimeofday(&t2, NULL);
+
     //if (i == 0) cout << "OECWorker::fetchWorker.fetch first t = " << RedisUtil::duration(t1, t2) << endl;
     char* content = rReply->element[1]->str;
     OECDataPacket* pkt = new OECDataPacket(content);
@@ -1209,6 +1233,7 @@ void OECWorker::fetchWorker(BlockingQueue<OECDataPacket*>* fetchQueue,
     fetchQueue->push(pkt);
     freeReplyObject(rReply);
   }
+
   gettimeofday(&time2, NULL);
   cout << "OECWorker::fetchWorker.duration: " << RedisUtil::duration(time1, time2) << " for " << keybase << endl;
   redisFree(fetchCtx);
