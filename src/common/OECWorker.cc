@@ -28,7 +28,7 @@ OECWorker::~OECWorker() {
 }
 
 void OECWorker::doProcess() {
-  ThreadPool threadPool(100);
+  ThreadPool threadPool(500);
       
   redisReply* rReply;
   while (true) {

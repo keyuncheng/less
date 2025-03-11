@@ -1591,7 +1591,6 @@ void Coordinator::repairReqFromSS(CoorCommand *coorCmd)
   SSEntry *ssentry = _stripeStore->getEntryFromObj(objname);
   int redundancy = ssentry->getType();
 
-  printf("redundancy: %d\n", redundancy);
   if (redundancy == 0)
   {
     // return recoveryOnline(objname);
@@ -1927,14 +1926,7 @@ void Coordinator::recoveryOnlineHCIP(string lostobj)
     objlist.insert(make_pair(sid, curpair));
     sid2ip.insert(make_pair(sid, loc));
     stripeips.push_back(loc);
-    
-    printf("sid2ip: %d, %s\n", sid, RedisUtil::ip2Str(loc).c_str());
   }
-
-  printf("failed idx: %d, IP: %s\n", lostidx, RedisUtil::ip2Str(sid2ip[lostidx]).c_str());
-  
-
-
 
   // we need to update the location for lostobj
   vector<vector<int>> group;
@@ -2006,8 +1998,7 @@ void Coordinator::recoveryOnlineHCIP(string lostobj)
     vector<unsigned int> candidates = node->candidateIps(sid2ip, cid2ip, _conf->_agentsIPs, ecn, eck, ecw, locality, lostidx);
     // choose from candidates
     unsigned int curip = chooseFromCandidates(candidates, _conf->_repair_policy, "repair");
-
-    printf("before fixed IP: %d, %s\n", cidx, RedisUtil::ip2Str(curip).c_str());
+    // printf("before fixed IP: %d, %s\n", cidx, RedisUtil::ip2Str(curip).c_str());
 
     // Keyun: it's not a symbol to recover, fix the ip to the failed node
     if (find(toreccidx.begin(), toreccidx.end(), cidx) == toreccidx.end() &&
@@ -2016,13 +2007,13 @@ void Coordinator::recoveryOnlineHCIP(string lostobj)
       curip = sid2ip[lostidx];
     }
 
-    // put all intermediate symbols to the failed node
+    // force non-data symbols to store in the failed node 
     if (find(availcidx.begin(), availcidx.end(), cidx) == availcidx.end())
     {
       curip = sid2ip[lostidx];
     }
 
-    printf("after: fixed IP: %d, %s\n", cidx, RedisUtil::ip2Str(curip).c_str());
+    // printf("after: fixed IP: %d, %s\n", cidx, RedisUtil::ip2Str(curip).c_str());
 
     cid2ip.insert(make_pair(cidx, curip));
   }
@@ -2427,20 +2418,18 @@ void Coordinator::recoveryOfflineHCIP(string lostobj)
     string objname = stripeobjs[i];
     SSEntry *curssentry = _stripeStore->getEntryFromObj(objname);
     unsigned int loc;
-    if (integrity[i] == 1)
-      loc = curssentry->getLocOfObj(objname);
-    else
-      loc = 0;
+    // if (integrity[i] == 1)
+    //   loc = curssentry->getLocOfObj(objname);
+    // else
+    //   loc = 0;
+    loc = curssentry->getLocOfObj(objname);
     pair<string, unsigned int> curpair = make_pair(objname, loc);
 
     objlist.insert(make_pair(sid, curpair));
     sid2ip.insert(make_pair(sid, loc));
     stripeips.push_back(loc);
 
-    printf("sid2ip: %d, %s\n", sid, RedisUtil::ip2Str(loc).c_str());
   }
-
-  printf("failed idx: %d, IP: %s\n", lostidx, RedisUtil::ip2Str(sid2ip[lostidx]).c_str());
   
   // we need to update the location for lostobj
   vector<vector<int>> group;
@@ -2508,19 +2497,18 @@ void Coordinator::recoveryOfflineHCIP(string lostobj)
     vector<unsigned int> candidates = node->candidateIps(sid2ip, cid2ip, _conf->_agentsIPs, ecn, eck, ecw, locality, lostidx);
     // choose from candidates
     unsigned int curip = chooseFromCandidates(candidates, _conf->_repair_policy, "repair");
-
-    printf("before fixed IP: %d, %s\n", cidx, RedisUtil::ip2Str(curip).c_str());
-
+    
     // Keyun: it's not a symbol to recover, fix the ip to the failed node
     if (find(toreccidx.begin(), toreccidx.end(), cidx) == toreccidx.end() &&
         find(availcidx.begin(), availcidx.end(), cidx) == availcidx.end())
     {
       curip = sid2ip[lostidx];
     }
-    
-    curip = sid2ip[lostidx];
-    
-    printf("after: fixed IP: %d, %s\n", cidx, RedisUtil::ip2Str(curip).c_str());
+    // force non-data symbols to store in the failed node 
+    if (find(availcidx.begin(), availcidx.end(), cidx) == availcidx.end())
+    {
+      curip = sid2ip[lostidx];
+    }
 
     cid2ip.insert(make_pair(cidx, curip));
   }
