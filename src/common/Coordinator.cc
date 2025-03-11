@@ -1914,12 +1914,10 @@ void Coordinator::recoveryOnlineHCIP(string lostobj)
     string objname = stripeobjs[i];
     SSEntry *curssentry = _stripeStore->getEntryFromObj(objname);
     unsigned int loc;
-    // if (integrity[i] == 1)
-    //   loc = curssentry->getLocOfObj(objname);
-    // else
-    //   loc = 0;
-    // 
-    loc = curssentry->getLocOfObj(objname); 
+    if (integrity[i] == 1)
+      loc = curssentry->getLocOfObj(objname);
+    else
+      loc = 0;
     
     pair<string, unsigned int> curpair = make_pair(objname, loc);
 
@@ -1943,49 +1941,49 @@ void Coordinator::recoveryOnlineHCIP(string lostobj)
 
   // Keyun (fix): no need to relocate
 
-  // // relocate
-  // vector<unsigned int> placedIps;
-  // vector<int> placedIdx;
-  // for (int i = 0; i < ecn; i++)
-  // {
-  //   if (integrity[i] == 1)
-  //   {
-  //     placedIdx.push_back(i);
-  //     placedIps.push_back(stripeips[i]);
-  //   }
-  //   else
-  //   {
-  //     vector<int> colocWith;
-  //     if (idx2group.find(i) != idx2group.end())
-  //       colocWith = idx2group[i];
-  //     vector<unsigned int> candidates = getCandidates(placedIps, placedIdx, colocWith);
-  //     // we need to remove remaining ips in candidates
-  //     for (int j = i + 1; j < ecn; j++)
-  //     {
-  //       if (integrity[j] == 1)
-  //       {
-  //         unsigned int toremove = stripeips[j];
-  //         vector<unsigned int>::iterator position = find(candidates.begin(), candidates.end(), toremove);
-  //         if (position != candidates.end())
-  //           candidates.erase(position);
-  //       }
-  //     }
-  //     // now we choose a loc from candidates
-  //     unsigned int curip = chooseFromCandidates(candidates, _conf->_repair_policy, "repair");
+  // relocate
+  vector<unsigned int> placedIps;
+  vector<int> placedIdx;
+  for (int i = 0; i < ecn; i++)
+  {
+    if (integrity[i] == 1)
+    {
+      placedIdx.push_back(i);
+      placedIps.push_back(stripeips[i]);
+    }
+    else
+    {
+      vector<int> colocWith;
+      if (idx2group.find(i) != idx2group.end())
+        colocWith = idx2group[i];
+      vector<unsigned int> candidates = getCandidates(placedIps, placedIdx, colocWith);
+      // we need to remove remaining ips in candidates
+      for (int j = i + 1; j < ecn; j++)
+      {
+        if (integrity[j] == 1)
+        {
+          unsigned int toremove = stripeips[j];
+          vector<unsigned int>::iterator position = find(candidates.begin(), candidates.end(), toremove);
+          if (position != candidates.end())
+            candidates.erase(position);
+        }
+      }
+      // now we choose a loc from candidates
+      unsigned int curip = chooseFromCandidates(candidates, _conf->_repair_policy, "repair");
 
-  //     // update placedIps, placedIdx
-  //     placedIps.push_back(curip);
-  //     placedIdx.push_back(i);
-  //     // update sid2ip, objlist, stripeips
-  //     sid2ip[i] = curip;
-  //     objlist[i].second = curip;
-  //     stripeips[i] = curip;
-  //     // we need to update the location in SSEntry
-  //     string objname = objlist[i].first;
-  //     SSEntry *curssentry = _stripeStore->getEntryFromObj(objname);
-  //     curssentry->updateObjLoc(objname, curip);
-  //   }
-  // }
+      // update placedIps, placedIdx
+      placedIps.push_back(curip);
+      placedIdx.push_back(i);
+      // update sid2ip, objlist, stripeips
+      sid2ip[i] = curip;
+      objlist[i].second = curip;
+      stripeips[i] = curip;
+      // we need to update the location in SSEntry
+      string objname = objlist[i].first;
+      SSEntry *curssentry = _stripeStore->getEntryFromObj(objname);
+      curssentry->updateObjLoc(objname, curip);
+    }
+  }
 
   vector<int> toposeq = ecdag->toposort();
 
@@ -2000,18 +1998,18 @@ void Coordinator::recoveryOnlineHCIP(string lostobj)
     unsigned int curip = chooseFromCandidates(candidates, _conf->_repair_policy, "repair");
     // printf("before fixed IP: %d, %s\n", cidx, RedisUtil::ip2Str(curip).c_str());
 
-    // Keyun: it's not a symbol to recover, fix the ip to the failed node
-    if (find(toreccidx.begin(), toreccidx.end(), cidx) == toreccidx.end() &&
-        find(availcidx.begin(), availcidx.end(), cidx) == availcidx.end())
-    {
-      curip = sid2ip[lostidx];
-    }
+    // // Keyun: it's not a symbol to recover, fix the ip to the failed node
+    // if (find(toreccidx.begin(), toreccidx.end(), cidx) == toreccidx.end() &&
+    //     find(availcidx.begin(), availcidx.end(), cidx) == availcidx.end())
+    // {
+    //   curip = sid2ip[lostidx];
+    // }
 
-    // force non-data symbols to store in the failed node 
-    if (find(availcidx.begin(), availcidx.end(), cidx) == availcidx.end())
-    {
-      curip = sid2ip[lostidx];
-    }
+    // // force non-data symbols to store in the failed node 
+    // if (find(availcidx.begin(), availcidx.end(), cidx) == availcidx.end())
+    // {
+    //   curip = sid2ip[lostidx];
+    // }
 
     // printf("after: fixed IP: %d, %s\n", cidx, RedisUtil::ip2Str(curip).c_str());
 
