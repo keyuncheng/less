@@ -148,7 +148,8 @@ int main(int argc, char **argv)
     Config *conf = new Config(confpath);
     // send coorCmd to coordinator
     CoorCommand *cmd = new CoorCommand();
-    cmd->buildType7(7, 1, "repair");
+    // cmd->buildType7(7, 1, "repair");
+    cmd->buildType7(7, 1, "fullNodeRecovery");
     cmd->sendTo(conf->_coorIp);
     delete cmd;
     delete conf;

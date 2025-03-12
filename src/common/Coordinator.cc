@@ -852,7 +852,44 @@ void Coordinator::setECStatus(CoorCommand *coorCmd)
 {
   int op = coorCmd->getOp();
   string ectype = coorCmd->getECType();
-  _stripeStore->setECStatus(op, ectype);
+  if (ectype == "fullNodeRecovery")
+  {
+    // Workflow: we sequentially repair each failed block for all lost blocks
+    // at the moment. We do not parallelize the repair of multiple stripes.
+
+    // Step 1: retrieve failed blocks from the stripestore
+    vector<string> failedObjNames = _stripeStore->getLostObjs();
+    cout << "Coordinator::setECStatus get full-node repair request for " << failedObjNames.size() << " objects: " << endl;
+    for (auto objname : failedObjNames)
+    {
+      cout << "object: " << objname << endl;
+    }
+
+    for (auto objname : failedObjNames)
+    {
+      // Step 2: repair each failed block
+      cout << "Coordinator::setECStatus start to repair object: " << objname << endl;
+
+      // figure out ec type
+      SSEntry *ssentry = _stripeStore->getEntryFromObj(objname);
+      int redundancy = ssentry->getType();
+
+      if (redundancy == 0)
+      {
+        // return recoveryOnline(objname);
+        return recoveryOnlineHCIP(objname);
+      }
+      else
+      {
+        return recoveryOfflineHCIP(objname);
+        // return recoveryOffline(objname);
+      }
+    }
+  }
+  else
+  {
+    _stripeStore->setECStatus(op, ectype);
+  }
 }
 
 void Coordinator::getFileMeta(CoorCommand *coorCmd)
@@ -1954,11 +1991,11 @@ void Coordinator::recoveryOnlineHCIP(string lostobj)
 
     if (find(toreccidx.begin(), toreccidx.end(), cidx) != toreccidx.end())
     {
-        // printf("\n\n %s before: fixed IP: %d, %s\n\n", lostobj.c_str(), cidx, RedisUtil::ip2Str(cid2ip[cidx]).c_str());
-        curip = sid2ip[lostidx];
-        cid2ip[cidx] = sid2ip[lostidx];
-	node->setIp(sid2ip[lostidx]);
-        // printf("\n\n%s after: fixed IP: %d, %s\n\n\n", lostobj.c_str(), cidx, RedisUtil::ip2Str(cid2ip[cidx]).c_str());
+      // printf("\n\n %s before: fixed IP: %d, %s\n\n", lostobj.c_str(), cidx, RedisUtil::ip2Str(cid2ip[cidx]).c_str());
+      curip = sid2ip[lostidx];
+      cid2ip[cidx] = sid2ip[lostidx];
+      node->setIp(sid2ip[lostidx]);
+      // printf("\n\n%s after: fixed IP: %d, %s\n\n\n", lostobj.c_str(), cidx, RedisUtil::ip2Str(cid2ip[cidx]).c_str());
     }
 
     if (node->getCoefmap().size() > 1)
@@ -2434,9 +2471,9 @@ void Coordinator::recoveryOfflineHCIP(string lostobj)
       }
       // now we choose a loc from candidates
       unsigned int curip = chooseFromCandidates(candidates, _conf->_repair_policy, "repair");
-      
+
       // FIX: no need to relocate
-      curip = sid2ip[lostidx]; 
+      curip = sid2ip[lostidx];
 
       // update placedIps, placedIdx
       placedIps.push_back(curip);
@@ -2517,9 +2554,9 @@ void Coordinator::recoveryOfflineHCIP(string lostobj)
           break;
         }
       }
-    } 
-    
-   //  printf("after: fixed IP: %d, %s\n", cidx, RedisUtil::ip2Str(curip).c_str());
+    }
+
+    //  printf("after: fixed IP: %d, %s\n", cidx, RedisUtil::ip2Str(curip).c_str());
   }
 
   // 6. parse for oec
@@ -2900,4 +2937,3 @@ void Coordinator::offlineDegradedET(CoorCommand *coorCmd)
 
   ecpool->unlock();
 }
-
