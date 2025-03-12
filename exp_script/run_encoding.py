@@ -75,35 +75,82 @@ def main():
 
             encodingThroughputList = []
             encodingTimeList = []
-            for i in range(numRuns):
-                cmd = "cd {} && ./CodeTest {} {} {} {} {}".format(RAW_LIB_BUILD_DIR, codeName, codeN, codeK, codeAlpha, blockSizeBytes)
-                retVal, success = execCmd(cmd, exec=True)
-                # extract Encoding throughput from retVal
-                # format: Encoding throughput: 1464.843750 MiB/s, time:
-                # 0.000004
-                resultToken = "Encoding throughput:"
-                for line in retVal.split("\n"):
-                    line = line.strip()
-                    if line.startswith(resultToken):
-                        match = re.search(r"{} (\d+\.\d+) MiB/s, time: (\d+\.\d+)".format(resultToken), line)
-                        if not match:
-                            print("Error: cannot find result from line: {}".format(line))
-                            # print(msg)
-                            exit()
-                        encodingThroughput = match.group(1)
-                        encodingTime = match.group(2)
-                        encodingThroughputList.append(float(encodingThroughput))
-                        encodingTimeList.append(float(encodingTime))
-                        break
-            
-            # calculate average throughput
-            results_std_t = student_t_dist(encodingThroughputList)
-            resultsAvg = results_std_t[0]
-            resultsLower = results_std_t[0] - results_std_t[1]
-            resultsUpper = results_std_t[0] + results_std_t[1]
 
-            print("Results for {}: {} {} {}".format(codeParam, resultsAvg, resultsLower, resultsUpper))
+            decodingThroughputList = []
+            decodingTimeList = []
+
+            for i in range(numRuns):
+                runEncThptList = []
+                runEncTimeList = []
+                runDecThptList = []
+                runDecTimeList = []
+                for blockId in range(int(codeN)):
+                    cmd = "cd {} && ./CodeTest {} {} {} {} {} {}".format(RAW_LIB_BUILD_DIR, codeName, codeN, codeK, codeAlpha, blockSizeBytes, blockId)
+                    retVal, success = execCmd(cmd, exec=True)
+                    # extract Encoding throughput from retVal
+                    # format: Encoding throughput: 1464.843750 MiB/s, time:
+                    # 0.000004
+                    resultToken = "Encoding throughput:"
+                    for line in retVal.split("\n"):
+                        line = line.strip()
+                        if line.startswith(resultToken):
+                            match = re.search(r"{} (\d+\.\d+) MiB/s, time: (\d+\.\d+)".format(resultToken), line)
+                            if not match:
+                                print("Error: cannot find result from line: {}".format(line))
+                                # print(msg)
+                                exit()
+                            encodingThroughput = match.group(1)
+                            encodingTime = match.group(2)
+                            runEncThptList.append(float(encodingThroughput))
+                            runEncTimeList.append(float(encodingTime))
+                            break
+
+                    # extract Decoding throughput from retVal
+                    # format: Decoding throughput: 1464.843750 MiB/s, time:
+                    resultToken = "Decoding throughput:"
+                    for line in retVal.split("\n"):
+                        line = line.strip()
+                        if line.startswith(resultToken):
+                            match = re.search(r"{} (\d+\.\d+) MiB/s, time: (\d+\.\d+)".format(resultToken), line)
+                            if not match:
+                                print("Error: cannot find result from line: {}".format(line))
+                                # print(msg)
+                                exit()
+                            decodingThroughput = match.group(1)
+                            decodingTime = match.group(2)
+                            runDecThptList.append(float(decodingThroughput))
+                            runDecTimeList.append(float(decodingTime))
+                            break
+                
+                # average over all blocks
+                avgEncThpt = sum(runEncThptList) / len(runEncThptList)
+                avgEncTime = sum(runEncTimeList) / len(runEncTimeList)
+                encodingThroughputList.append(avgEncThpt)
+                encodingTimeList.append(avgEncTime)
+
+                # average over all blocks
+                avgDecThpt = sum(runDecThptList) / len(runDecThptList)
+                avgDecTime = sum(runDecTimeList) / len(runDecTimeList)
+                decodingThroughputList.append(avgDecThpt)
+                decodingTimeList.append(avgDecTime)
+            
+            # calculate average encoding throughput
+            enc_results_std_t = student_t_dist(encodingThroughputList)
+            encResultsAvg = enc_results_std_t[0]
+            encResultsLower = enc_results_std_t[0] - enc_results_std_t[1]
+            encResultsUpper = enc_results_std_t[0] + enc_results_std_t[1]
+
+            print("Encoding results for {}: {} {} {}".format(codeParam, encResultsAvg, encResultsLower, encResultsUpper))
             print("Raw results: {}".format(encodingThroughputList))
+
+            # calculate average decoding throughput
+            dec_results_std_t = student_t_dist(decodingThroughputList)
+            decResultsAvg = dec_results_std_t[0]
+            decResultsLower = dec_results_std_t[0] - dec_results_std_t[1]
+            decResultsUpper = dec_results_std_t[0] + dec_results_std_t[1]
+
+            print("Decoding results for {}: {} {} {}".format(codeParam, decResultsAvg, decResultsLower, decResultsUpper))
+            print("Raw results: {}".format(decodingThroughputList))
             time.sleep(1)
 
     end_exp_time = time.time()
