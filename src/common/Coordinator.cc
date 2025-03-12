@@ -877,11 +877,11 @@ void Coordinator::setECStatus(CoorCommand *coorCmd)
       if (redundancy == 0)
       {
         // return recoveryOnline(objname);
-        return recoveryOnlineHCIP(objname);
+        recoveryOnlineHCIP(objname);
       }
       else
       {
-        return recoveryOfflineHCIP(objname);
+        recoveryOfflineHCIP(objname);
         // return recoveryOffline(objname);
       }
     }
