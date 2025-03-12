@@ -48,10 +48,11 @@ void Coordinator::doProcess()
       CoorCommand *coorCmd = new CoorCommand(reqStr);
       coorCmd->dump();
       // int type = coorCmd->getType();
-      
+
       // Dispatch command processing in a new thread
-      // std::thread([this, coorCmd]() {  
-      threadPool.enqueueTask([this, coorCmd]() {  
+      // std::thread([this, coorCmd]() {
+      threadPool.enqueueTask([this, coorCmd]()
+                             {  
           switch (coorCmd->getType())
           {
           case 0:
@@ -103,9 +104,8 @@ void Coordinator::doProcess()
             cerr << "Unknown CoorCommand type: " << coorCmd->getType() << endl;
 	    break;
           }
-          delete coorCmd;
-       });  // Detach the thread so it runs independently
-       // }).detach();  // Detach the thread so it runs independently
+          delete coorCmd; }); // Detach the thread so it runs independently
+                                   // }).detach();  // Detach the thread so it runs independently
     }
     // free reply object
     freeReplyObject(rReply);
@@ -1173,77 +1173,6 @@ void Coordinator::optOfflineDegrade(string lostobj, unsigned int clientIp, Offli
     }
   }
 
-  // hack (start): special handling for AzureLRCTradeoff: overwride integrity and availacidx
-  
-  string ecClassName = ecpolicy->getClassName();
-  if (ecClassName.find("AzureLRCFlat") != std::string::npos || ecClassName.find("AzureLRCTradeoff") != std::string::npos || ecClassName.find("AzureLRCOptR") != std::string::npos || ecClassName.find("AzureLRCOptM") != std::string::npos)
-  {
-    // check if it's maintenance
-    vector<string> params = ecpolicy->getParams();
-    int approach = 0;
-    if (ecClassName.find("AzureLRCTradeoff") != std::string::npos) {
-      approach = atoi(params[3].c_str());
-    } else if (ecClassName.find("AzureLRCOptR") != std::string::npos || ecClassName.find("AzureLRCOptM") != std::string::npos) {
-      approach = atoi(params[2].c_str());
-    }
-    if (approach == 1)
-    {
-      printf("special handling for maintenance for %s (%u, %u)\n", ecClassName.c_str(), ec->_n, ec->_k);
-
-      vector<vector<int>> group;
-      ec->Place(group);
-
-      // get failed group id
-      int failed_gp_id = -1;
-
-      for (int gp_id = 0; gp_id < group.size(); gp_id++)
-      {
-        for (auto bid : group[gp_id])
-        {
-          if (bid == lostidx)
-          {
-            failed_gp_id = gp_id;
-            break;
-          }
-        }
-
-        if (failed_gp_id != -1)
-        {
-          break;
-        }
-      }
-
-      // update integrity and availcidx
-      integrity.clear();
-      availcidx.clear();
-
-      for (int i = 0; i < ecn; i++)
-      {
-        if (i == lostidx)
-        {
-          integrity.push_back(0);
-        }
-        else
-        {
-          // if we cannot find the block in the failed group
-          if (find(group[failed_gp_id].begin(), group[failed_gp_id].end(), i) == group[failed_gp_id].end())
-          {
-            integrity.push_back(1);
-            for (int j = 0; j < ecw; j++)
-            {
-              availcidx.push_back(i * ecw + j);
-            }
-          }
-          else
-          {
-            integrity.push_back(0);
-          }
-        }
-      }
-    }
-  }
-  // hack (end)
-
   // create ecdag
   ECDAG *ecdag = ec->Decode(availcidx, toreccidx);
   ecdag->reconstruct(opt);
@@ -1673,10 +1602,11 @@ void Coordinator::recoveryOnline(string lostobj)
     string objname = stripeobjs[i];
     SSEntry *curssentry = _stripeStore->getEntryFromObj(objname);
     unsigned int loc;
-    if (integrity[i] == 1)
-      loc = curssentry->getLocOfObj(objname);
-    else
-      loc = 0;
+    // if (integrity[i] == 1)
+    //   loc = curssentry->getLocOfObj(objname);
+    // else
+    //   loc = 0;
+    loc = curssentry->getLocOfObj(objname);
     pair<string, unsigned int> curpair = make_pair(objname, loc);
 
     objlist.insert(make_pair(sid, curpair));
@@ -1914,11 +1844,12 @@ void Coordinator::recoveryOnlineHCIP(string lostobj)
     string objname = stripeobjs[i];
     SSEntry *curssentry = _stripeStore->getEntryFromObj(objname);
     unsigned int loc;
-    if (integrity[i] == 1)
-      loc = curssentry->getLocOfObj(objname);
-    else
-      loc = 0;
-    
+    // if (integrity[i] == 1)
+    //   loc = curssentry->getLocOfObj(objname);
+    // else
+    //   loc = 0;
+
+    loc = curssentry->getLocOfObj(objname);
     pair<string, unsigned int> curpair = make_pair(objname, loc);
 
     objlist.insert(make_pair(sid, curpair));
@@ -1938,8 +1869,6 @@ void Coordinator::recoveryOnlineHCIP(string lostobj)
       idx2group.insert(make_pair(idx, item));
     }
   }
-
-  // Keyun (fix): no need to relocate
 
   // relocate
   vector<unsigned int> placedIps;
@@ -1971,6 +1900,9 @@ void Coordinator::recoveryOnlineHCIP(string lostobj)
       // now we choose a loc from candidates
       unsigned int curip = chooseFromCandidates(candidates, _conf->_repair_policy, "repair");
 
+      // FIX: no need to relocate the failed block
+      curip = sid2ip[lostidx];
+
       // update placedIps, placedIdx
       placedIps.push_back(curip);
       placedIdx.push_back(i);
@@ -1996,23 +1928,6 @@ void Coordinator::recoveryOnlineHCIP(string lostobj)
     vector<unsigned int> candidates = node->candidateIps(sid2ip, cid2ip, _conf->_agentsIPs, ecn, eck, ecw, locality, lostidx);
     // choose from candidates
     unsigned int curip = chooseFromCandidates(candidates, _conf->_repair_policy, "repair");
-    // printf("before fixed IP: %d, %s\n", cidx, RedisUtil::ip2Str(curip).c_str());
-
-    // // Keyun: it's not a symbol to recover, fix the ip to the failed node
-    // if (find(toreccidx.begin(), toreccidx.end(), cidx) == toreccidx.end() &&
-    //     find(availcidx.begin(), availcidx.end(), cidx) == availcidx.end())
-    // {
-    //   curip = sid2ip[lostidx];
-    // }
-
-    // // force non-data symbols to store in the failed node 
-    // if (find(availcidx.begin(), availcidx.end(), cidx) == availcidx.end())
-    // {
-    //   curip = sid2ip[lostidx];
-    // }
-
-    // printf("after: fixed IP: %d, %s\n", cidx, RedisUtil::ip2Str(curip).c_str());
-
     cid2ip.insert(make_pair(cidx, curip));
   }
 
@@ -2022,6 +1937,55 @@ void Coordinator::recoveryOnlineHCIP(string lostobj)
 
   // optimize
   ecdag->optimize2(opt, cid2ip, _conf->_ip2Rack, ecn, eck, ecw, sid2ip, _conf->_agentsIPs, locality);
+
+  // Fix: recover lost symbols directly in the "failed" node
+  for (int i = 0; i < toposeq.size(); i++)
+  {
+    int cidx = toposeq[i];
+    ECNode *node = ecdag->getNode(cidx);
+    unsigned int curip = cid2ip[cidx];
+
+    // // Keyun: it's not a symbol to recover, fix the ip to the failed node
+    // if (find(toreccidx.begin(), toreccidx.end(), cidx) == toreccidx.end() &&
+    //     find(availcidx.begin(), availcidx.end(), cidx) == availcidx.end())
+    // {
+    //   curip = sid2ip[lostidx];
+    // }
+
+    if (find(toreccidx.begin(), toreccidx.end(), cidx) != toreccidx.end())
+    {
+        // printf("\n\n %s before: fixed IP: %d, %s\n\n", lostobj.c_str(), cidx, RedisUtil::ip2Str(cid2ip[cidx]).c_str());
+        curip = sid2ip[lostidx];
+        cid2ip[cidx] = sid2ip[lostidx];
+	node->setIp(sid2ip[lostidx]);
+        // printf("\n\n%s after: fixed IP: %d, %s\n\n\n", lostobj.c_str(), cidx, RedisUtil::ip2Str(cid2ip[cidx]).c_str());
+    }
+
+    if (node->getCoefmap().size() > 1)
+    {
+      // printf("Found bind node %d to relocate\n", cidx);
+      // // print coef map
+      // printf("Coefmap: ");
+      // for (auto &item : node->getCoefmap())
+      // {
+      //   printf("%d, ", item.first);
+      // }
+      // printf("\n");
+
+      for (auto &item : node->getCoefmap())
+      {
+        // check whether the ECNode to compute is in toreccidx
+        if (find(toreccidx.begin(), toreccidx.end(), item.first) != toreccidx.end())
+        {
+          curip = sid2ip[lostidx];
+          cid2ip[cidx] = sid2ip[lostidx];
+          node->setIp(sid2ip[lostidx]);
+          break;
+        }
+      }
+    }
+    // printf("after: fixed IP: %d, %s\n", cidx, RedisUtil::ip2Str(curip).c_str());
+  }
 
   // 6. parse for oec
   // vector<AGCommand*> agCmds = ecdag->parseForOEC(cid2ip, stripename, ecn, eck, ecw, pktnum, objlist);
@@ -2377,7 +2341,7 @@ void Coordinator::recoveryOfflineHCIP(string lostobj)
     {
       integrity.push_back(1);
     }
-  }  
+  }
 
   // prepare availcidx and toreccidx
   int ecn = ecpolicy->getN();
@@ -2416,19 +2380,18 @@ void Coordinator::recoveryOfflineHCIP(string lostobj)
     string objname = stripeobjs[i];
     SSEntry *curssentry = _stripeStore->getEntryFromObj(objname);
     unsigned int loc;
-    // if (integrity[i] == 1)
-    //   loc = curssentry->getLocOfObj(objname);
-    // else
-    //   loc = 0;
-    loc = curssentry->getLocOfObj(objname);
+    if (integrity[i] == 1)
+      loc = curssentry->getLocOfObj(objname);
+    else
+      loc = 0;
+
     pair<string, unsigned int> curpair = make_pair(objname, loc);
 
     objlist.insert(make_pair(sid, curpair));
     sid2ip.insert(make_pair(sid, loc));
     stripeips.push_back(loc);
-
   }
-  
+
   // we need to update the location for lostobj
   vector<vector<int>> group;
   ec->Place(group);
@@ -2441,6 +2404,7 @@ void Coordinator::recoveryOfflineHCIP(string lostobj)
       idx2group.insert(make_pair(idx, item));
     }
   }
+
   // relocate
   vector<unsigned int> placedIps;
   vector<int> placedIdx;
@@ -2470,6 +2434,10 @@ void Coordinator::recoveryOfflineHCIP(string lostobj)
       }
       // now we choose a loc from candidates
       unsigned int curip = chooseFromCandidates(candidates, _conf->_repair_policy, "repair");
+      
+      // FIX: no need to relocate
+      curip = sid2ip[lostidx]; 
+
       // update placedIps, placedIdx
       placedIps.push_back(curip);
       placedIdx.push_back(i);
@@ -2495,19 +2463,6 @@ void Coordinator::recoveryOfflineHCIP(string lostobj)
     vector<unsigned int> candidates = node->candidateIps(sid2ip, cid2ip, _conf->_agentsIPs, ecn, eck, ecw, locality, lostidx);
     // choose from candidates
     unsigned int curip = chooseFromCandidates(candidates, _conf->_repair_policy, "repair");
-    
-    // Keyun: it's not a symbol to recover, fix the ip to the failed node
-    if (find(toreccidx.begin(), toreccidx.end(), cidx) == toreccidx.end() &&
-        find(availcidx.begin(), availcidx.end(), cidx) == availcidx.end())
-    {
-      curip = sid2ip[lostidx];
-    }
-    // force non-data symbols to store in the failed node 
-    if (find(availcidx.begin(), availcidx.end(), cidx) == availcidx.end())
-    {
-      curip = sid2ip[lostidx];
-    }
-
     cid2ip.insert(make_pair(cidx, curip));
   }
 
@@ -2517,6 +2472,55 @@ void Coordinator::recoveryOfflineHCIP(string lostobj)
 
   // optimize
   ecdag->optimize2(opt, cid2ip, _conf->_ip2Rack, ecn, eck, ecw, sid2ip, _conf->_agentsIPs, locality);
+
+  // Fix: recover lost symbols directly in the "failed" node
+  for (int i = 0; i < toposeq.size(); i++)
+  {
+    int cidx = toposeq[i];
+    ECNode *node = ecdag->getNode(cidx);
+    unsigned int curip = cid2ip[cidx];
+    // printf("before fixed IP: %d, %s\n", cidx, RedisUtil::ip2Str(curip).c_str());
+
+    // // Keyun: it's not a symbol to recover, fix the ip to the failed node
+    // if (find(toreccidx.begin(), toreccidx.end(), cidx) == toreccidx.end() &&
+    //     find(availcidx.begin(), availcidx.end(), cidx) == availcidx.end())
+    // {
+    //   curip = sid2ip[lostidx];
+    // }
+
+    if (find(toreccidx.begin(), toreccidx.end(), cidx) != toreccidx.end())
+    {
+      curip = sid2ip[lostidx];
+      cid2ip[cidx] = sid2ip[lostidx];
+      node->setIp(sid2ip[lostidx]);
+    }
+
+    if (node->getCoefmap().size() > 1)
+    {
+      // printf("Found bind node %d to relocate\n", cidx);
+      // // print coef map
+      // printf("Coefmap: ");
+      // for (auto &item : node->getCoefmap())
+      // {
+      //   printf("%d, ", item.first);
+      // }
+      // printf("\n");
+
+      for (auto &item : node->getCoefmap())
+      {
+        // check whether the ECNode to compute is in toreccidx
+        if (find(toreccidx.begin(), toreccidx.end(), item.first) != toreccidx.end())
+        {
+          curip = sid2ip[lostidx];
+          cid2ip[cidx] = sid2ip[lostidx];
+          node->setIp(sid2ip[lostidx]);
+          break;
+        }
+      }
+    } 
+    
+   //  printf("after: fixed IP: %d, %s\n", cidx, RedisUtil::ip2Str(curip).c_str());
+  }
 
   // 6. parse for oec
   // vector<AGCommand*> agCmds = ecdag->parseForOEC(cid2ip, stripename, ecn, eck, ecw, pktnum, objlist);
@@ -2896,3 +2900,4 @@ void Coordinator::offlineDegradedET(CoorCommand *coorCmd)
 
   ecpool->unlock();
 }
+

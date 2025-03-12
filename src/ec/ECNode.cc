@@ -378,6 +378,10 @@ unsigned int ECNode::getIp() {
   return _ip;
 }
 
+void ECNode::setIp(unsigned int ip) {
+  _ip = ip;
+}
+
 AGCommand* ECNode::parseAGCommand(string stripename,
                                   int n, int k, int w,
                                   int num,

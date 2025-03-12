@@ -56,6 +56,7 @@ class ECNode {
     void setConstraint(bool cons, int id);
 
     unsigned int getIp();
+    void setIp(unsigned int ip);
 
     // parseForClient compute tasks
     void parseForClient(vector<ECTask*>& tasks);
