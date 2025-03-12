@@ -953,8 +953,10 @@ ECDAG *LESS::decodeMultipleWithSubStripes(vector<int> &availSymbols, vector<int>
         vector<int> coef(decodeMatrix4SubStripe + i * as_k, decodeMatrix4SubStripe + (i + 1) * as_k);
         ecdag->Join(code, data, coef);
     }
-    int vidx = ecdag->BindX(codes);
-    ecdag->BindY(vidx, data[0]);
+    // int vidx = ecdag->BindX(codes);
+    // ecdag->BindY(vidx, data[0]);
+
+    ecdag->BindX(codes);
 
     delete[] from;
     delete[] to;
