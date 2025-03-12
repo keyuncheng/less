@@ -378,6 +378,8 @@ vector<string> StripeStore::getLostObjs()
   _lostMap.clear();
 
   _lockLostMap.unlock();
+
+  return toret;
 }
 
 void StripeStore::scanRepair()
