@@ -877,7 +877,8 @@ void Coordinator::setECStatus(CoorCommand *coorCmd)
       if (redundancy == 0)
       {
         // return recoveryOnline(objname);
-        recoveryOnlineHCIP(objname);
+        // recoveryOnlineHCIP(objname);
+        recoveryOnlineObject(objname);
       }
       else
       {
@@ -2936,4 +2937,208 @@ void Coordinator::offlineDegradedET(CoorCommand *coorCmd)
   //  free(instruction);
 
   ecpool->unlock();
+}
+
+// Keyun: add object recovery and persist
+void Coordinator::recoveryOnlineObject(string lostObjName)
+{
+  // we need ecdag, toposort and parseForOEC, which requires cid2ip, stripename, n,k,w,pktnum,objlist
+  // we also need to create persist command to persist repaired block
+  // after we create commands, we send these commands to corresponding Agenst
+
+  // 0. given lostobj, find SSEntry and figure out opt version
+  SSEntry *ssentry = _stripeStore->getEntryFromObj(lostObjName);
+  string ecid = ssentry->getEcidpool();
+  ECPolicy *ecpolicy = _conf->_ecPolicyMap[ecid];
+
+  // 1. create ec instances
+  ECBase *ec = ecpolicy->createECClass();
+
+  // 2, get stripeobjs for lostobj to figure out lostidx
+  string filename = ssentry->getFilename();
+  string stripename = filename;
+  vector<string> stripeobjs = ssentry->getObjlist();
+  int lostidx;
+  vector<int> integrity;
+  for (int i = 0; i < stripeobjs.size(); i++)
+  {
+    if (lostObjName == stripeobjs[i])
+    {
+      integrity.push_back(0);
+      lostidx = i;
+    }
+    else
+    {
+      integrity.push_back(1);
+    }
+  }
+  unsigned int lostAgentIP = ssentry->getLocOfObj(lostObjName);
+  int objSizeMB = ssentry->getFilesizeMB();
+
+  // prepare availcidx and toreccidx
+  int ecn = ecpolicy->getN();
+  int eck = ecpolicy->getK();
+  int ecw = ecpolicy->getW();
+  bool locality = ecpolicy->getLocality();
+  int opt = ecpolicy->getOpt();
+  vector<int> availcidx;
+  vector<int> toreccidx;
+  for (int i = 0; i < ecn; i++)
+  {
+    if (i == lostidx)
+    {
+      for (int j = 0; j < ecw; j++)
+        toreccidx.push_back(i * ecw + j);
+    }
+    else
+    {
+      for (int j = 0; j < ecw; j++)
+        availcidx.push_back(i * ecw + j);
+    }
+  }
+
+  if (opt >= 0)
+  {
+    cout << "Unsupported optimization, return" << endl;
+    return;
+  }
+
+  // Notify the lost Agent to prepare for object recovery
+  cout << "Notify the lost Agent to prepare for object recovery" << endl;
+  unsigned long long objsizeBytes = (unsigned long long)objSizeMB * 1048576;
+  int pktnum = objsizeBytes / (unsigned long long)_conf->_pktSize;
+  AGCommand *agCmd = new AGCommand();
+  agCmd->buildType13ForObjOnlineRecovery(13, lostAgentIP, lostObjName, objSizeMB, pktnum);
+  agCmd->dump();
+  agCmd->sendTo(lostAgentIP);
+  delete agCmd;
+
+  // create ecdag
+  ECDAG *ecdag = ec->Decode(availcidx, toreccidx);
+  vector<int> toposeq = ecdag->toposort();
+
+  // obtain information for source objs
+  vector<int> leaves = ecdag->getLeaves();
+  vector<int> loadidx;
+  vector<string> loadobjs;
+  unordered_map<int, vector<int>> sid2Cids;
+  for (int i = 0; i < leaves.size(); i++)
+  {
+    int sidx = leaves[i] / ecw;
+
+    // Keyun (for shortening): skip loading shortening symbols
+    if (sidx >= ecn)
+    {
+      continue;
+    }
+
+    if (sid2Cids.find(sidx) == sid2Cids.end())
+    {
+      vector<int> curlist = {leaves[i]};
+      sid2Cids.insert(make_pair(sidx, curlist));
+      loadidx.push_back(sidx);
+      // loadobjs.push_back(stripeobjs[sidx]);
+      loadobjs.push_back(stripeobjs[sidx + lostidx * ecn]);
+    }
+    else
+    {
+      sid2Cids[sidx].push_back(leaves[i]);
+    }
+  }
+  // obtain computetask
+  vector<ECTask *> computetasks;
+  for (int i = 0; i < toposeq.size(); i++)
+  {
+    ECNode *curnode = ecdag->getNode(toposeq[i]);
+    curnode->parseForClient(computetasks);
+  }
+  for (int i = 0; i < computetasks.size(); i++)
+    computetasks[i]->dump();
+
+  char *instruction = (char *)calloc(1048576, sizeof(char));
+  int offset = 0;
+
+  // we need to return
+  // |opt|lostidx|ecn|eck|ecw|loadn|loadidx-objname|cidnum|cidxs|..|computen|computetask|..|
+  int tmpopt = htonl(opt);
+  memcpy(instruction + offset, (char *)&tmpopt, 4);
+  offset += 4;
+  int tmplostidx = htonl(lostidx);
+  memcpy(instruction + offset, (char *)&tmplostidx, 4);
+  offset += 4;
+  int tmpecn = htonl(ecn);
+  memcpy(instruction + offset, (char *)&tmpecn, 4);
+  offset += 4;
+  int tmpeck = htonl(eck);
+  memcpy(instruction + offset, (char *)&tmpeck, 4);
+  offset += 4;
+  int tmpecw = htonl(ecw);
+  memcpy(instruction + offset, (char *)&tmpecw, 4);
+  offset += 4;
+  int tmploadn = htonl(loadidx.size());
+  memcpy(instruction + offset, (char *)&tmploadn, 4);
+  offset += 4;
+  for (int i = 0; i < loadidx.size(); i++)
+  {
+    int tmpidx = htonl(loadidx[i]);
+    memcpy(instruction + offset, (char *)&tmpidx, 4);
+    offset += 4;
+    // objname
+    string loadobjname = loadobjs[i];
+    int len = loadobjname.size();
+    int tmpobjlen = htonl(len);
+    memcpy(instruction + offset, (char *)&tmpobjlen, 4);
+    offset += 4;
+    memcpy(instruction + offset, loadobjname.c_str(), len);
+    offset += len;
+    vector<int> curlist = sid2Cids[loadidx[i]];
+    // num cids
+    int numcids = curlist.size();
+    int tmpnumcids = htonl(numcids);
+    memcpy(instruction + offset, (char *)&tmpnumcids, 4);
+    offset += 4;
+    for (int j = 0; j < numcids; j++)
+    {
+      int curcid = curlist[j];
+      int tmpcid = htonl(curcid);
+      memcpy(instruction + offset, (char *)&tmpcid, 4);
+      offset += 4;
+    }
+  }
+  int computen = computetasks.size();
+  int tmpcomputen = htonl(computen);
+  memcpy(instruction + offset, (char *)&tmpcomputen, 4);
+  offset += 4;
+
+  // first send out info without compute
+  string key = "offlinedegradedinst:" + lostObjName;
+  redisContext *sendCtx = RedisUtil::createContext(lostAgentIP);
+  redisReply *rReply = (redisReply *)redisCommand(sendCtx, "RPUSH %s %b", key.c_str(), instruction, offset);
+  freeReplyObject(rReply);
+  redisFree(sendCtx);
+
+  // then send out computetasks
+  for (int i = 0; i < computetasks.size(); i++)
+  {
+    ECTask *curcompute = computetasks[i];
+    curcompute->buildType2();
+    string key = "compute:" + lostObjName + ":" + to_string(i);
+    curcompute->sendTo(key, lostAgentIP);
+  }
+
+  // wait for agent's feedback
+  redisContext *waitCtx = RedisUtil::createContext(lostAgentIP);
+  string wkey = "writefinish:" + lostObjName;
+  redisReply *fReply = (redisReply *)redisCommand(waitCtx, "blpop %s 0", wkey.c_str());
+  freeReplyObject(fReply);
+  redisFree(waitCtx);
+
+  cout << "Coordinator::repair for " << lostObjName << " finishes" << endl;
+
+  // free
+  for (auto task : computetasks)
+    delete task;
+  delete ecdag;
+  delete ec;
+  free(instruction);
 }
