@@ -1371,7 +1371,7 @@ void OECWorker::repairObjOnline(AGCommand *agcmd)
 
   // write a finish flag to local?
   // writefinish:objname
-  redisReply *rReply;
+  // redisReply *rReply;
   redisContext *writeCtx = RedisUtil::createContext(_conf->_localIp);
 
   string wkey = "writefinish:" + lostObjName;
