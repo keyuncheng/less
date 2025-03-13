@@ -1391,7 +1391,6 @@ void Coordinator::nonOptOfflineDegrade(string lostobj, unsigned int clientIp, Of
       integrity.push_back(1);
     }
   }
-  cout << "Coordinator::nonOptOfflineDegrade.lostidx = " << lostidx << endl;
 
   // 2. we need n, k, w to obtain availcidx and toreccidx
   int ecn = ecpolicy->getN();
@@ -1447,6 +1446,7 @@ void Coordinator::nonOptOfflineDegrade(string lostobj, unsigned int clientIp, Of
       sid2Cids[sidx].push_back(leaves[i]);
     }
   }
+
   // obtain computetask
   vector<ECTask *> computetasks;
   for (int i = 0; i < toposeq.size(); i++)
@@ -2945,9 +2945,53 @@ void Coordinator::recoveryOnlineObject(string lostObjName)
   // we need ecdag, toposort and parseForOEC, which requires cid2ip, stripename, n,k,w,pktnum,objlist
   // we also need to create persist command to persist repaired block
   // after we create commands, we send these commands to corresponding Agenst
+  SSEntry *ssentry = _stripeStore->getEntryFromObj(lostObjName);
+  string ecpoolid = ssentry->getEcidpool(); 
+
+  // Keyun: slight modification to support offline degraded read blocks with online encoding
+  string pool_suffix = "_pool";
+  if (ecpoolid.find(pool_suffix) == std::string::npos)
+  {
+    printf("failed to find suffix %s, encoded by online encoding\n", pool_suffix.c_str());
+    ecpoolid += pool_suffix;
+  }
+  else
+  {
+    // printf("found suffix, encoded by offline encoding\n");
+  }
+  OfflineECPool *ecpool = _stripeStore->getECPool(ecpoolid);
+  ecpool->lock();
+
+  // convert to stripe name
+  string objRawName = lostObjName;
+  string to_remove = "_oecobj";
+  size_t pos = objRawName.find(to_remove);
+  if (pos != std::string::npos) {
+      objRawName.erase(pos, to_remove.length());
+  }
+
+  string stripename = ecpool->getStripeForObj(objRawName);
+  
+  vector<string> fullObjList = ecpool->getStripeObjList(stripename);
+
+  // filter out valid stripeobjs
+  pos = objRawName.rfind('_');  // find the last underscore of '_'
+  string stripePrefix;
+  if (pos != std::string::npos) {
+      stripePrefix = objRawName.substr(0, pos);
+  } else {
+      std::cout << "error: Underscore not found." << std::endl;
+  } 
+
+  vector<string> stripeobjs;
+
+  for (const auto& objName : fullObjList) {
+      if (objName.rfind(stripePrefix, 0) == 0) {
+          stripeobjs.push_back(objName);
+      }
+  }
 
   // 0. given lostobj, find SSEntry and figure out opt version
-  SSEntry *ssentry = _stripeStore->getEntryFromObj(lostObjName);
   string ecid = ssentry->getEcidpool();
   ECPolicy *ecpolicy = _conf->_ecPolicyMap[ecid];
 
@@ -2955,10 +2999,11 @@ void Coordinator::recoveryOnlineObject(string lostObjName)
   ECBase *ec = ecpolicy->createECClass();
 
   // 2, get stripeobjs for lostobj to figure out lostidx
-  string filename = ssentry->getFilename();
-  string stripename = filename;
-  vector<string> stripeobjs = ssentry->getObjlist();
-  int lostidx;
+  // string filename = ssentry->getFilename();
+  /// string stripename = filename;
+  // vector<string> stripeobjs = ssentry->getObjlist();
+ 
+  int lostidx = -1;
   vector<int> integrity;
   for (int i = 0; i < stripeobjs.size(); i++)
   {
@@ -2972,13 +3017,12 @@ void Coordinator::recoveryOnlineObject(string lostObjName)
       integrity.push_back(1);
     }
   }
-  unsigned int lostAgentIP = ssentry->getLocOfObj(lostObjName);
-  int objSizeMB = ssentry->getFilesizeMB();
-
+  
   // prepare availcidx and toreccidx
   int ecn = ecpolicy->getN();
   int eck = ecpolicy->getK();
   int ecw = ecpolicy->getW();
+  int loststripe = lostidx / ecn;
   bool locality = ecpolicy->getLocality();
   int opt = ecpolicy->getOpt();
   vector<int> availcidx;
@@ -2997,21 +3041,14 @@ void Coordinator::recoveryOnlineObject(string lostObjName)
     }
   }
 
+  unsigned int lostAgentIP = ssentry->getLocOfObj(lostObjName);
+  int objSizeMB = ssentry->getFilesizeMB() / eck;
+
   if (opt >= 0)
   {
     cout << "Unsupported optimization, return" << endl;
     return;
   }
-
-  // Notify the lost Agent to prepare for object recovery
-  cout << "Notify the lost Agent to prepare for object recovery" << endl;
-  unsigned long long objsizeBytes = (unsigned long long)objSizeMB * 1048576;
-  int pktnum = objsizeBytes / (unsigned long long)_conf->_pktSize;
-  AGCommand *agCmd = new AGCommand();
-  agCmd->buildType13ForObjOnlineRecovery(13, lostAgentIP, lostObjName, objSizeMB, pktnum);
-  agCmd->dump();
-  agCmd->sendTo(lostAgentIP);
-  delete agCmd;
 
   // create ecdag
   ECDAG *ecdag = ec->Decode(availcidx, toreccidx);
@@ -3038,13 +3075,14 @@ void Coordinator::recoveryOnlineObject(string lostObjName)
       sid2Cids.insert(make_pair(sidx, curlist));
       loadidx.push_back(sidx);
       // loadobjs.push_back(stripeobjs[sidx]);
-      loadobjs.push_back(stripeobjs[sidx + lostidx * ecn]);
+      loadobjs.push_back(stripeobjs[sidx + loststripe * ecn]);
     }
     else
     {
       sid2Cids[sidx].push_back(leaves[i]);
     }
   }
+
   // obtain computetask
   vector<ECTask *> computetasks;
   for (int i = 0; i < toposeq.size(); i++)
@@ -3117,6 +3155,16 @@ void Coordinator::recoveryOnlineObject(string lostObjName)
   freeReplyObject(rReply);
   redisFree(sendCtx);
 
+  // Notify the lost Agent to prepare for object recovery
+  cout << "Notify the lost Agent to prepare for object recovery" << endl;
+  unsigned long long objsizeBytes = (unsigned long long)objSizeMB * 1048576;
+  int pktnum = objsizeBytes / (unsigned long long)_conf->_pktSize;
+  AGCommand *agCmd = new AGCommand();
+  agCmd->buildType13ForObjOnlineRecovery(13, lostAgentIP, lostObjName, objSizeMB, pktnum);
+  agCmd->dump();
+  agCmd->sendTo(lostAgentIP);
+  delete agCmd;
+
   // then send out computetasks
   for (int i = 0; i < computetasks.size(); i++)
   {
@@ -3132,6 +3180,8 @@ void Coordinator::recoveryOnlineObject(string lostObjName)
   redisReply *fReply = (redisReply *)redisCommand(waitCtx, "blpop %s 0", wkey.c_str());
   freeReplyObject(fReply);
   redisFree(waitCtx);
+
+  ecpool->unlock();
 
   cout << "Coordinator::repair for " << lostObjName << " finishes" << endl;
 

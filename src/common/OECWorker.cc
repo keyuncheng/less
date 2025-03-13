@@ -1174,7 +1174,7 @@ void OECWorker::repairObjOnline(AGCommand *agcmd)
 
   // now repair the object at this function
 
-  cout << "OECWorker::readOfflineObj. " << lostObjName << " does not exist!" << endl;
+  cout << "OECWorker::repairObjOnline: " << lostObjName << " does not exist!" << endl;
 
   struct timeval time1, time2, time3, time4, time5;
   gettimeofday(&time1, NULL);
@@ -1305,7 +1305,7 @@ void OECWorker::repairObjOnline(AGCommand *agcmd)
   redisFree(waitCtx);
 
   gettimeofday(&time2, NULL);
-  cout << "OECWorker::readOfflineObj issue degraded inst = " << RedisUtil::duration(time1, time2) << endl;
+  cout << "OECWorker::repairObjOnline issue degraded inst = " << RedisUtil::duration(time1, time2) << endl;
 
   // 1.0 create input stream
   FSObjInputStream **readStreams = (FSObjInputStream **)calloc(loadn, sizeof(FSObjInputStream *));
@@ -1333,7 +1333,7 @@ void OECWorker::repairObjOnline(AGCommand *agcmd)
     readThreads[loadi].join();
 
   gettimeofday(&time3, NULL);
-  cout << "OECWorker::readOfflineObj loadObj = " << RedisUtil::duration(time2, time3) << endl;
+  cout << "OECWorker::repairObjOnline loadObj = " << RedisUtil::duration(time2, time3) << endl;
 
   // 2. computeThread
   BlockingQueue<OECDataPacket *> *writeQueue = new BlockingQueue<OECDataPacket *>();
@@ -1343,7 +1343,7 @@ void OECWorker::repairObjOnline(AGCommand *agcmd)
   computeThread.join();
 
   gettimeofday(&time4, NULL);
-  cout << "OECWorker::readOfflineObj compute = " << RedisUtil::duration(time3, time4) << endl;
+  cout << "OECWorker::repairObjOnline compute = " << RedisUtil::duration(time3, time4) << endl;
 
   // persist the object
   // create objstream and writeThread
@@ -2282,8 +2282,7 @@ void OECWorker::readOffline(string filename, int filesizeMB, vector<string> objl
 //}
 
 void OECWorker::readOfflineObj(string filename, string objname, int objsizeMB, FSObjInputStream *objstream, int pktnum, int idx)
-{
-  cout << "OECWorker::readOfflineObj" << endl;
+{ 
   bool objexist = objstream->exist();
   if (objexist)
   {

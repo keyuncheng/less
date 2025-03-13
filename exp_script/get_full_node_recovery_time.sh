@@ -4,7 +4,8 @@
 source "./load_eval_settings.sh"
 
 LOG_FILE=${proj_dir}/coor_output
-START_PATTERN="StripeStore::scanning repair queue"
+# START_PATTERN="StripeStore::scanning repair queue"
+START_PATTERN="fullNodeRecovery"
 END_PATTERN="Coordinator::repair for "
 full_node_num_stripes=$(grep '^full_node_num_stripes = ' "$INI_FILE" | cut -d '=' -f2)
 full_node_num_stripes=$(echo "$full_node_num_stripes" | xargs)
