@@ -11,10 +11,9 @@ from scipy.stats import t
 import re
 
 def parseArgs(cmd_args):
-    arg_parser = argparse.ArgumentParser(description="extract logs from testbed experiments")
-    arg_parser.add_argument("-ecn", type=int, required=True, help="ecn")
+    arg_parser = argparse.ArgumentParser(description="extract logs from testbed experiments for full-node recovery")
     arg_parser.add_argument("-r", type=int, required=True, help="number of runs")
-    arg_parser.add_argument("-d", type=str, required=True, help="log directory. The directory contains <ecn> .txt files for the testbed experiments")
+    arg_parser.add_argument("-d", type=str, required=True, help="log directory. The directory contains #runs .txt files for the testbed experiments")
     
     args = arg_parser.parse_args(cmd_args)
     return args
@@ -40,8 +39,6 @@ def main():
     if not args:
         exit()
 
-    # read bandwidth
-    ecn = args.ecn
     numRuns = args.r
     logDir = args.d 
     logDir = Path(logDir).resolve()
@@ -50,21 +47,20 @@ def main():
 
     results = [[] for i in range(numRuns)]
 
-    for i in range(ecn):
-        resultFileName = "{}/block_{}.txt".format(logDir, i)
-        with open(resultFileName, "r") as f:
-            resultRawStr = ""
-            for line in f.readlines():
-                resultRawStr += line
-            # split by spaces
-            blkResults = [float(item) for item in resultRawStr.strip().split(" ")]
-            if len(blkResults) != numRuns:
-                print("error: insufficient number of runs for {}".format(resultFileName))
-            for j in range(numRuns):
-                results[j].append(blkResults[j])
+    resultToken = "Full-node recovery time:"
 
-    results = [sum(item) / len(item) / 1000 for item in results]
-    avgResult = sum(results) / len(results)
+    for i in range(numRuns):
+        resultFileName = "{}/recovery_run_{}.txt".format(logDir, i)
+        with open(resultFileName, "r") as f:
+            for line in f.readlines():
+                if (resultToken not in f.read()):
+                    continue
+                # split by spaces
+                line = line.strip()
+                match = re.search(r"{}\s*([\d.]+)\s*seconds".format(resultToken), line)
+                if match:
+                    result = float(match.group(1))
+                    results[i].append(result)
 
     results_std_t = student_t_dist(results)
     resultsAvg = results_std_t[0]
