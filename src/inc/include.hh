@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <random>
 
 #include <cassert>
 #include <cstring>

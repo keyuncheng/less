@@ -152,6 +152,12 @@ void Coordinator::registerOnlineEC(unsigned int clientIp, string filename, strin
   vector<unsigned int> ips;
   vector<int> placed;
   vector<string> objnames;
+  
+  // hack: fix fully randomized location for each block
+  vector<unsigned int> randIPs = _conf->_agentsIPs;
+  std::mt19937 rng(std::random_device{}());
+  std::shuffle(randIPs.begin(), randIPs.end(), rng);
+  
   for (int i = 0; i < ecn; i++)
   {
     string obj = filename + "_oecobj_" + to_string(i);
@@ -181,6 +187,9 @@ void Coordinator::registerOnlineEC(unsigned int clientIp, string filename, strin
       curIp = _conf->_agentsIPs[i];
     }
 
+    // hack: randomly choose an IP to place the block
+    curIp = randIPs[i];
+    
     placed.push_back(i);
     ips.push_back(curIp);
   }
