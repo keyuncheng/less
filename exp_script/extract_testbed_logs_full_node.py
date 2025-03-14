@@ -53,7 +53,7 @@ def main():
         resultFileName = "{}/recovery_run_{}.txt".format(logDir, i)
         with open(resultFileName, "r") as f:
             for line in f.readlines():
-                if (resultToken not in f.read()):
+                if resultToken not in line:
                     continue
                 # split by spaces
                 line = line.strip()
