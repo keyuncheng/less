@@ -27,9 +27,9 @@
 
 #define WORD_SIZE 8
 
-// // xiaolu comment 20180831 start
+// // anonymous comment 20180831 start
 // int *matrix = NULL;
-// // xiaolu comment 20180831 end
+// // anonymous comment 20180831 end
 
 
 int matrix[32*32];

@@ -116,9 +116,9 @@ public class BlockPlacementPolicyDefault extends BlockPlacementPolicy {
    */
   protected int tolerateHeartbeatMultiplier;
 
-  // Xiaolu integrate for OpenEC start
+  // anonymous integrate for OpenEC start
   public Configuration conf;
-  // Xiaolu integrate for OpenEC end
+  // anonymous integrate for OpenEC end
 
   protected BlockPlacementPolicyDefault() {
   }
@@ -127,9 +127,9 @@ public class BlockPlacementPolicyDefault extends BlockPlacementPolicy {
   public void initialize(Configuration conf,  FSClusterStats stats,
                          NetworkTopology clusterMap, 
                          Host2NodesMap host2datanodeMap) {
-    // Xiaolu integrate for OpenEC start
+    // anonymous integrate for OpenEC start
     this.conf = conf;
-    // Xiaolu integrate for OpenEC end
+    // anonymous integrate for OpenEC end
     this.considerLoad = conf.getBoolean(
         DFSConfigKeys.DFS_NAMENODE_REDUNDANCY_CONSIDERLOAD_KEY,
         DFSConfigKeys.DFS_NAMENODE_REDUNDANCY_CONSIDERLOAD_DEFAULT);
@@ -188,7 +188,7 @@ public class BlockPlacementPolicyDefault extends BlockPlacementPolicy {
         excludedNodes, blocksize, storagePolicy, flags, storageTypes);
   }
 
-  // Xiaolu integrate for OpenEC
+  // anonymous integrate for OpenEC
   @Override
   public DatanodeStorageInfo[] chooseTarget(String src,
       int numOfReplicas,
@@ -330,10 +330,10 @@ public class BlockPlacementPolicyDefault extends BlockPlacementPolicy {
         && writer != null
         && !excludedNodes.contains(writer));
 
-    // Xiaolu integrate for OpenEC starts
+    // anonymous integrate for OpenEC starts
     avoidLocalNode = conf.getBoolean("placement.avoidlocal", false);
-    System.out.println("Xiaolu debug::BlockPlacementPolicyDefault.chooseTarget avoidLocalNode = " + avoidLocalNode);
-    // Xiaolu integrate for OpenEC ends
+    System.out.println("anonymous debug::BlockPlacementPolicyDefault.chooseTarget avoidLocalNode = " + avoidLocalNode);
+    // anonymous integrate for OpenEC ends
 
     // Attempt to exclude local rack if the client suggests so. If no enough
     // nodes can be obtained or number of racks are less than three, it falls

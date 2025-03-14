@@ -2142,7 +2142,7 @@ public class BlockManager implements BlockStatsMXBean {
     return targets;
   }
 
-  // Xiaolu integrate for OpenEC
+  // anonymous integrate for OpenEC
   public DatanodeStorageInfo[] chooseTarget4NewBlockFromOEC(final String src,
       final int numOfReplicas, final Node client,
       final Set<Node> excludedNodes,

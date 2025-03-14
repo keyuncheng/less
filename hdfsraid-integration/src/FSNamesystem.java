@@ -475,7 +475,7 @@ public class FSNamesystem extends ReconfigurableBase
   /**
    * FSNamesystem constructor.
    */
-  // xiaolu add for OEC
+  // anonymous add for OEC
   public Configuration conf;
   Map<Long, String> blkId2FileName = new HashMap<Long, String>();
   Map<String, Long> corruptObjMap = new HashMap<String, Long>();

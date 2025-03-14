@@ -266,7 +266,7 @@ class FSDirWriteFileOp {
     return makeLocatedBlock(fsn, fsn.getStoredBlock(newBlock), targets, offset);
   }
 
-  // Xiaolu integrate for OEC
+  // anonymous integrate for OEC
   static LocatedBlock storeAllocatedBlockOEC(FSNamesystem fsn, String src,
       long fileId, String clientName, ExtendedBlock previous,
       DatanodeStorageInfo[] targets, Block b) throws IOException {
@@ -306,7 +306,7 @@ class FSDirWriteFileOp {
     return makeLocatedBlock(fsn, fsn.getStoredBlock(b), targets, offset);
   }
 
-  // Xiaolu integrate for OpenEC
+  // anonymous integrate for OpenEC
   static Block getNewBlockForOEC(FSNamesystem fsn, String src,
       long fileId, String clientName, ExtendedBlock previous) throws IOException {
     LocatedBlock[] onRetryBlock = new LocatedBlock[1];
@@ -342,7 +342,7 @@ class FSDirWriteFileOp {
                                     r.blockType, r.ecPolicy, flags);
   }
 
-  // Xiaolu integrate for OpenEC
+  // anonymous integrate for OpenEC
   static DatanodeStorageInfo[] chooseTargetForNewBlockOEC(
       BlockManager bm, String src, DatanodeInfo[] excludedNodes,
       String[] favoredNodes, EnumSet<AddBlockFlag> flags,

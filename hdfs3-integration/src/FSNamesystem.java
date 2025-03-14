@@ -2628,7 +2628,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     return this.blockManager.getFileNameWithBlkId(blkid);
   }
 
-  // Xiaolu integrate for OpenEC
+  // anonymous integrate for OpenEC
   LocatedBlock getAdditionalBlockFromOEC(
       String src, long fileId, String clientName, ExtendedBlock previous,
       DatanodeInfo[] excludedNodes, String[] favoredNodes,

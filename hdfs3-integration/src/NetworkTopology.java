@@ -98,12 +98,12 @@ public class NetworkTopology {
   /** rack counter */
   protected int numOfRacks = 0;
 
-  // Xiaolu add for OpenEC
+  // anonymous add for OpenEC
   public Map<String, Node> ipMap = new HashMap<String, Node>();
   public List<Node> oecIpList = new LinkedList<Node>();
   public Map<Integer, Integer> loadMap = new HashMap<Integer, Integer>();
   public Map<String, List<Integer>> file2IpMap = new HashMap<String, List<Integer>>();
-  // Xiaolu add for OpenEC end
+  // anonymous add for OpenEC end
 
   public Node getLocByIp(String ip) {
     return this.ipMap.get(ip);
@@ -127,7 +127,7 @@ public class NetworkTopology {
     return toret;
   }
 
-  // Xiaolu simulate to get loc from OEC
+  // anonymous simulate to get loc from OEC
   public Node getLocFromOEC(String name, String type, String policy) {
     if (policy.equals("random")) {
       // if choose random location for oecobj, then need to avoid some locs
@@ -226,7 +226,7 @@ public class NetworkTopology {
                                          or node to be added is not a leaf
    */
   public void add(Node node) {
-    // Xiaolu add some code for OEC to test?
+    // anonymous add some code for OEC to test?
     String loc = node.getName();
     int idx = loc.indexOf(":");
     String ip;
