@@ -137,21 +137,20 @@ def main():
     execCmd(cmd, exec=True)
 
     time.sleep(1)
-    
-    for code_params in exp.codes:
-        codeName = code_params[0]
-        ecn = int(code_params[1])
-        eck = int(code_params[2])
-        ecw = int(code_params[3])
-        codeId = "{}_{}_{}_{}".format(codeName, ecn, eck, ecw)
+ 
+    for runId in range(exp.num_runs):
+        print("Start run {}".format(runId))
+   
+        for code_params in exp.codes:
+            codeName = code_params[0]
+            ecn = int(code_params[1])
+            eck = int(code_params[2])
+            ecw = int(code_params[3])
+            codeId = "{}_{}_{}_{}".format(codeName, ecn, eck, ecw)
 
-        print("Start evaluating code {}".format(codeId))
-
-        for runId in range(exp.num_runs):
-            print("Start run {}".format(runId))
-
+            print("Start evaluating code {}".format(codeId))
             # evaluation workflow: (1) write <exp.full_node_num_stripes>
-            # stripes; (2) delete all blocks on the 2nd node (all blocks are
+            # stripes; (2) delete all blocks on the 1st node (all blocks are
             # randomly distributed); (3) start full node repair (4) obtain the
             # time
 
@@ -180,10 +179,9 @@ def main():
                 execCmd(cmd, exec=True)
                 time.sleep(10)
 
-            # remove all blocks on the 2nd data node
-            print("Remove all blocks on the 2nd data node")
-            # nodeIp = cluster.nodeIps[cluster.agent_ids[1]]
-            nodeIp = cluster.nodeIps[cluster.agent_ids[1]]
+            # remove all blocks on the 1st data node
+            print("Remove all blocks on the 1st data node")
+            nodeIp = cluster.nodeIps[cluster.agent_ids[0]]
             cmd = "ssh {}@{} \"rm -rf {}/dfs/data/current/BP*/current/finalized/*/*/blk_*\"".format(cluster.user_name, nodeIp, common.HADOOP_DIR)
             execCmd(cmd, exec=True)
             time.sleep(30)

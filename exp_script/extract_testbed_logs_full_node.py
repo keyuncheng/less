@@ -45,7 +45,7 @@ def main():
 
     print("log directory: {}".format(logDir))
 
-    results = [[] for i in range(numRuns)]
+    results = []
 
     resultToken = "Full-node recovery time:"
 
@@ -60,7 +60,7 @@ def main():
                 match = re.search(r"{}\s*([\d.]+)\s*seconds".format(resultToken), line)
                 if match:
                     result = float(match.group(1))
-                    results[i].append(result)
+                    results.append(result)
 
     results_std_t = student_t_dist(results)
     resultsAvg = results_std_t[0]
