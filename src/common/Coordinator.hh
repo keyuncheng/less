@@ -47,7 +47,7 @@ public:
   void reportRepaired(CoorCommand *coorCmd);
   void coorBenchmark(CoorCommand *coorCmd);
 
-  // Keyun: for ET
+  // for ET
   void getHDFSMeta(CoorCommand *coorCmd);
   void offlineDegradedET(CoorCommand *coorCmd);
 
@@ -62,11 +62,11 @@ public:
   void recoveryOnline(string filename);
   void recoveryOffline(string filename);
 
-  // Keyun: hard-code ip
+  // hard-code ip
   void recoveryOnlineHCIP(string filename);
   void recoveryOfflineHCIP(string filename);
 
-  // Keyun: add object recovery and persist
+  // add object recovery and persist
   void recoveryOnlineObject(string lostObjName);
 };
 

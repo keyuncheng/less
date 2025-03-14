@@ -18,5 +18,5 @@
 
 <configuration>
 <property><name>fs.defaultFS</name><value>hdfs://192.168.10.57:9000</value></property>
-<property><name>hadoop.tmp.dir</name><value>/home/kycheng/hadoop-3.3.4</value></property>
+<property><name>hadoop.tmp.dir</name><value>/home/openec/hadoop-3.3.4</value></property>
 </configuration>

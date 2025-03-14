@@ -125,7 +125,7 @@ all_codes = [
 
 def restart_cluster():
     print("Restart the whole cluster...")
-    restart_cmd = "ssh namenode \"cd /home/kycheng/openec-et; sh env.sh && sh start.sh;\""
+    restart_cmd = "ssh namenode \"cd /home/less/openec-et; sh env.sh && sh start.sh;\""
     start = time.time()
     # print(restart_cmd)
     os.system(restart_cmd)
@@ -305,7 +305,7 @@ def test_single_code(code_id):
 
     copy_agent = "cp agent_output " + result_save_code_folder
     os.system(copy_agent)
-    copy_coor = "scp namenode:/home/kycheng/openec-et/coor_output " + result_save_code_folder
+    copy_coor = "scp namenode:/home/less/openec-et/coor_output " + result_save_code_folder
     os.system(copy_coor)
     print("Save the code results to " + result_save_code_folder)
 

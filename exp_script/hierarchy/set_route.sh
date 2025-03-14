@@ -6,7 +6,7 @@ if [ "$#" != "2" ]; then
     exit 1
 fi
 
-passwd=kycheng
+passwd=less
 dst_ip=$1
 gw_ip=$2
 

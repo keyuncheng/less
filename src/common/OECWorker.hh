@@ -43,7 +43,7 @@ public:
   void offlineWrite(string filename, string ecpoolid, int filesizeMB);
   void readOnline(string filename, int filesizeMB, int ecn, int eck, int ecw);
   void readOffline(string filename, int filesizeMB, int objnum);
-  void readOffline(string filename, int filesizeMB, vector<string> objlist); // Keyun: read offline with objlist
+  void readOffline(string filename, int filesizeMB, vector<string> objlist); // read offline with objlist
   void readOfflineObj(string filename, string objname, int objsizeMB, FSObjInputStream *objstream, int pktnum, int idx);
   // repair object online
   void repairObjOnline(AGCommand *agCmd);
@@ -88,7 +88,7 @@ public:
   void persist(AGCommand *agCmd);
   void readFetchCompute(AGCommand *agCmd);
 
-  // Keyun: for Shortening
+  // for Shortening
   void readDiskForShortening(AGCommand *agCmd);
 
   void selectCacheWorker(BlockingQueue<OECDataPacket *> *cacheQueue,
@@ -103,7 +103,7 @@ public:
                           int w,
                           vector<int> idxlist,
                           unordered_map<int, int> refs);
-  // Keyun: for Shortening
+  // for Shortening
   void pushShorteningPktsToRedis(int pktnum,
                                  string keybase,
                                  int w,

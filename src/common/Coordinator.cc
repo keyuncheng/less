@@ -92,7 +92,7 @@ void Coordinator::doProcess()
             coorBenchmark(coorCmd);
             break;
 
-          // Keyun: for ET
+          // for ET
           case 21:
             getHDFSMeta(coorCmd);
             break;
@@ -152,12 +152,12 @@ void Coordinator::registerOnlineEC(unsigned int clientIp, string filename, strin
   vector<unsigned int> ips;
   vector<int> placed;
   vector<string> objnames;
-  
+
   // hack: fix fully randomized location for each block
   vector<unsigned int> randIPs = _conf->_agentsIPs;
   std::mt19937 rng(std::random_device{}());
   std::shuffle(randIPs.begin(), randIPs.end(), rng);
-  
+
   for (int i = 0; i < ecn; i++)
   {
     string obj = filename + "_oecobj_" + to_string(i);
@@ -189,7 +189,7 @@ void Coordinator::registerOnlineEC(unsigned int clientIp, string filename, strin
 
     // hack: randomly choose an IP to place the block
     curIp = randIPs[i];
-    
+
     placed.push_back(i);
     ips.push_back(curIp);
   }
@@ -201,7 +201,7 @@ void Coordinator::registerOnlineEC(unsigned int clientIp, string filename, strin
 
   ////////////////////////////////////////////////
 
-  // Keyun: hacked version to support online degraded read for single block repair experiments (with the workflow of offline degraded read)
+  // hacked version to support online degraded read for single block repair experiments (with the workflow of offline degraded read)
 
   // (1). add poolentry of the stripe
   string pool_suffix = "_pool";
@@ -963,7 +963,7 @@ void Coordinator::getFileMeta(CoorCommand *coorCmd)
     memcpy(filemeta + metaoff, (char *)&tmpnum, 4);
     metaoff += 4;
 
-    // Keyun: actually we should also append the object lists (previously didn't)
+    // actually we should also append the object lists (previously didn't)
     for (auto objname : objlist)
     {
       int len = objname.size();
@@ -1134,7 +1134,7 @@ void Coordinator::offlineDegradedInst(CoorCommand *coorCmd)
   SSEntry *ssentry = _stripeStore->getEntryFromObj(lostobj);
   string ecpoolid = ssentry->getEcidpool();
 
-  // Keyun: slight modification to support offline degraded read blocks with online encoding
+  // slight modification to support offline degraded read blocks with online encoding
   string pool_suffix = "_pool";
   if (ecpoolid.find(pool_suffix) == std::string::npos)
   {
@@ -1436,7 +1436,7 @@ void Coordinator::nonOptOfflineDegrade(string lostobj, unsigned int clientIp, Of
   {
     int sidx = leaves[i] / ecw;
 
-    // Keyun (for shortening): skip loading shortening symbols
+    // (for shortening): skip loading shortening symbols
     if (sidx >= ecn)
     {
       continue;
@@ -1992,7 +1992,7 @@ void Coordinator::recoveryOnlineHCIP(string lostobj)
     ECNode *node = ecdag->getNode(cidx);
     unsigned int curip = cid2ip[cidx];
 
-    // // Keyun: it's not a symbol to recover, fix the ip to the failed node
+    // // it's not a symbol to recover, fix the ip to the failed node
     // if (find(toreccidx.begin(), toreccidx.end(), cidx) == toreccidx.end() &&
     //     find(availcidx.begin(), availcidx.end(), cidx) == availcidx.end())
     // {
@@ -2528,7 +2528,7 @@ void Coordinator::recoveryOfflineHCIP(string lostobj)
     unsigned int curip = cid2ip[cidx];
     // printf("before fixed IP: %d, %s\n", cidx, RedisUtil::ip2Str(curip).c_str());
 
-    // // Keyun: it's not a symbol to recover, fix the ip to the failed node
+    // // it's not a symbol to recover, fix the ip to the failed node
     // if (find(toreccidx.begin(), toreccidx.end(), cidx) == toreccidx.end() &&
     //     find(availcidx.begin(), availcidx.end(), cidx) == availcidx.end())
     // {
@@ -2948,16 +2948,16 @@ void Coordinator::offlineDegradedET(CoorCommand *coorCmd)
   ecpool->unlock();
 }
 
-// Keyun: add object recovery and persist
+// add object recovery and persist
 void Coordinator::recoveryOnlineObject(string lostObjName)
 {
   // we need ecdag, toposort and parseForOEC, which requires cid2ip, stripename, n,k,w,pktnum,objlist
   // we also need to create persist command to persist repaired block
   // after we create commands, we send these commands to corresponding Agenst
   SSEntry *ssentry = _stripeStore->getEntryFromObj(lostObjName);
-  string ecpoolid = ssentry->getEcidpool(); 
+  string ecpoolid = ssentry->getEcidpool();
 
-  // Keyun: slight modification to support offline degraded read blocks with online encoding
+  // slight modification to support offline degraded read blocks with online encoding
   string pool_suffix = "_pool";
   if (ecpoolid.find(pool_suffix) == std::string::npos)
   {
@@ -2975,29 +2975,35 @@ void Coordinator::recoveryOnlineObject(string lostObjName)
   string objRawName = lostObjName;
   string to_remove = "_oecobj";
   size_t pos = objRawName.find(to_remove);
-  if (pos != std::string::npos) {
-      objRawName.erase(pos, to_remove.length());
+  if (pos != std::string::npos)
+  {
+    objRawName.erase(pos, to_remove.length());
   }
 
   string stripename = ecpool->getStripeForObj(objRawName);
-  
+
   vector<string> fullObjList = ecpool->getStripeObjList(stripename);
 
   // filter out valid stripeobjs
-  pos = objRawName.rfind('_');  // find the last underscore of '_'
+  pos = objRawName.rfind('_'); // find the last underscore of '_'
   string stripePrefix;
-  if (pos != std::string::npos) {
-      stripePrefix = objRawName.substr(0, pos);
-  } else {
-      std::cout << "error: Underscore not found." << std::endl;
-  } 
+  if (pos != std::string::npos)
+  {
+    stripePrefix = objRawName.substr(0, pos);
+  }
+  else
+  {
+    std::cout << "error: Underscore not found." << std::endl;
+  }
 
   vector<string> stripeobjs;
 
-  for (const auto& objName : fullObjList) {
-      if (objName.rfind(stripePrefix, 0) == 0) {
-          stripeobjs.push_back(objName);
-      }
+  for (const auto &objName : fullObjList)
+  {
+    if (objName.rfind(stripePrefix, 0) == 0)
+    {
+      stripeobjs.push_back(objName);
+    }
   }
 
   // 0. given lostobj, find SSEntry and figure out opt version
@@ -3011,7 +3017,7 @@ void Coordinator::recoveryOnlineObject(string lostObjName)
   // string filename = ssentry->getFilename();
   /// string stripename = filename;
   // vector<string> stripeobjs = ssentry->getObjlist();
- 
+
   int lostidx = -1;
   vector<int> integrity;
   for (int i = 0; i < stripeobjs.size(); i++)
@@ -3026,7 +3032,7 @@ void Coordinator::recoveryOnlineObject(string lostObjName)
       integrity.push_back(1);
     }
   }
-  
+
   // prepare availcidx and toreccidx
   int ecn = ecpolicy->getN();
   int eck = ecpolicy->getK();
@@ -3072,7 +3078,7 @@ void Coordinator::recoveryOnlineObject(string lostObjName)
   {
     int sidx = leaves[i] / ecw;
 
-    // Keyun (for shortening): skip loading shortening symbols
+    // (for shortening): skip loading shortening symbols
     if (sidx >= ecn)
     {
       continue;

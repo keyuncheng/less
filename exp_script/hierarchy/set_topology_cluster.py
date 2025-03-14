@@ -15,8 +15,8 @@ clear_bw_script = "clear_bw.sh"
 set_bw_script = "set_bw.sh"
 clear_route_script = "clear_route.sh"
 set_route_script = "set_route.sh"
-user_name = "kycheng"
-user_passwd = "kycheng"
+user_name = "less"
+user_passwd = "less"
 
 def parse_args(cmd_args):
     arg_parser = argparse.ArgumentParser(description="set hierarchical network topology for the cluster (based on HDFS rack topology).")

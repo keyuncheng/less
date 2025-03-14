@@ -52,7 +52,7 @@ AGCommand::AGCommand(char *reqStr)
     resolveType11();
     break;
 
-  // Keyun: for shortening
+  // for shortening
   case 12:
     resolveType12ForShortening();
     break;
@@ -761,7 +761,7 @@ void AGCommand::dump()
     {
       cout << "    Cache: " << item.first << " : " << item.second << endl;
     }
-    // Keyun: for shortening
+    // for shortening
   }
   else if (_type == 12)
   {
