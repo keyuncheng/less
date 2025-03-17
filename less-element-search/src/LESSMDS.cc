@@ -176,7 +176,7 @@ void LESS_PCmat::print_square_mat(int *subset)
         {
             for (int u = 0; u < _alpha; u++)
             {
-                uint32_t a = pcmat[(j*_alpha+u) * rows + i * _r + 1];
+                uint32_t a = pcmat[(j * _alpha + u) * rows + i * _r + 1];
                 if (a == 0)
                 {
                     printf("     ");
@@ -198,23 +198,25 @@ bool LESS_PCmat::verify_MDS_property(int w, uint32_t e)
     generate_combination g(_n, _r);
     unsigned long long total = comb(_n, _r);
     ProgressBar bar(total);
-    printf("\n\n\nVerifying MDS property for (%d, %d, %d) LESS:\n", _n, _k, _alpha);
-    printf("    primitive element %u in GF(2^%d)\n", e, w);
-    printf("    total number of combination: %lld\n", total);
+    printf(">>> Verifying MDS property for LESS:\n");
+    printf("        (n, k, alpha)  =  (%d, %d, %d)\n", _n, _k, _alpha);
+    // printf("    n-k = %d, alpha = %d, n = %d\n", _r, _alpha, _n);
+    printf("        primitive element: %u in GF(2^%d)\n", e, w);
+    // printf("     total number of combinations: %lld\n", total);
     do
     {
         uint32_t *M = get_square_mat(g.cur_subset());
         if (!is_invertible(M, w))
         {
-            printf("\n  %u in GF(2^%d)  DO NOT satisfy the MDS property!!!\n    ", e, w);
-            g.print();
-            //print_square_mat(g.cur_subset());
+            printf("\n        Non-MDS!!!\n\n");
+            // g.print();
+            // print_square_mat(g.cur_subset());
             return false;
         }
         bar.increment();
     } while (g.next());
 
-    printf("\n The primitive element %u in GF(2^%d) satisfy the MDS property!!!\n", e, w);
+    printf("        MDS!!!\n\n");
 
     return true;
 }

@@ -14,12 +14,12 @@
 class ProgressBar
 {
 public:
-    ProgressBar(int total, int width = 50) : total_(total), width_(width), current_(0)
+    ProgressBar(unsigned long long total, int width = 50) : total_(total), width_(width), current_(0)
     {
         is_terminal_ = isatty(fileno(stdout));
     }
 
-    void update(int current)
+    void update(unsigned long long int current)
     {
         current_ = current;
         print();
@@ -32,12 +32,12 @@ public:
     }
 
 private:
-    void print();
+    void print(); // print the progress bar
 
-    int total_;
-    int width_;
-    int current_;
-    bool is_terminal_;
+    unsigned long long int total_; // total number of iterations
+    int width_; // width of the progress bar
+    unsigned long long int current_; // current iteration
+    bool is_terminal_; // check if the output is terminal
 };
 
 #endif // #ifndef __PROGRESS_BAR__

@@ -80,7 +80,7 @@ bool primitive_element_generator::is_minimum_conjugate(uint32_t e)
     return true;
 }
 
-int primitive_element_generator::minimum_conjugate(uint32_t e)
+uint32_t primitive_element_generator::minimum_conjugate(uint32_t e)
 {
     uint32_t conj = e;
     uint32_t min = e;

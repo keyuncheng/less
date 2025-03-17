@@ -57,7 +57,7 @@ bool generate_combination::next()
 
 void generate_combination::print()
 {
-    printf("{", count);
+    printf("{");
     printf("%d", subset[0]);
     for (int i = 1; i < _r; i++)
     {
