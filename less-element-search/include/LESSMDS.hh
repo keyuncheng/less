@@ -2,6 +2,7 @@
 #define __LESSMDS__
 
 #include <stdlib.h>
+#include "include.hh"
 
 /**
  * @brief  A class to generate the parity-check matrix of (n, k, alpha) LESS

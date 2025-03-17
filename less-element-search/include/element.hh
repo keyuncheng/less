@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include "jerasure.h"
+#include "include.hh"
 
 /**
  * @brief Generate primitive element from GF(2^w)

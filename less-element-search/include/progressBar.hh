@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <string>
 
+#include "include.hh"
+
 /**
  * @brief A simple progress bar for terminal
  * @param total The total number of iterations

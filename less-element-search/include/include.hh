@@ -12,4 +12,6 @@
 #include "jerasure.h"
 #include <isa-l.h>
 
+#include <cstdint>
+
 using namespace std;

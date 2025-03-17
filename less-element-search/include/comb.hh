@@ -1,6 +1,8 @@
 #ifndef __COMBINATION__
 #define __COMBINATION__
 
+#include "include.hh"
+
 /**
  * @brief Calculate the combination of \binom{n}{r}
  * @param n The total number of elements
