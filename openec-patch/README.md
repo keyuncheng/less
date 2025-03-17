@@ -4,14 +4,13 @@
 ## Overview
 
 We implement LESS atop Hadoop [HDFS
-  3.3.4]((https://hadoop.apache.org/docs/r3.3.4/)) with [OpenEC](https://www.usenix.org/conference/fast19/presentation/li) (USENIX FAST
-2019). OpenEC is a middleware system realizing erasure coding schemes in the
-form of direct acyclic graphs (named ECDAGs) atop existing distributed storage
-systems.
-
-We implement LESS in ECDAGs, and integrated our implementation to **OpenEC
-v1.0.0** ([link](http://adslab.cse.cuhk.edu.hk/software/openec/)). This
-repository contains **the patch** to OpenEC.
+  3.3.4]((https://hadoop.apache.org/docs/r3.3.4/)) with
+[OpenEC](https://www.usenix.org/conference/fast19/presentation/li) (USENIX
+FAST 2019). OpenEC is a middleware system realizing custom erasure coding
+solutions in the form of direct acyclic graphs (named ECDAGs) atop existing
+distributed storage systems.  We implement LESS in ECDAGs and integrate to
+**OpenEC v1.0.0** ([link](http://adslab.cse.cuhk.edu.hk/software/openec/)).
+This repository contains **the patch** to OpenEC.
 
 ## Folder Structure
 
@@ -56,22 +55,25 @@ Please follow the deployment steps below:
 
 * [Start HDFS-3.3.4 with OpenEC](#start-hdfs-334-with-openec)
 
-* [Run](#run)
+* [Run Single-block Repair](#run-single-block-repair)
+
+* [Run Full-node Recovery](#run-full-node-recovery)
 
 
 ### Cluster Setup
 
-We setup a (local) storage cluster of 15 machines (1 for HDFS NameNode, 14 for
-DataNode). 
+We setup a cluster of 15 machines (1 for HDFS NameNode, 14 for DataNode). 
 
 | HDFS | OpenEC | Number | IP |
 | ------ | ------ | ------ | ------ |
 | NameNode | Controller | 1 | 192.168.10.57 |
 | DataNode | Agent and Client | 14 | 192.168.10.<47,48,49,50,52,55,56,58,60,62,67,68,69,31> | 
 
-On each machine, we create an account ```less```.
-Please change the IP addresses in the configuration files of HDFS and OpenEC
-for your cluster accordingly.
+On each machine, we create an account ```less```. Please change the IP
+addresses in the configuration files of HDFS (in
+```$HADOOP_HOME/etc/hadoop/workers, $HADOOP_HOME/etc/hadoop/core-site.xml, $HADOOP_HOME/etc/hadoop/hdfs-site.xml```) and OpenEC (```conf/sysSetting.xml```) for
+your cluster accordingly. Please also refer to OpenEC documentation for more
+details.
 
 
 ### Download HDFS-3.3.4, OpenEC-v1.0.0
@@ -101,10 +103,10 @@ the cluster.
 
 Notes:
 
-* the sample configuration files for HDFS-3.3.4 are in
-```openec-patch/hdfs3-integration/conf```.
+* The sample configuration files for HDFS-3.3.4 are in
+```openec-patch/hdfs3.3.4-integration/conf```.
 
-We set the following system configurations:
+We set the default system configurations as follows:
 - HDFS block size: 64 MiB
 - OpenEC packet size: 256 KiB
 
@@ -122,12 +124,12 @@ In ```conf/sysSetting.xml``` of OpenEC:
 | ------ | ------ | ------ |
 | packet.size | The size of a packet in bytes. | 262144 |
 
-The other configurations follow the default in OpenEC documentation.
+The other configurations follow the defaults in OpenEC documentation.
 
 ### Compile and deploy HDFS and OpenEC
 
-We follow the default compilation and deployment steps as in OpenEC. Please
-follow OpenEC documentation for details.
+We follow the default compilation and deployment steps in OpenEC. Please
+follow the steps in OpenEC documentation.
 
 ### Start HDFS-3.3.4 with OpenEC
 
@@ -146,7 +148,7 @@ $ python script/start.py
 ```
 
 
-### Run
+### Run Single-block Repair
 
 Below is an example of single-block repair for LESS with (14, 10), sub-packetization = 4.
 
@@ -155,8 +157,8 @@ Below is an example of single-block repair for LESS with (14, 10), sub-packetiza
 On one HDFS DataNode:
 
 - Use OpenEC Client to issue an (online) file write. Assume the filename is
-  ```input_640``` and the file size is: 640 MiB = *k = 10* HDFS blocks. The
-  file is encoded into *n* HDFS blocks and randomly distributed to *n* storage
+  ```input_640``` and the file size is 640 MiB in *k=10* HDFS blocks. The file
+  is encoded into *n=14* HDFS blocks and randomly distributed to *n* storage
   nodes.
 
 ```
@@ -191,29 +193,26 @@ physical block name stored in HDFS is named ```blk_1073741836```.
 
 #### Manually Fail a Block
 
-Now we manually remove a block from one of the storage node. For example, we
-manually fail block 0 (named ```/test_code_oecobj_0``` in HDFS). **On the
-DataNode that stores block 0**, we first enter the folder that physically
-stores the block in HDFS:
+We manually remove a block from one DataNode. For example, we manually fail
+block 0 (named ```/test_code_oecobj_0``` in HDFS). **On the DataNode that
+stores block 0**, we first enter the folder that physically stores the block
+in HDFS:
 
 ```
 cd ${HADOOP_HOME}/dfs/data/current/BP-*/current/finalized/subdir0/subdir0/
 ```
 
 Only one block ```blk_<blkid>``` is stored with it's metadata file
-```blk_<blkid>.meta```. We copy the block to OpenEC project directory, and
-then manually remove the block.
+```blk_<blkid>.meta```. We move the block to OpenEC project directory to
+manually remove the block.
 
 ```
-cp blk_<blkid> ~/openec
-rm blk_<blkid>
+mv blk_<blkid> ~/openec
 ```
 
-After the operation, block 0 is considered lost, as it no longer exists in the
-HDFS directory.
-
-HDFS will automatically detect and report the lost block shortly after the
-block manual removal. We can verify with ```hdfs fsck``` again.
+After the operation, block 0 is considered lost. HDFS will automatically
+detect and report the lost block shortly after the block manual removal. We
+can verify with ```hdfs fsck``` again.
 
 ```
 hdfs fsck / -list-corruptfileblocks
@@ -237,4 +236,73 @@ stored in ```~/openec/```.
 ```
 cd ~/openec
 cmp test_code_0 blk_<blkid>
+```
+
+
+
+### Run Full-node Recovery
+
+Below is an example of full-node recovery for LESS with (14, 10),
+sub-packetization = 4.  We write two stripes in OpenEC and manually remove the
+two blocks stored in one DataNode.  We then trigger full-node recovery in
+OpenEC to repair the blocks.
+
+#### Write Blocks
+
+On one HDFS DataNode:
+
+- Use OpenEC Client to issue two (online) file writes. Assume the filename is
+  ```input_640``` and the file size is 640 MiB in *k=10* HDFS blocks. The file
+  is encoded into *n=14* HDFS blocks and randomly distributed to *n* storage
+  nodes.
+
+```
+cd ~/openec
+./OECClient write input_640 /S1_test_code LESS_14_10_4 online 640
+./OECClient write input_640 /S2_test_code LESS_14_10_4 online 640
+```
+
+Similar to single-block repair, we can check the distribution of blocks for
+the two stripes with:
+
+```
+hdfs fsck / -files -blocks -locations
+```
+
+
+#### Manually Fail all Blocks in One DataNode
+
+Suppose we manually remove all blocks from DataNode 0:
+
+```
+rm -rf {}/dfs/data/current/BP*/current/finalized/*/*/blk_*
+```
+
+HDFS will automatically detect and report the lost blocks shortly after the
+removal. We can verify with ```hdfs fsck``` again.
+
+```
+hdfs fsck / -list-corruptfileblocks
+```
+
+
+#### Repair a Failed Block
+
+After the failures are detected, **on the same DataNode**, we use OpenEC
+Client to trigger full-node recovery
+
+```
+cd ~/openec
+./OECClient startRepair
+```
+
+We can verify in OpenEC Controller's log ```openec/coor_output``` when the full-node recovery is
+completed.
+
+```
+cat openec/coor_output
+
+// Sample log messages:
+Coordinator::repair for <StripeName> finishes
+Full-node recovery time: xxx seconds
 ```
