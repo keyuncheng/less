@@ -4,12 +4,12 @@
 ## Overview
 
 This repository contains the brute-force search implementation for finding the
-primitive element for (n,k,\alpha) LESS.  The coding operations is based on
+primitive element for (n,k,\alpha) LESS.  The coding operations are based on
 [Jerasure](https://github.com/ceph/jerasure).
 
 ## Installation
 
-The library can be installed in Ubuntu 22.04.
+The source code can be installed in Ubuntu 22.04.
 
 
 * Install dependencies
