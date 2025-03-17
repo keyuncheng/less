@@ -59,6 +59,8 @@ Please follow the deployment steps below:
 
 * [Run Full-node Recovery](#run-full-node-recovery)
 
+* [Misc: Run ECDAG Test](#misc-run-ecdag-test)
+
 
 ### Cluster Setup
 
@@ -305,4 +307,20 @@ cat openec/coor_output
 // Sample log messages:
 Coordinator::repair for <StripeName> finishes
 Full-node recovery time: xxx seconds
+```
+
+### Misc: Run ECDAG Test
+
+We provide ECDAG test cases in OpenEC.
+
+For example, we test the encoding and decoding of ECDAG for LESS with (14,
+10), sub-packetization = 4, and failed block 0:
+
+```
+./CodeTest LESS 14 10 4 1048576 0
+
+// Sample outputs:
+Repair degree (number of accessed nodes): 13
+Repair bandwidth: total packets read: 19 / 40, average per node: 1.461538 (min: 1, max: 4), normalized repair bandwidth (w.t. RS): 0.475000
+Repair access: total non-contiguous accesses: 13, average per node: 1.000000 (min: 1, max: 1)
 ```

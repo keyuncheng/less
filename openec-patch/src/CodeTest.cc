@@ -7,11 +7,8 @@
 #include "ec/RSCONV.hh"
 #include "ec/HHXORPlus.hh"
 #include "ec/HTEC.hh"
-#include "ec/BUTTERFLY.hh"
 #include "ec/Clay.hh"
 #include "ec/ETRSConv.hh"
-#include "ec/ETHTEC.hh"
-#include "ec/ETHHXORPlus.hh"
 #include "ec/LESS.hh"
 
 #include <utility>

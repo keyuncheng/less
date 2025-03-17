@@ -135,7 +135,7 @@ public:
      *
      * @return vector<vector<int>>
      */
-    vector<vector<int>> GetSubPackets();
+    virtual vector<vector<int>> GetSubPackets();
 
     /**
      * @brief Get total number of symbols

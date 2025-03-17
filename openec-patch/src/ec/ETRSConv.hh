@@ -63,7 +63,7 @@ public:
      * 
      * @return vector<vector<int>> 
      */
-    vector<vector<int>> GetSubPackets();
+    virtual vector<vector<int>> GetSubPackets();
 };
 
 #endif // __ET_RSCONV_HH__
