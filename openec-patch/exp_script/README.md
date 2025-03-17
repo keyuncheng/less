@@ -26,10 +26,16 @@
     * restart_hdfs.sh: reset and restart HDFS
     * restart_oec.sh restart OpenEC
     * gen_oec_config.py: generate OpenEC config on a node
-    * run_code_test_single.py: run single failure erasure code test
-    * run_code_test_multiple.py: run multiple failure erasure code test
-    * run_testbed_single.py: run single failure testbed experiment
-    * extract_testbed_logs.py: extract logs from testbed experiment
+    * run_code_test_single.py: run single-block repair code test
+    * run_code_test_multiple.py: run multi-block failure erasure code test
+    * run_testbed_single.py: run single-block repair testbed experiment
+    * run_testbed_full_node.py: run full-node recovery testbed experiment
+    * get_full_node_recovery_times.sh: get full-node recovery times from
+      OpenEC Coordinator logs
+    * run_encoding.py: run encoding throughput test
+    * extract_testbed_logs_single.py: extract logs from single-block repair
+      testbed experiment
+    * extract_testbed_logs_full_node.py: extract logs from full-node recovery testbed experiment
 
 * Files:
     * eval_settings.ini: evaluation settings file
