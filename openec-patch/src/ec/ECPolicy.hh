@@ -6,11 +6,7 @@
 #include "RSCONV.hh"
 #include "HHXORPlus.hh"
 #include "HTEC.hh"
-#include "WASLRC.hh"
 #include "ETRSConv.hh"
-#include "ETHHXORPlus.hh"
-#include "ETHTEC.hh"
-#include "BUTTERFLY.hh"
 #include "Clay.hh"
 #include "LESS.hh"
 
