@@ -10,7 +10,6 @@
 
 #include "galois.h"
 #include "jerasure.h"
-#include <isa-l.h>
 
 #include <cstdint>
 
