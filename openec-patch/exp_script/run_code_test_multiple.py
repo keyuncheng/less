@@ -111,7 +111,7 @@ def main():
             failedIds = " ".join([str(x) for x in failedIds])
             # print(index, failedIds)
 
-            cmd = "source {} && cd {} && ./{} {} {} {} {} {} {}".format("~/.zshrc", common.PROJ_DIR, "CodeTest", codeName, codeN, codeK, codeW, DEFAULT_BLOCK_SIZE, failedIds)
+            cmd = "cd {} && ./{} {} {} {} {} {} {}".format(common.PROJ_DIR, "CodeTest", codeName, codeN, codeK, codeW, DEFAULT_BLOCK_SIZE, failedIds)
             msg, success = execCmd(cmd, printCmd=False, printOutputs=False)
 
             if "error" in msg:
