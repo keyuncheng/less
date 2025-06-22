@@ -16,8 +16,8 @@ performance as shown in our FAST 2026 paper.  For numerical analysis (i.e.,
 Exp\#A1 and Exp\#A2), we expect the results to match those in our paper. For
 testbed experiments (i.e., Exp\#B1 to Exp\#B5), we expect that LESS reduces
 the single-block repair and full-node recovery times compared to the baseline
-erasure codes. However, the testbed experiment results may vary slightly from
-those in our paper due to different factors, such as cluster sizes, machine
+erasure codes. However, the testbed experiment results may vary from those in
+our paper due to different factors, such as cluster sizes, machine
 specifications, operating systems, and software packages.
 
 ## Hardware Dependencies
@@ -40,7 +40,6 @@ same following default configurations:
 ```
 Operating System: Ubuntu 22.04 LTS
 OS username / password: less / less
-network_interface: <please check on the machines via ifconfig>
 Path to artifact: "/home/${username}/less"
 ```
 
@@ -50,17 +49,17 @@ Ubuntu 22.04 LTS. Note that the actual running times of the scripts depend on
 the cluster sizes, machine specifications, operating systems, and software
 packages.
 
-Please follow the steps below:
+For each node in the cluster, please follow the steps below:
 
-Step 1: manually set up the node with the default
-username/password. This ensures automatic testbed setup with the scripts.
+Step 1: Manually set up the node with the default username/password. This
+ensures automatic testbed setup with the scripts later.
 
-Step 2: For each node, modify ```scripts/settings.sh``` to follow the default
+Step 2: Modify ```scripts/settings.sh``` to align with the default
 configurations.
 
-Step 3: Modify ```node_list.txt``` to include the IP addresses of all nodes in
-the cluster. Each line should contain only one IP address, and the file should
-not contain any empty lines or comments.  See example below:
+Step 3: Modify ```scripts/node_list.txt``` to include the IP addresses of all
+nodes in the cluster. Each line should contain only one IP address, and the
+file should not contain any empty lines or comments.  See the example below:
 
 ```
 192.168.0.1
@@ -69,12 +68,12 @@ not contain any empty lines or comments.  See example below:
 192.168.0.15
 ```
 
-We assume **the first machine** serves as the HDFS NameNode, and the other 14
-machines serve as HDFS DataNodes.
+We assume **the first machine** (with the first IP address) serves as the HDFS
+NameNode, and the other 14 machines serve as HDFS DataNodes.
 
-On the NameNode, run ```scripts/``` to install the software dependencies, set
-up the environment variables on each node, and set up mutual password-less SSH
-connection between all nodes.
+On the NameNode, run ```scripts/setup.sh``` to install all the software
+dependencies, set up the environment variables on each node, and set up mutual
+password-less SSH connection between all nodes.
 
 ```
 bash scripts/setup.sh
