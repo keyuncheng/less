@@ -39,7 +39,7 @@ same following default configurations:
 
 ```
 Operating System: Ubuntu 22.04 LTS
-OS username / password: less / less
+Username / password: less / less
 Path to artifact: "/home/${username}/less"
 ```
 
@@ -54,8 +54,20 @@ For each node in the cluster, please follow the steps below:
 Step 1: Manually set up the node with the default username/password. This
 ensures automatic testbed setup with the scripts later.
 
-Step 2: Modify ```scripts/settings.sh``` to align with the default
-configurations.
+Step 2: Modify ```scripts/settings.sh``` to change the evaluation settings.
+There are a few settings you may need to change:
+
+```
+[Experiment]
+num_runs = 1 # the number of runs in experiments
+
+[Cluster]
+root_user_name = less # the username of the root user
+root_user_passwd = less # the password of the root user
+user_name = less # the username of the user running the scripts
+user_passwd = less # the password of the user running the scripts
+ip_prefix = 192.168.10 # the IP prefix of the cluster nodes
+```
 
 Step 3: Modify ```scripts/node_list.txt``` to include the IP addresses of all
 nodes in the cluster. Each line should contain only one IP address, and the
@@ -72,11 +84,12 @@ We assume **the first machine** (with the first IP address) serves as the HDFS
 NameNode, and the other 14 machines serve as HDFS DataNodes.
 
 On the NameNode, run ```scripts/setup.sh``` to install all the software
-dependencies, set up the environment variables on each node, and set up mutual
+dependencies, set up the environment variables on all nodes, and set up mutual
 password-less SSH connection between all nodes.
 
 ```
-bash scripts/setup.sh
+cd scripts
+bash setup.sh
 ```
 
 
