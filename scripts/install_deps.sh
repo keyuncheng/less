@@ -67,16 +67,18 @@ make
 echo $user_passwd | sudo -S make install
 
 
-# dependencies (ISA-L v2.30.0)
-cd $pkg_dir
-tar zxvf isa-l-2.30.0.tar.gz
-cd isa-l-2.30.0/
-libtoolize
-autoupdate
-./autogen.sh
-./configure
-make
-echo $user_passwd | sudo -S make install
+# dependencies (ISA-L)
+echo $user_passwd | sudo -S apt-get -y install libisal-dev
+# Alternative: manually install ISA-L v2.30.0
+# cd $pkg_dir
+# tar zxvf isa-l-2.30.0.tar.gz
+# cd isa-l-2.30.0/
+# libtoolize
+# autoupdate
+# ./autogen.sh
+# ./configure
+# make
+# echo $user_passwd | sudo -S make install
 
 
 # dependencies (Java 8, Maven)
@@ -110,11 +112,10 @@ echo -e 'export HADOOP_CLASSPATH=$JAVA_HOME/lib/tools.jar:$HADOOP_CLASSPATH' >> 
 echo -e 'export CLASSPATH=$JAVA_HOME/lib:$CLASSPATH' >> $home_dir/.bashrc
 echo -e 'export LD_LIBRARY_PATH=$HADOOP_HOME/lib/native:$JAVA_HOME/jre/lib/amd64/server/:/usr/local/lib:$LD_LIBRARY_PATH' >> $home_dir/.bashrc
 echo -e 'export PATH=$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$PATH' >> $home_dir/.bashrc
-source $home_dir/.bashrcq
+source $home_dir/.bashrc
 
 
 # dependencies (patch OpenEC with LESS)
-
 cp -r $proj_dir/src/openec-patch/* $pkg_dir/openec
 cp $pkg_dir/openec/CMakeLists.txt $proj_dir
 cp -r $pkg_dir/openec/conf $proj_dir
