@@ -54,4 +54,4 @@ sed -i 's%\(<yarnpkg.version>\)[^<]*%\1v1.22.19%' ${HADOOP_SRC_DIR}/hadoop-proje
 
 # 4. compile source code
 cd $HADOOP_SRC_DIR
-mvn package -Dhttp.proxyHost=137.189.90.217 -Dhttp.proxyPort=8000 -Dhttps.proxyHost=137.189.90.217 -Dhttps.proxyPort=8000 -Pdist,native -DskipTests -Dmaven.javadoc.skip=true -DskipShade -e -Drequire.isal -Drequire.ssl
+mvn package -Pdist,native -DskipTests -Dmaven.javadoc.skip=true -DskipShade -e -Drequire.isal -Drequire.ssl

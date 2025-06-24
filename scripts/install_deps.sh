@@ -95,7 +95,7 @@ echo -e 'export PATH=$MAVEN_HOME/bin:$JAVA_HOME/bin:$PATH' >> $home_dir/.bashrc
 
 
 # dependencies (Hadoop 3.3.4)
-echo $user_passwd | sudo -S apt-get -y install ezlib1g-dev libssl-dev doxygen protobuf-compiler libprotobuf-dev libprotoc-dev libsasl2-dev libgsasl7-dev libuuid1 libfuse-dev
+echo $user_passwd | sudo -S apt-get -y install libssl-dev doxygen protobuf-compiler libprotobuf-dev libprotoc-dev libsasl2-dev libgsasl7-dev libuuid1 libfuse-dev doxygen
 cd $pkg_dir
 tar zxf hadoop-3.3.4-src.tar.gz
 
@@ -113,15 +113,3 @@ echo -e 'export CLASSPATH=$JAVA_HOME/lib:$CLASSPATH' >> $home_dir/.bashrc
 echo -e 'export LD_LIBRARY_PATH=$HADOOP_HOME/lib/native:$JAVA_HOME/jre/lib/amd64/server/:/usr/local/lib:$LD_LIBRARY_PATH' >> $home_dir/.bashrc
 echo -e 'export PATH=$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$PATH' >> $home_dir/.bashrc
 source $home_dir/.bashrc
-
-
-# dependencies (patch OpenEC with LESS)
-cp -r $proj_dir/src/openec-patch/* $pkg_dir/openec
-cp $pkg_dir/openec/CMakeLists.txt $proj_dir
-cp -r $pkg_dir/openec/conf $proj_dir
-cp -r $pkg_dir/openec/doc $proj_dir
-cp -r $pkg_dir/openec/hdfs3.3.4-integration $proj_dir
-cp -r $pkg_dir/openec/lib $proj_dir
-cp -r $pkg_dir/openec/conf $proj_dir
-cp -r $pkg_dir/openec/script $proj_dir
-cp -r $pkg_dir/openec/src $proj_dir

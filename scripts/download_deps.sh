@@ -5,6 +5,12 @@ source "./load_eval_settings.sh"
 
 mkdir -p $pkg_dir && cd $pkg_dir
 
+echo $user_passwd | sudo -S apt-get -y install expect
+
+# benchmark (wondershaper)
+cd $pkg_dir
+git clone https://github.com/magnific0/wondershaper.git
+
 # redis v3.2.8
 wget https://download.redis.io/releases/redis-3.2.8.tar.gz
 
@@ -24,6 +30,13 @@ wget https://archive.apache.org/dist/hadoop/common/hadoop-3.3.4/hadoop-3.3.4-src
 cd $pkg_dir
 git clone https://github.com/ukulililixl/openec.git
 
-# benchmark (wondershaper)
-cd $pkg_dir
-git clone https://github.com/magnific0/wondershaper.git
+# dependencies (patch OpenEC with LESS)
+cp -r $proj_dir/src/openec-patch/* $pkg_dir/openec
+cp $pkg_dir/openec/CMakeLists.txt $proj_dir
+cp -r $pkg_dir/openec/conf $proj_dir
+cp -r $pkg_dir/openec/doc $proj_dir
+cp -r $pkg_dir/openec/hdfs3.3.4-integration $proj_dir
+cp -r $pkg_dir/openec/lib $proj_dir
+cp -r $pkg_dir/openec/conf $proj_dir
+cp -r $pkg_dir/openec/script $proj_dir
+cp -r $pkg_dir/openec/src $proj_dir

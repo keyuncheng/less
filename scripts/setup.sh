@@ -1,0 +1,42 @@
+#!/bin/bash
+
+source "./load_eval_settings.sh"
+
+# download dependencies
+bash download_deps.sh
+
+# create users on each node
+./create_users_dist.exp
+
+# set up ssh password-less connection on each node
+./set_ssh_dist.exp
+
+# copy dependencies to all DataNodes
+bash copy_dist.sh $proj_dir $home_dir
+bash copy_dist.sh $pkg_dir $home_dir
+
+# install dependencies on each node
+for idx in $(seq 0 $((num_nodes-1))); do
+    node_ip=${node_ip_list[$idx]}
+
+    echo "start to install dependencies on $node_ip"
+    echo
+
+    echo $user_passwd | ssh $user_name@$node_ip "cd $exp_script_dir && bash install_deps.sh"
+
+    echo "finish installing dependencies on $node_ip"
+    echo
+done
+
+# compile Hadoop 3 (this may take a long while)
+bash compile_hadoop.sh
+
+# copy Hadoop to all DataNodes
+bash copy_dist.sh $hadoop_home_dir $home_dir
+
+# compile OpenEC on each node
+for idx in $(seq 0 $((num_nodes-1))); do
+    node_ip=${node_ip_list[$idx]}
+
+    echo $user_passwd | ssh $user_name@$node_ip "cd $exp_script_dir && bash install_oec.sh"
+done
