@@ -23,4 +23,7 @@
 | run_script_dist.sh | (All nodes but self) Run a script on all nodes but itself |
 | update_config_dist.sh | (All nodes) Update OpenEC and HDFS configurations on all nodes
 | update_hdfs_config.sh | Update HDFS configurations |
-| update_ip.sh
+| update_ip.sh | Update IP addresses in the configuration files |
+| gen_oec_config.py | Generate OpenEC configuration file |
+| restart_hdfs.sh | Restart HDFS |
+| restart_oec.sh | Restart OpenEC |
