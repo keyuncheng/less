@@ -38,5 +38,10 @@ bash copy_dist.sh $hadoop_home_dir $home_dir
 for idx in $(seq 0 $((num_nodes-1))); do
     node_ip=${node_ip_list[$idx]}
 
+    echo "start to install OpenEC on $node_ip"
+    echo
+
     echo $user_passwd | ssh $user_name@$node_ip "cd $exp_script_dir && bash install_oec.sh"
+
+    echo "finish installing OpenEC on $node_ip"
 done

@@ -15,6 +15,6 @@ dst_dir=$2
 for idx in $(seq 1 $((num_nodes-1))); do
     node_ip=${node_ip_list[$idx]}
     
-    echo rsync -av --delete --recursive $src_file $user_name@$node_ip:$dst_dir
-    rsync -av --delete --recursive $src_file $user_name@$node_ip:$dst_dir
+    echo rsync -av --recursive $src_file $user_name@$node_ip:$dst_dir
+    rsync -av --recursive $src_file $user_name@$node_ip:$dst_dir
 done

@@ -1,19 +1,17 @@
-# Evaluation Scripts
+# List of Evaluation Scripts
 
-* Scripts:
-    * setup.sh: setup the evaluation environment
-    * load_eval_settings.sh: load eval_settings.ini into bash variables
-    * download_deps.sh: download dependencies on a node
-    * install_deps.sh: install dependencies on a node
-    * create_users_dist.exp: on each DataNode, create user and set root privilege
-    * set_ssh_dist.exp: generate ssh keys on each node, and setup
-      password-less connections between NameNode and DataNodes
-    * compile_hadoop.sh: compile Hadoop
-    * install_oec.sh: install OpenEC
-    * test_login_dist.sh: test login on all nodes
-
-* Files:
-    * settings.ini: evaluation settings file
-    * common.py: common functions of python scripts
-    * node_list.txt: node IP list
-    * code_test_list.txt: erasure codes to test
+| Name | Description |
+| ------ | ------ |
+| setup.sh | Set up the testbed for evaluation |
+| load_eval_settings.sh | Load evaluation settings |
+| download_deps.sh | Download dependencies |
+| install_deps.sh | Install dependencies |
+| create_users_dist.exp | (All nodes) Create user, set root privilege, and set SSH keys |
+| set_ssh_dist.exp | (All nodes) Set up password-less connections |
+| test_login_dist.sh | Test user login on all nodes |
+| compile_hadoop.sh | Compile Hadoop |
+| install_oec.sh | Install OpenEC |
+| settings.ini | Evaluation settings file |
+| common.py | Common functions for Python |
+| node_list.txt | List of Node IPs |
+| code_test_list.txt | List of Erasure codes to test |

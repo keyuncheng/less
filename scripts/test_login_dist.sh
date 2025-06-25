@@ -8,7 +8,7 @@ for idx in $(seq 0 $((num_nodes-1))); do
     
     expect << EOF
     
-    set timeout 5
+    set timeout 3
     spawn ssh $user_name@$node_ip "echo success"
     expect {
         "*yes/no" { send "yes\n"; exp_continue }
