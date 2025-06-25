@@ -30,13 +30,13 @@ using namespace std;
 void usage()
 {
     printf("usage: ./CodeTest code_name n k w blockSizeBytes <failed_block_ids>\n");
-    printf("code_name: RSCONV, HHXORPlus, HTEC, BUTTERFLY, Clay, ETRSConv, ETHTEC, ETHHXORPlus, LESS\n");
+    printf("code_name: RSCONV, HHXORPlus, HTEC, Clay, ETRSConv, LESS\n");
     printf("n: number of blocks\n");
     printf("k: number of data blocks\n");
     printf("w: sub-packetization\n");
     printf("blockSizeBytes: size of each block in Bytes\n");
     printf("failed_block_ids: list of failed block ids\n");
-    printf("Example: ./CodeTest RSCONV 10 6 4 1024 1 2 3\n");
+    printf("Example: ./CodeTest RSCONV 14 10 1 1024 1\n");
 }
 
 double getCurrentTime()

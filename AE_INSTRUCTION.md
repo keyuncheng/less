@@ -93,9 +93,44 @@ bash setup.sh
 ```
 
 
-
 ## Evaluation
+
+The default OpenEC configuration file is in ```conf/sysSetting.xml```.
+It includes configurations for different (n, k) = (14, 10) erasure codes:
+
+| Code | ClassName | Parameters *(n,k)* | Sub-packetization |
+| ------ | ------ | ------ | ------ |
+| LESS | LESS | (14,10) | 2, 3, 4 |
+| RS codes | RSCONV | (14,10) | 1 |
+| Hitchhiker (Hitchhiker-XOR+ version) | HHXORPlus | (14,10) | 2 |
+| Elastic Transformation (base code: RS codes) | ETRSConv | (14,10) | 2, 3, 4 |
+| HashTag | HTEC | (14,10) | 2, 3, 4 |
+| Clay codes | Clay | (14,10) | 256 |
 
 ### Numerical Analysis
 
+#### Exp#A1 Single-block Repair
+
+Run the script to generate the results for single-block repair:
+```
+bash exp_a1.sh
+```
+
+#### Exp#A2 Multi-block Repair
+
+Run the script to generate the results for multi-block repair:
+```
+bash exp_a2.sh
+```
+
 ### Testbed Experiments
+
+#### Exp#B1 Single-block Repair
+
+#### Exp#B2 Full-node Recovery
+
+#### Exp#B1 Encoding Throughput
+
+#### Exp#B2 Impact of Network Bandwidth
+
+#### Exp#B1 Impact of Packet Size

@@ -2,7 +2,11 @@
 
 source "./load_eval_settings.sh"
 
-node_ip=$(ifconfig | grep $ip_prefix | head -1 | sed "s/ *inet [addr:]*\([^ ]*\).*/\1/")
+if [ "$#" == "0" ]; then
+    node_ip=$(ifconfig | grep $ip_prefix | head -1 | sed "s/ *inet [addr:]*\([^ ]*\).*/\1/")
+elif [ "$#" == "1" ]; then
+	node_ip=$1
+fi
 
 conf_filename=sysSetting.xml
 
