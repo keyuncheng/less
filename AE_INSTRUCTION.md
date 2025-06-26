@@ -159,8 +159,27 @@ LESS reduces the average repair I/O of RS codes by (10 - 9.252747252747254) /
 
 #### Exp#B2 Full-node Recovery
 
-#### Exp#B1 Encoding Throughput
+#### Exp#B3 Encoding Throughput
 
-#### Exp#B2 Impact of Network Bandwidth
+This experiment evaluates encoding throughput (MiB/s) of LESS and RS codes. We
+run a standalone program to encode a single (14,10) stripe in memory, with
+packet sizes varied from 128 KiB t o 1024 KiB.
 
-#### Exp#B1 Impact of Packet Size
+Run ```exp_b3.sh``` to generate the results for LESS and RS codes:
+```
+bash exp_b3.sh
+```
+
+The encoding throughputs will be printed on the terminal.  See the results for
+LESS (14,10) with 256 KiB packet size below:
+
+```
+LESS (14, 10, 4), packet size (bytes): 262144, Encoding throughput (MiB/s): avg: 1643.149958, lower: 1611.547963, upper: 1675.171492
+```
+
+Note that the encoding throughputs depend on the CPUs and could be different
+from the paper's results.
+
+#### Exp#B4 Impact of Network Bandwidth
+
+#### Exp#B5 Impact of Packet Size

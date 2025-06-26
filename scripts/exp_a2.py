@@ -6,7 +6,7 @@ import math
 # @param alpha: sub-packetization
 # @param m: number of failed blocks
 def run_multi_block(n, k, alpha, m):
-    print("LESS(n={}, k={}, alpha={}, {}-blocks repair)".format(n, k, alpha, m))
+    print("LESS ({}, {}, {}), {}-blocks repair".format(n, k, alpha, m))
 
     if m > (n-k)//alpha:
         print(f"LESS DO NOT have repair bandwidth and # I/O seeks reduction, when {m} blocks fail!!!")

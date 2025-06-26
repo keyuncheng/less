@@ -13,7 +13,7 @@ fi
 
 
 # dependencies (general)
-echo $user_passwd | sudo -S apt-get -y install expect iproute2 net-tools fio lshw iperf python2.7 build-essential
+echo $user_passwd | sudo -S apt-get -y install expect iproute2 net-tools fio lshw iperf python2.7 python3 build-essential
 
 
 # dependencies (cmake g++)
