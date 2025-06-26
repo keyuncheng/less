@@ -157,7 +157,37 @@ LESS reduces the average repair I/O of RS codes by (10 - 9.252747252747254) /
 
 #### Exp#B1 Single-block Repair
 
+This experiment evaluates single-block repair time of different erasure codes.
+We measure single-block repair time (in seconds) in OpenEC.
+
+Run ```exp_b1.sh``` to generate the results for LESS:
+```
+bash exp_b1.sh
+```
+
+The repair time will be printed on the terminal. See the results for LESS (14,10,4) below:
+
+```
+LESS (14, 10, 4), Single-block repair time (seconds): avg: 2.123456789, lower: 2.0, upper: 2.3
+```
+
+Note that the actual repair time depends on the hardware and software configurations of the testbed, and could be different from the paper's results.
+
 #### Exp#B2 Full-node Recovery
+
+This experiment evaluates full-node recovery time of different erasure codes.
+We measure full-node recovery time (in seconds) in OpenEC.
+
+Run ```exp_b2.sh``` to generate the results for LESS:
+```
+bash exp_b2.sh
+```
+
+The repair time will be printed on the terminal. See the results for LESS (14,10,4) below:
+
+```
+LESS (14, 10, 4), Full-node recovery time (seconds): avg: 2.123456789, lower: 2.0, upper: 2.3
+```
 
 #### Exp#B3 Encoding Throughput
 
@@ -182,4 +212,34 @@ from the paper's results.
 
 #### Exp#B4 Impact of Network Bandwidth
 
+This experiment evaluates single-block repair time of LESS, RS codes and Clay
+codes. We measure single-block repair time (in seconds) in OpenEC for
+different network bandwidth (1, 2, 5, 10 Gbps).
+
+Run ```exp_b4.sh``` to generate the results for LESS:
+```
+bash exp_b4.sh
+```
+
+The repair time will be printed on the terminal. See the results for LESS (14,10,4) below:
+
+```
+LESS (14, 10, 4), Single-block repair time (seconds): avg: 2.123456789, lower: 2.0, upper: 2.3
+```
+
 #### Exp#B5 Impact of Packet Size
+
+This experiment evaluates single-block repair time of LESS, RS codes and Clay
+codes. We measure single-block repair time (in seconds) in OpenEC for
+different packet sizes (128 KiB, 256 KiB, 512 KiB, 1024 KiB).
+
+Run ```exp_b5.sh``` to generate the results for LESS:
+```
+bash exp_b5.sh
+```
+
+The repair time will be printed on the terminal. See the results for LESS (14,10,4) below:
+
+```
+LESS (14, 10, 4), Single-block repair time (seconds): avg: 2.123456789, lower: 2.0, upper: 2.3
+```

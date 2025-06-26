@@ -9,9 +9,13 @@ Below are the scripts that needs to run or modify:
 | settings.ini | Evaluation settings file |
 | node_list.txt | List of Node IPs |
 | setup.sh | Set up the testbed for evaluation |
-| exp_a1.py | Script for Exp#A1 |
-| exp_a2.py | Script for Exp#A2 |
-| exp_b3.sh | Script for Exp#B3 |
+| exp_a1.py | Script for Exp#A1: Single-block repair |
+| exp_a2.py | Script for Exp#A2: Multi-block repair |
+| exp_b1.sh | Script for Exp#B1: Single-block repair |
+| exp_b2.sh | Script for Exp#B2: Full-node recovery |
+| exp_b3.sh | Script for Exp#B3: Encoding throughput |
+| exp_b4.sh | Script for Exp#B4: Impact of network bandwidth |
+| exp_b5.sh | Script for Exp#B5: Impact of packet size |
 
 ## List of helper scripts
 

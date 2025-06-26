@@ -1,15 +1,13 @@
 #!/bin/bash
-# usage: Exp#B3: encoding throughput
+# usage: Exp#B3: Encoding throughput
 
 source "./load_eval_settings.sh"
 
-cd $proj_dir/src/ec-library
-
 echo "Exp#B3: Encoding throughput"
 
+# install the ec-library
 echo "Installing the ec-library"
-
-# compile the ec-library
+cd $proj_dir/src/ec-library
 echo $user_passwd | sudo -S apt-get install libtool autoconf
 mkdir build && cd build
 cmake .. && make
