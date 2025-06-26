@@ -74,10 +74,10 @@ nodes in the cluster. Each line should contain only one IP address, and the
 file should not contain any empty lines or comments.  See the example below:
 
 ```
-192.168.0.1
-192.168.0.2
+192.168.10.1
+192.168.10.2
 ...
-192.168.0.15
+192.168.10.15
 ```
 
 We assume **the first machine** (with the first IP address) serves as the HDFS
@@ -98,7 +98,7 @@ bash setup.sh
 The default OpenEC configuration file is in ```conf/sysSetting.xml```.
 It includes configurations for different (n, k) = (14, 10) erasure codes:
 
-| Code | ClassName | Parameters *(n,k)* | Sub-packetization |
+| Code | ClassName | Parameters *(n,k)* | Sub-packetization (alpha) |
 | ------ | ------ | ------ | ------ |
 | RS codes | RSCONV | (14,10) | 1 |
 | Clay codes | Clay | (14,10) | 256 |
