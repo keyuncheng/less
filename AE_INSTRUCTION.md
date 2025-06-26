@@ -100,12 +100,12 @@ It includes configurations for different (n, k) = (14, 10) erasure codes:
 
 | Code | ClassName | Parameters *(n,k)* | Sub-packetization |
 | ------ | ------ | ------ | ------ |
-| LESS | LESS | (14,10) | 2, 3, 4 |
 | RS codes | RSCONV | (14,10) | 1 |
+| Clay codes | Clay | (14,10) | 256 |
+| HashTag | HTEC | (14,10) | 2, 3, 4 |
 | Hitchhiker (Hitchhiker-XOR+ version) | HHXORPlus | (14,10) | 2 |
 | Elastic Transformation (base code: RS codes) | ETRSConv | (14,10) | 2, 3, 4 |
-| HashTag | HTEC | (14,10) | 2, 3, 4 |
-| Clay codes | Clay | (14,10) | 256 |
+| LESS | LESS | (14,10) | 2, 3, 4 |
 
 ### Numerical Analysis
 
@@ -114,6 +114,15 @@ It includes configurations for different (n, k) = (14, 10) erasure codes:
 Run the script to generate the results for single-block repair:
 ```
 bash exp_a1.sh
+```
+
+The repair I/O and I/O seeks will be printed on the terminal, which exactly
+matches the results in Tables 2 and 3. See the results for RS (14,10) below:
+
+```
+Code: RSCONV (14, 10, 1)
+Repair I/O (bandwidth): 10.0 (min: 10.0, max: 10.0)
+I/O seek: 10.0 (min: 10, max: 10))
 ```
 
 #### Exp#A2 Multi-block Repair

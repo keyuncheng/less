@@ -59,7 +59,7 @@ ECDAG* RSCONV::Decode(vector<int> from, vector<int> to) {
   }
   int _invert_matrix[_k*_k];
 
-  jerasure_invert_matrix(_select_matrix, _invert_matrix, _k, _k); 
+  jerasure_invert_matrix(_select_matrix, _invert_matrix, _k, 8); 
   for (int i=0; i<to.size(); i++) {
     int ridx = to[i];
     int _select_vector[_k];

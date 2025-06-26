@@ -15,11 +15,10 @@ class DictToObject:
             setattr(self, key, value)
 
 def parseArgs(cmdArgs):
-    argParser = argparse.ArgumentParser(description="generate openec config") 
+    argParser = argparse.ArgumentParser(description="generate OpenEC config file") 
 
-    # Input parameters: -f code test file
-    argParser.add_argument("-f", type=str, required=True, help="config file (.ini): config file")
-    argParser.add_argument("-o", type=str, help="output file (.xml): output file", default=common.CONFIG_DIR + "/sysSetting.xml")
+    argParser.add_argument("-f", type=str, help="Evaluation config file (.ini)", default=common.EXP_SCRIPT_DIR + "/settings.ini")
+    argParser.add_argument("-o", type=str, help="OpenEC config file (.xml)", default=common.CONFIG_DIR + "/sysSetting.xml")
     
     args = argParser.parse_args(cmdArgs)
     return args
@@ -168,7 +167,7 @@ def main():
     # write xml to file
     tree = ET.ElementTree(root)
     ET.indent(tree, space="\t", level=0)
-    print("Generated config to {}".format(outputConfigXMLFile))
+    print("Generated OpenEC config, save to {}".format(outputConfigXMLFile))
 
     Path(common.CONFIG_DIR).mkdir(parents=True, exist_ok=True)
     tree.write(outputConfigXMLFile)

@@ -8,7 +8,7 @@
 
 using namespace std;
 
-#define RS_N_MAX (32)
+#define RS_N_MAX (255)
 
 #define RSCONV_DEBUG_ENABLE false
 
