@@ -37,7 +37,7 @@ codeList = [
 ]
 
 def parseArgs(cmdArgs):
-    argParser = argparse.ArgumentParser(description="Exp#A1 Single-block repair")
+    argParser = argparse.ArgumentParser(description="Exp#A1: Single-block repair")
 
     argParser.add_argument("-f", type=str, help="Evaluation config file (.ini)", default=common.EXP_SCRIPT_DIR + "/settings.ini")
     
@@ -75,7 +75,8 @@ def main():
     # Input parameters: configFile
     configFile = args.f
 
-    print(codeList)
+    print("Exp#A1: Single-block repair\n")
+    print("Code List:", codeList)
 
     # parse configs
     configsRaw = configparser.ConfigParser()
@@ -216,8 +217,8 @@ def main():
         # print stats
         print("")
         print("Code: {} ({}, {}, {})".format(codeName, codeN, codeK, codeW))
-        print("Repair I/O (bandwidth): {} (min: {}, max: {})".format(sum(repairBWStats) / codeW / maxBlockId, min(repairBWStats) / codeW, max(repairBWStats) / codeW))
-        print("I/O seek: {} (min: {}, max: {}))".format(sum(nonContIOStats) / maxBlockId, min(nonContIOStats), max(nonContIOStats)))
+        print("Repair I/O (bandwidth): avg: {}, min: {}, max: {}".format(sum(repairBWStats) / codeW / maxBlockId, min(repairBWStats) / codeW, max(repairBWStats) / codeW))
+        print("I/O seeks: avg: {}, min: {}, max: {}".format(sum(nonContIOStats) / maxBlockId, min(nonContIOStats), max(nonContIOStats)))
         print("")
 
     endExpTime = time.time()

@@ -111,26 +111,47 @@ It includes configurations for different (n, k) = (14, 10) erasure codes:
 
 #### Exp#A1 Single-block Repair
 
-Run the script to generate the results for single-block repair:
+This experiment evaluates single-block repair performance of different
+erasure codes. The results includes single-block repair I/O and I/O seeks.
+
+Run ```exp_a1.sh``` to generate the results for different codes:
 ```
 bash exp_a1.sh
 ```
 
 The repair I/O and I/O seeks will be printed on the terminal, which exactly
-matches the results in Tables 2 and 3. See the results for RS (14,10) below:
+matches the results in Tables 2 and 3. See the results for LESS (14,10,4) below:
 
 ```
-Code: RSCONV (14, 10, 1)
-Repair I/O (bandwidth): 10.0 (min: 10.0, max: 10.0)
-I/O seek: 10.0 (min: 10, max: 10))
+Code: LESS (14, 10, 4)
+Repair I/O (bandwidth): avg: 4.642857142857143, min: 4.0, max: 4.75
+I/O seeks: avg: 13.0, min: 13, max: 13
 ```
 
 #### Exp#A2 Multi-block Repair
 
-Run the script to generate the results for multi-block repair:
+This experiment evaluates multi-block repair performance of LESS and RS codes.
+The results includes two-block repair I/O, I/O seeks, and the improved repair
+ratio.  Note that there is no need to run experiment for RS codes, as the
+repair I/O and I/O seeks are both equal to k.
+
+Run ```exp_a2.sh``` to generate the results for LESS:
 ```
 bash exp_a2.sh
 ```
+
+The repair I/O, I/O seeks, and improved repair ratio will be printed on
+the terminal, which exactly matches the results in Figure 3. See the results
+for LESS (14,10,2) below:
+```
+LESS(n=14, k=10, alpha=2, 2-blocks repair)
+Repair I/O (bandwidth): avg: 9.252747252747254
+I/O seeks: avg: 10.571428571428571
+Improved repair (with reduced repair I/O and I/O seeks) ratio: 0.2857142857142857
+```
+LESS reduces the average repair I/O of RS codes by (10 - 9.252747252747254) /
+10 = 7.4%, and improves for 28.6% of cases.
+
 
 ### Testbed Experiments
 
