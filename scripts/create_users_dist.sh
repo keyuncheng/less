@@ -36,6 +36,12 @@ for idx in $(seq 0 $((num_nodes-1))); do
     set timeout 1
     send "sudo usermod -aG sudo $user_name\n"
 
+    # change user
+    send "su - $user_name\n"
+    expect {
+        "*password for" { send "$user_passwd\n"; exp_continue }
+    }
+
     # create ssh key
     send "ssh-keygen -t rsa -P \"\" -f /home/$user_name/.ssh/id_rsa\n"
     expect {
