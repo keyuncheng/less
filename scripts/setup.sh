@@ -8,9 +8,6 @@ find . -type f -name "*.py" -exec chmod +x {} \;
 # download dependencies
 bash download_deps.sh
 
-# create users on each node
-bash create_users_dist.sh
-
 # set up ssh password-less connection on each node
 bash set_ssh_dist.sh
 

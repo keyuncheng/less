@@ -3,23 +3,22 @@
 
 source "./load_eval_settings.sh"
 
+echo "Setting up SSH password-less connection on each node..."
+
+if [ -z "$user_private_key" ]; then
+    echo "User private key is not set. Using password authentication."
+    if [ ! -f ~/.ssh/id_rsa ]; then
+        ssh-keygen -t rsa -P "" -f /home/$user_name/.ssh/id_rsa
+    else
+        cp $user_public_key ~/.ssh/id_rsa.pub
+        cp $user_private_key ~/.ssh/id_rsa
+    fi
+fi
+
 for idx in $(seq 0 $((num_nodes-1))); do
     node_ip=${node_ip_list[$idx]}
     
-    /usr/bin/expect << EOF
-
-    # remove key
-    set timeout 2
-    spawn ssh-keygen -f "/home/$user_name/.ssh/known_hosts" -R $node_ip
-    expect eof
-
-    # set ssh-copy-id 
-    set timeout 2
-    spawn ssh-copy-id -f $user_name@$node_ip
-    expect {
-        "*yes/no" { send "yes\n"; exp_continue }
-        "*password" { send "$user_passwd\n"; exp_continue }
-    }
-
+    ssh-keyscan -H ${node_ip} >> ~/.ssh/known_hosts
+    ssh-copy-id -f -i ~/.ssh/id_rsa.pub ${user_name}@${node_ip}
 EOF
 done

@@ -22,23 +22,21 @@ echo "home_dir:" $home_dir
 echo "proj_dir:" $proj_dir
 echo "conf_dir:" $conf_dir
 
-# root user
-root_user_name=$(grep '^root_user_name = ' "$INI_FILE" | cut -d '=' -f2)
-root_user_name=$(echo "$root_user_name" | xargs)
-root_user_passwd=$(grep '^root_user_passwd = ' "$INI_FILE" | cut -d '=' -f2)
-root_user_passwd=$(echo "$root_user_passwd" | xargs)
-
 # user
 user_name=$(grep '^user_name = ' "$INI_FILE" | cut -d '=' -f2)
 user_name=$(echo "$user_name" | xargs)
 user_passwd=$(grep '^user_passwd = ' "$INI_FILE" | cut -d '=' -f2)
 user_passwd=$(echo "$user_passwd" | xargs)
+user_public_key=$(grep '^user_public_key = ' "$INI_FILE" | cut -d '=' -f2)
+user_public_key=$(echo "$user_public_key" | xargs)
+user_private_key=$(grep '^user_private_key = ' "$INI_FILE" | cut -d '=' -f2)
+user_private_key=$(echo "$user_private_key" | xargs)
 
 # print user
-echo "root_user_name:" $root_user_name
-echo "root_user_passwd:" $root_user_passwd
 echo "user_name: "$user_name
 echo "user_passwd:" $user_passwd
+echo "user_public_key:" $user_public_key
+echo "user_private_key:" $user_private_key
 
 # ip_prefix
 ip_prefix=$(grep '^ip_prefix = ' "$INI_FILE" | cut -d '=' -f2)

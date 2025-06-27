@@ -26,7 +26,6 @@ Below are the helper scripts for evaluation:
 | load_eval_settings.sh | Load evaluation settings |
 | download_deps.sh | Download dependencies |
 | install_deps.sh | Install dependencies |
-| create_users_dist.sh | (All nodes) Create user, set root privilege, and set SSH keys |
 | set_ssh_dist.sh | (All nodes) Set up password-less connections |
 | test_login_dist.sh | (All nodes) Test user login |
 | compile_hadoop.sh | Compile Hadoop |
