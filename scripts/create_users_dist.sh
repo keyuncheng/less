@@ -1,4 +1,4 @@
-#!/usr/bin/expect -f
+#!/bin/bash
 # usage: create user and set root privilege on each node
 
 source "./load_eval_settings.sh"
@@ -6,7 +6,7 @@ source "./load_eval_settings.sh"
 for idx in $(seq 0 $((num_nodes-1))); do
     node_ip=${node_ip_list[$idx]}
     
-    expect << EOF
+    /usr/bin/expect << EOF
    
     # ssh 
     set timeout 5
