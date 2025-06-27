@@ -91,6 +91,28 @@ cd scripts
 bash setup.sh
 ```
 
+To verify the installation is successful, please check the following items:
+
+* Check if the terminal outputs any essential error messages.
+* Test SSH password-less login: run ```bash test_login_dist.sh``` should return "success" for all nodes.
+* Redis: run ```redis-cli``` should enter the Redis CLI without any error.
+* Hiredis: run ```find /usr /usr/local -name hiredis.h 2>/dev/null``` should
+  return the path to the hiredis header file, e.g.,
+  ```/usr/local/include/hiredis/hiredis.h```.
+* GF-Complete: run ```find /usr /usr/local -name gf_complete.h 2>/dev/null``` should
+  return the path to the gf_complete header file, e.g.,
+  ```/usr/local/include/gf_complete.h```.
+* ISA-L: run ```find /usr /usr/local -name isa-l.h 2>/dev/null``` should
+  return the path to the isa-l header file, e.g.,
+  ```/usr/include/isa-l.h```.
+* JAVA: run ```cd $JAVA_HOME``` should enters the Java home directory
+  ```/usr/lib/jvm/java-8-openjdk-amd64```.
+* Maven: run command ```mvn -v``` should show the Maven version.
+* Hadoop: the building process could take a long while, and it should not
+  report any error. After the installation, run command ```hadoop version```
+  should show the Hadoop version as 3.3.4.
+* OpenEC: the compilation should generate the binaries without any error.
+
 
 ## Evaluation
 
