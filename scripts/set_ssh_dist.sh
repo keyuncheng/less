@@ -20,5 +20,4 @@ for idx in $(seq 0 $((num_nodes-1))); do
     
     ssh-keyscan -H ${node_ip} >> ~/.ssh/known_hosts
     ssh-copy-id -f -i ~/.ssh/id_rsa.pub ${user_name}@${node_ip}
-EOF
 done

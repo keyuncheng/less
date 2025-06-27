@@ -39,7 +39,6 @@ same following default configurations:
 
 ```
 Operating System: Ubuntu 22.04 LTS
-Username / password: less / less
 Path to artifact: "/home/${username}/less"
 ```
 
@@ -64,7 +63,8 @@ num_runs = 1 # the number of runs in experiments
 [Cluster]
 user_name = cc # the username of the root user
 user_passwd = # the password of the root user (For Chameleon cloud, please keep this empty.)
-user_private_key = /home/cc/.ssh/fast26less # Path to cluster SSH keys (Only used for Chameleon Cloud instance created with CC-* series system image; make sure this private key is used for ssh to the instance). For nodes without private_key, please keep this empty. We assume all the nodes have the same path.
+user_public_key = /home/cc/.ssh/id_rsa.pub # Path to cluster SSH public key
+user_private_key = /home/cc/.ssh/id_rsa # Path to cluster SSH private key (Only used for Chameleon Cloud instance created with CC-* series system image; make sure this private key is used for ssh to the instance). For nodes without private_key, please keep this empty. We assume all the nodes have the same path.
 ip_prefix = 192.168.10 # the IP prefix of the cluster nodes
 ```
 
