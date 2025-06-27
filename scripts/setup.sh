@@ -3,17 +3,16 @@
 source "./load_eval_settings.sh"
 
 find . -type f -name "*.sh" -exec chmod +x {} \;
-find . -type f -name "*.exp" -exec chmod +x {} \;
 find . -type f -name "*.py" -exec chmod +x {} \;
 
 # download dependencies
 bash download_deps.sh
 
 # create users on each node
-./create_users_dist.sh
+bash create_users_dist.sh
 
 # set up ssh password-less connection on each node
-./set_ssh_dist.exp
+bash set_ssh_dist.sh
 
 # copy dependencies to all DataNodes
 bash copy_dist.sh $proj_dir $home_dir
