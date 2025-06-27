@@ -11,9 +11,10 @@ else
     exit 0
 fi
 
+echo $user_passwd | sudo -S apt-get update
 
 # dependencies (general)
-echo $user_passwd | sudo -S apt-get -y install expect iproute2 net-tools fio lshw iperf python2.7 python3 build-essential
+echo $user_passwd | sudo -S apt-get -y install expect iproute2 net-tools fio lshw iperf python2.7 python3 build-essential automake libjemalloc-dev
 
 
 # dependencies (cmake g++)
@@ -112,4 +113,31 @@ echo -e 'export HADOOP_CLASSPATH=$JAVA_HOME/lib/tools.jar:$HADOOP_CLASSPATH' >> 
 echo -e 'export CLASSPATH=$JAVA_HOME/lib:$CLASSPATH' >> $home_dir/.bashrc
 echo -e 'export LD_LIBRARY_PATH=$HADOOP_HOME/lib/native:$JAVA_HOME/jre/lib/amd64/server/:/usr/local/lib:$LD_LIBRARY_PATH' >> $home_dir/.bashrc
 echo -e 'export PATH=$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$PATH' >> $home_dir/.bashrc
+
+# Backup original .bashrc
+cp $home_dir/.bashrc $home_dir/.bashrc.bak
+
+# Define start and end patterns
+start_pattern="# If not running interactively, don't do anything"
+end_pattern="esac"
+
+# Read file line by line and comment out the block
+while IFS= read -r line; do
+    if [[ "$line" == "$start_pattern" ]]; then
+        in_block=true
+    fi
+
+    if [[ "$in_block" == true ]]; then
+        echo "#$line"  # Comment out the line
+    else
+        echo "$line"   # Leave other lines unchanged
+    fi
+
+    if [[ "$line" == "$end_pattern" ]]; then
+        in_block=false
+    fi
+done < $home_dir/.bashrc > $home_dir/.bashrc.tmp && mv $home_dir/.bashrc.tmp $home_dir/.bashrc
+
+echo "Interactive shell check has been disabled (commented out)"
+
 source $home_dir/.bashrc

@@ -32,7 +32,7 @@ machines to run the HDFS DataNodes.
 
 ## Testbed Setup
 
-**Time estimation**: ~ 5 human-minutes + ~ 100 machine minutes
+**Time estimation**: ~ 10 human-minutes + ~ 120 compute minutes
 
 **Assumptions**: To simplify the testbed setup, we assume all nodes share the
 same following default configurations:
@@ -106,9 +106,11 @@ It includes configurations for different (n, k) = (14, 10) erasure codes:
 | Elastic Transformation (base code: RS codes) | ETRSConv | (14,10) | 2, 3, 4 |
 | LESS | LESS | (14,10) | 2, 3, 4 |
 
-### Numerical Analysis
+### Numerical Analysis (for a quick start)
 
 #### Exp#A1 Single-block Repair
+
+**Time estimation**: ~ 1 human-minutes + ~ 10 compute minutes
 
 This experiment evaluates single-block repair performance of different
 erasure codes. The results includes single-block repair I/O and I/O seeks.
@@ -128,6 +130,8 @@ I/O seeks: avg: 13.0, min: 13, max: 13
 ```
 
 #### Exp#A2 Multi-block Repair
+
+**Time estimation**: ~ 1 human-minutes + ~ 5 compute minutes
 
 This experiment evaluates multi-block repair performance of LESS and RS codes.
 The results includes two-block repair I/O, I/O seeks, and the improved repair
@@ -156,6 +160,8 @@ LESS reduces the average repair I/O of RS codes by (10 - 9.252747252747254) /
 
 #### Exp#B1 Single-block Repair
 
+**Time estimation**: ~ 1 human-minutes + ~ 10 compute minutes
+
 This experiment evaluates single-block repair time of different erasure codes.
 We measure single-block repair time (in seconds) in OpenEC.
 
@@ -174,6 +180,8 @@ Note that the actual repair time depends on the hardware and software configurat
 
 #### Exp#B2 Full-node Recovery
 
+**Time estimation**: ~ 1 human-minutes + ~ 10 compute minutes
+
 This experiment evaluates full-node recovery time of different erasure codes.
 We measure full-node recovery time (in seconds) in OpenEC.
 
@@ -189,6 +197,8 @@ LESS (14, 10, 4), Full-node recovery time (seconds): avg: 2.123456789, lower: 2.
 ```
 
 #### Exp#B3 Encoding Throughput
+
+**Time estimation**: ~ 1 human-minutes + ~ 10 compute minutes
 
 This experiment evaluates encoding throughput (MiB/s) of LESS and RS codes. We
 run a standalone program to encode a single (14,10) stripe in memory, with
@@ -211,6 +221,8 @@ from the paper's results.
 
 #### Exp#B4 Impact of Network Bandwidth
 
+**Time estimation**: ~ 1 human-minutes + ~ 10 compute minutes
+
 This experiment evaluates single-block repair time of LESS, RS codes and Clay
 codes. We measure single-block repair time (in seconds) in OpenEC for
 different network bandwidth (1, 2, 5, 10 Gbps).
@@ -227,6 +239,8 @@ LESS (14, 10, 4), Single-block repair time (seconds): avg: 2.123456789, lower: 2
 ```
 
 #### Exp#B5 Impact of Packet Size
+
+**Time estimation**: ~ 1 human-minutes + ~ 10 compute minutes
 
 This experiment evaluates single-block repair time of LESS, RS codes and Clay
 codes. We measure single-block repair time (in seconds) in OpenEC for
