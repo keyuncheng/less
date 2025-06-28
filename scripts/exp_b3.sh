@@ -13,6 +13,7 @@ mkdir build && cd build
 cmake .. && make
 
 # install dependencies
+echo $user_passwd | sudo -S apt-get install python3-pip
 pip3 install pathlib numpy scipy
 
 # run experiment
