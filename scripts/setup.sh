@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 source "./load_eval_settings.sh"
 
 find . -type f -name "*.sh" -exec chmod +x {} \;
@@ -30,9 +32,10 @@ done
 
 # compile Hadoop 3 (this may take a long while)
 bash compile_hadoop.sh
-
+ 
 # copy Hadoop to all DataNodes
-bash copy_dist.sh $hadoop_home_dir $home_dir
+source ~/.bashrc
+bash copy_dist.sh $HADOOP_HOME $home_dir
 
 # compile OpenEC on each node
 for idx in $(seq 0 $((num_nodes-1))); do
@@ -45,3 +48,5 @@ for idx in $(seq 0 $((num_nodes-1))); do
 
     echo "finish installing OpenEC on $node_ip"
 done
+
+echo "Finished testbed setup!"
