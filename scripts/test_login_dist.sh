@@ -1,4 +1,4 @@
-#!/usr/bin/expect -f
+#!/bin/bash
 # usage: test ssh connection on each node
 
 source "./load_eval_settings.sh"
