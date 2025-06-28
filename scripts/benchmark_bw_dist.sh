@@ -1,4 +1,4 @@
-f#!/bin/bash
+#!/bin/bash
 # usage: benchmark bandwidth between current node and other nodes
 # Current node will run iperf server, and the other nodes will run iperf clients
 

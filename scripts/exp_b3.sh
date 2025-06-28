@@ -1,6 +1,8 @@
 #!/bin/bash
 # usage: Exp#B3: Encoding throughput
 
+set -e
+
 source "./load_eval_settings.sh"
 
 echo "Exp#B3: Encoding throughput"
