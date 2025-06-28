@@ -35,11 +35,11 @@ subdirectories.
 
 To quickly verify the effectiveness of LESS, we suggest to check our
 implementation of LESS in the [erasure coding library](src/ec-library), or
-refer to the quick start experiments in ```AE_INSTRUCTION.md```.
+refer to the quick start experiments in [```AE_INSTRUCTION.md```](AE_INSTRUCTION.md).
 
 ## Detailed Instructions
 
-To reproduce our results in the paper, please refer to the ```AE_INSTRUCTION.md```.
+To reproduce our results in the paper, please refer to the [```AE_INSTRUCTION.md```](AE_INSTRUCTION.md).
 
 ## Questions
 
