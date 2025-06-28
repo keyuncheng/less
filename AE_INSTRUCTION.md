@@ -25,10 +25,10 @@ specifications, operating systems, and software packages.
 We require and assume 15 machines to form a cluster for running the
 experiments with our prototype and evaluation scripts. These machines need to
 be connected via a 10 Gbps network, such that they are reachable from each
-other. For each machine, we recommend a quad-core CPU, 16 GiB of memory and
-above, and an 7200 RPM SATA HDD or above. We use the default erasure coding
-parameters (n, k) = (14, 10). In particular, we use one machine to run the
-HDFS NameNode and the other machines to run the HDFS DataNodes.
+other. For each machine, we recommend a quad-core CPU, 16 GiB of memory, a
+7200 RPM SATA HDD and above. We use the default erasure coding parameters (n,
+k) = (14, 10). In particular, we use one machine to run the HDFS NameNode and
+the other machines to run the HDFS DataNodes.
 
 ## Testbed Setup
 
@@ -39,19 +39,22 @@ same following default configurations:
 
 ```
 Operating System: Ubuntu 22.04 LTS
-Path to artifact: "/home/${username}/less"
+Path to artifact: "/home/${user_name}/less"
 ```
 
 
-We provide scripts for automatic testbed setup. The scripts are tested on
-Ubuntu 22.04 LTS. Note that the actual running times of the scripts depend on
-the cluster sizes, machine specifications, operating systems, and software
+We provide scripts for automatic testbed setup. The scripts in ```scripts/```
+are tested on Ubuntu 22.04 LTS, with a ```README.md``` file describing their
+usages. Note that the actual running times of the scripts depend on the
+cluster sizes, machine specifications, operating systems, and software
 packages.
 
 For each node in the cluster, please follow the steps below:
 
-Step 1: Manually set up the node with the default username/password. This
-ensures automatic testbed setup with the scripts later.
+Step 1: Set up the node with ```user_name/user_passwd```. This ensures
+automatic testbed setup with the scripts later.  For Chameleon cloud users,
+the instances created with CC-* series system image have the default user name
+"cc" and no password (but with SSH keys).
 
 Step 2: Modify ```scripts/settings.sh``` to change the evaluation settings.
 There are a few settings you may need to change:
@@ -61,15 +64,15 @@ There are a few settings you may need to change:
 num_runs = 1 # the number of runs in experiments
 
 [Cluster]
-user_name = cc # the username of the root user
-user_passwd = # the password of the root user (For Chameleon cloud, please keep this empty.)
+user_name = cc # the username of the root user (For Chameleon cloud users, please keep this as "cc".)
+user_passwd = # the password of the root user (For Chameleon cloud users, please keep this empty.)
 user_public_key = /home/cc/.ssh/id_rsa.pub # Path to cluster SSH public key
 user_private_key = /home/cc/.ssh/id_rsa # Path to cluster SSH private key (Only used for Chameleon Cloud instance created with CC-* series system image; make sure this private key is used for ssh to the instance). For nodes without private_key, please keep this empty. We assume all the nodes have the same path.
 ip_prefix = 192.168.10 # the IP prefix of the cluster nodes
 ```
 
 Step 3: Modify ```scripts/node_list.txt``` to include the IP addresses of all
-nodes in the cluster. Each line should contain only one IP address, and the
+nodes in the cluster. Each line should only contain one IP address, and the
 file should not contain any empty lines or comments.  See the example below:
 
 ```
@@ -114,13 +117,17 @@ To verify the installation is successful, please check the following items:
   command ```hadoop version``` should show the Hadoop version as 3.3.4.
 * OpenEC: On each node, the compilation should generate the binaries without
   any error. After the installation, check whether ```OECCoordinator``` and
-  ```OECAgent``` exists in the project directory.
+  ```OECAgent``` exist in the project directory.
 
 
 ## Evaluation
 
 Before running any experiment, please make sure that the testbed setup has
-been completed.
+been completed.  Then enter the ```scripts/``` directory:
+```
+cd scripts
+```
+
 
 The default OpenEC configuration file is in ```conf/sysSetting.xml```.
 It includes configurations for different (n, k) = (14, 10) erasure codes
@@ -135,12 +142,12 @@ evaluated in our paper:
 | Elastic Transformation (base code: RS codes) | ETRSConv | (14,10) | 2, 3, 4 |
 | LESS | LESS | (14,10) | 2, 3, 4 |
 
-NOTE: For Chameleon Cloud users, if you are using the CC-* series system
+**NOTE**: For Chameleon cloud users, if you are using the CC-* series system
 image, there are [firewall
 settings](https://chameleoncloud.readthedocs.io/en/latest/technical/networks/networks_basic.html#firewall)
-that need to be configured to allow connections between nodes in the cluster.
-In particular, please make sure the ports are open to allow connections for
-HDFS and OpenEC. On each node, please run below command to open the ports:
+that need to be configured to allow connections for different applications. In
+particular, please make sure the ports are open to allow connections for HDFS
+and OpenEC. On each node, please run below command to open the ports:
 
 ```
 sudo firewall-cmd --zone=trusted --add-source=192.168.10.0/24
@@ -198,37 +205,62 @@ LESS reduces the average repair I/O of RS codes by (10 - 9.252747252747254) /
 
 ### Testbed Experiments
 
-For a quick start: please refer to [Exp#B3: Encoding
-Throughput](#expb3-encoding-throughput), which runs on a single node.
+For a quick start, please refer to [Exp#B3: Encoding
+Throughput](#expb3-encoding-throughput), which runs on a single node. The
+other experiments run on a cluster of nodes.
+
+Note that the actual repair time depends on the hardware and software
+configurations of the testbed, and could be different from the paper's
+results.
 
 #### Exp#B1 Single-block Repair
 
-**Time estimation**: ~ 1 human-minutes + ~ 10 compute minutes
+**Time estimation**: ~ 1 human-minutes + ~ 120 compute minutes
 
 This experiment evaluates single-block repair time of different erasure codes.
-We measure single-block repair time (in seconds) in OpenEC.
+We measure single-block repair time (in seconds) in OpenEC, with the default
+network bandwidth 1Gbps, block size 64MiB, and packet size 256KiB.
 
-Run ```exp_b1.sh``` to generate the results for LESS:
+Run ```exp_b1.sh``` to generate the results:
 ```
 bash exp_b1.sh
 ```
 
-The repair time will be printed on the terminal. See the results for LESS (14,10,4) below:
+The repair time will be printed on the terminal. See the results for LESS
+(14,10,4) below:
 
 ```
-LESS (14, 10, 4), Single-block repair time (seconds): avg: 2.123456789, lower: 2.0, upper: 2.3
+Code: LESS (14, 10, 4)
+Network bandwidth: 1Gbps, block size: 64MiB, packet size: 256KiB
+
+Single-block repair time (sec): avg: 2.7268835714285715, lower: 2.297546428571428, upper: 2.962175714285715
 ```
 
-Note that the actual repair time depends on the hardware and software configurations of the testbed, and could be different from the paper's results.
+which shows that the single-block repair time for LESS (14,10,4) is around 2.7
+seconds. See also the intermediate results showing the repair time of the 1st
+block of a LESS (14,10,4) stripe below:
+
+```
+Execute Command: ssh cc@192.168.0.95 "cd /home/cc/less && ./OECClient read /Stripe_0_LESS_14_10_4_0 Stripe_0_LESS_14_10_4_0"
+OECInputStream::readWorker.duration: 2743.93
+OECInputStream::output2file.time = 2748.64
+read.overall.duration: 2749.87
+results for code LESS_14_10_4 block 0: 2749.87
+save LESS_14_10_4 result in /home/cc/less/eval_results/single/LESS_14_10_4/bw1Gbps_blk64MiB_pkt256KiB/block_0.txt
+Finished evaluation for code LESS_14_10_4, block 1
+```
+
+which shows that the single-block repair time for LESS (14,10,4) is around 2.7 seconds.
 
 #### Exp#B2 Full-node Recovery
 
-**Time estimation**: ~ 1 human-minutes + ~ 10 compute minutes
+**Time estimation**: ~ 1 human-minutes + ~ 120 compute minutes
 
 This experiment evaluates full-node recovery time of different erasure codes.
-We measure full-node recovery time (in seconds) in OpenEC.
+We measure full-node recovery time (in seconds) in OpenEC, with the default
+configurations as Exp#B1.
 
-Run ```exp_b2.sh``` to generate the results for LESS:
+Run ```exp_b2.sh``` to generate the results:
 ```
 bash exp_b2.sh
 ```
@@ -236,8 +268,14 @@ bash exp_b2.sh
 The repair time will be printed on the terminal. See the results for LESS (14,10,4) below:
 
 ```
-LESS (14, 10, 4), Full-node recovery time (seconds): avg: 2.123456789, lower: 2.0, upper: 2.3
+Code: LESS (14, 10, 4)
+Network bandwidth: 1Gbps, block size: 64MiB, packet size: 256KiB
+
+Full-node recovery time (sec): avg: 61.49134506, lower: 60.58655505, upper: 62.39613508
 ```
+
+which shows that the average full-node recovery time for LESS (14,10,4) is
+around 61.5 seconds.
 
 #### Exp#B3 Encoding Throughput
 
@@ -259,43 +297,55 @@ LESS (14,10) with 256 KiB packet size below:
 LESS (14, 10, 4), packet size (bytes): 262144, Encoding throughput (MiB/s): avg: 1643.149958, lower: 1611.547963, upper: 1675.171492
 ```
 
-The encoding throughputs may be different from the paper's results (typically
-they would be higher for both codes), depending on the CPUs.
 
 #### Exp#B4 Impact of Network Bandwidth
 
-**Time estimation**: ~ 1 human-minutes + ~ 10 compute minutes
+**Time estimation**: ~ 1 human-minutes + ~ 120 compute minutes
 
-This experiment evaluates single-block repair time of LESS, RS codes and Clay
-codes. We measure single-block repair time (in seconds) in OpenEC for
-different network bandwidth (1, 2, 5, 10 Gbps).
+This experiment evaluates the impact of network bandwidth for single-block
+repair time of LESS, RS codes and Clay codes. We measure single-block repair
+time (in seconds) in OpenEC with different network bandwidth (1, 2, 5, 10
+Gbps).
 
-Run ```exp_b4.sh``` to generate the results for LESS:
+Run ```exp_b4.sh``` to generate the results:
 ```
 bash exp_b4.sh
 ```
 
-The repair time will be printed on the terminal. See the results for LESS (14,10,4) below:
+The repair time will be printed on the terminal. See the results for LESS
+(14,10,4) in a 10Gbps network below:
 
 ```
-LESS (14, 10, 4), Single-block repair time (seconds): avg: 2.123456789, lower: 2.0, upper: 2.3
+Code: LESS (14, 10, 4)
+Network bandwidth: 10Gbps, block size: 64MiB, packet size: 256KiB
+
+Single-block repair time (sec): avg: 0.5253683786, lower: 0.5181347995, upper: 0.5326019577
 ```
+
+which shows that the single-block repair time for LESS (14,10,4) in a 10Gbps
+network is around 0.53 seconds.
 
 #### Exp#B5 Impact of Packet Size
 
-**Time estimation**: ~ 1 human-minutes + ~ 10 compute minutes
+**Time estimation**: ~ 1 human-minutes + ~ 120 compute minutes
 
-This experiment evaluates single-block repair time of LESS, RS codes and Clay
-codes. We measure single-block repair time (in seconds) in OpenEC for
-different packet sizes (128 KiB, 256 KiB, 512 KiB, 1024 KiB).
+This experiment evaluates the impact of packet size for single-block repair
+time of LESS, RS codes and Clay codes. We measure single-block repair time (in
+seconds) in OpenEC with different packet sizes (128, 256, 512, 1024 KiB).
 
 Run ```exp_b5.sh``` to generate the results for LESS:
 ```
 bash exp_b5.sh
 ```
 
-The repair time will be printed on the terminal. See the results for LESS (14,10,4) below:
+The repair time will be printed on the terminal. See the results for LESS
+(14,10,4) with 128KiB packet size below:
 
 ```
-LESS (14, 10, 4), Single-block repair time (seconds): avg: 2.123456789, lower: 2.0, upper: 2.3
+Code: LESS (14, 10, 4)
+Network bandwidth: 1Gbps, block size: 64MiB, packet size: 128KiB
+
+Single-block repair time (sec): avg: 2.755653143, lower: 2.74564861, upper: 2.765657676
 ```
+
+which shows that the single-block repair time for LESS (14,10,4) with 128KiB packet size is around 2.76 seconds.
