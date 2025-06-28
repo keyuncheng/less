@@ -29,7 +29,7 @@ def student_t_dist(samples_arr, ci=0.95):
     dof = len(samples) - 1
     # t value
     t_crit = np.abs(t.ppf((1-ci) / 2, dof))
-    print('t = {:.3f} when percentage = {:.3f} and degree of freedom = {:d}'.format(t_crit, (1-ci)*100/2, dof))
+    # print('t = {:.3f} when percentage = {:.3f} and degree of freedom = {:d}'.format(t_crit, (1-ci)*100/2, dof))
     # interval
     t_diff = stdev * t_crit / np.sqrt(len(samples))
 
