@@ -43,4 +43,5 @@ Below are the helper scripts for evaluation:
 | restart_hdfs.sh | Restart HDFS |
 | restart_oec.sh | Restart OpenEC |
 | exp_b3.py | Helper script for Exp#B3 |
+| get_full_node_recovery_time.sh | Get full node recovery time |
 | code_test_list.txt | List of Erasure codes to test |
