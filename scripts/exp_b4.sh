@@ -11,6 +11,9 @@ echo "Exp#B4: Impact of network bandwidth"
 echo $user_passwd | sudo -S apt-get install python3-pip
 pip3 install pathlib numpy scipy
 
+# extract num_runs from settings.ini
+numRuns=$(grep "^num_runs = " $INI_FILE | cut -d' ' -f3)
+
 codeList=$(cat <<EOF
 RSCONV 14 10 1
 Clay 14 10 256
@@ -20,7 +23,7 @@ LESS 14 10 4
 EOF
 )
 
-bandwidthList=(1048576 2097152 5242880 10485760)
+bandwidthList=(2097152 5242880 10485760)
 
 # prepare code list
 echo "${codeList[@]}" > $exp_script_dir/code_test_list.txt
@@ -72,7 +75,7 @@ for bandwidth_kbps in "${bandwidthList[@]}"; do
         packet_size_KiB=$((packet_size_byte / 1024))
 
         echo "Code: $code_name ($ecn, $eck, $ecw)"
-        echo "Network bandwidth: ${bandwidth_Gbps}Gbps, block size: ${block_s_MiB}MiB, packet size: ${packet_size_KiB}KiB"
+        echo "Network bandwidth: ${bandwidth_Gbps}Gbps, block size: ${block_size_MiB}MiB, packet size: ${packet_size_KiB}KiB"
         echo ""
 
         # Run the log extraction script

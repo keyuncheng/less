@@ -11,6 +11,9 @@ echo "Exp#B2: Full-node recovery"
 echo $user_passwd | sudo -S apt-get install python3-pip
 pip3 install pathlib numpy scipy
 
+# extract num_runs from settings.ini
+numRuns=$(grep "^num_runs = " $INI_FILE | cut -d' ' -f3)
+
 codeList=$(cat <<EOF
 RSCONV 14 10 1
 Clay 14 10 256

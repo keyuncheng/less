@@ -72,7 +72,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     packet_size_KiB=$((packet_size_byte / 1024))
 
     echo "Code: $code_name ($ecn, $eck, $ecw)"
-    echo "Network bandwidth: ${bandwidth_Gbps}Gbps, block size: ${block_s_MiB}MiB, packet size: ${packet_size_KiB}KiB"
+    echo "Network bandwidth: ${bandwidth_Gbps}Gbps, block size: ${block_size_MiB}MiB, packet size: ${packet_size_KiB}KiB"
     echo ""
 
     # Run the log extraction script
