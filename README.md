@@ -34,13 +34,12 @@ subdirectories.
 ## Getting Started Instructions
 
 To quickly verify the effectiveness of LESS, we suggest to check our
-implementation of LESS in the [erasure coding library](src/ec-library).
-Please refer to the [README.md](src/ec-library/README.md) in the directory
-for more details.
+implementation of LESS in the [erasure coding library](src/ec-library), or
+refer to the quick start experiments in ```AE_INSTRUCTION.md```.
 
 ## Detailed Instructions
 
-To reproduce our results in the paper, please refer to the ```AE_INSTRUCTION.md``` for more details.
+To reproduce our results in the paper, please refer to the ```AE_INSTRUCTION.md```.
 
 ## Questions
 

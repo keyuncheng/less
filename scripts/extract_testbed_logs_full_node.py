@@ -67,7 +67,7 @@ def main():
     resultsLower = results_std_t[0] - results_std_t[1]
     resultsUpper = results_std_t[0] + results_std_t[1]
 
-    print("Repair time (s): avg: {}, lower: {}, upper: {}".format(resultsAvg, resultsLower, resultsUpper))
+    print("Full-node recovery time (sec): avg: {}, lower: {}, upper: {}".format(resultsAvg, resultsLower, resultsUpper))
     # print("Raw: {}".format(results)) 
 
 if __name__ == '__main__':

@@ -26,13 +26,13 @@ We require and assume 15 machines to form a cluster for running the
 experiments with our prototype and evaluation scripts. These machines need to
 be connected via a 10 Gbps network, such that they are reachable from each
 other. For each machine, we recommend a quad-core CPU, 16 GiB of memory and
-above, and an HDD. We use the default erasure coding parameters (n, k) = (14,
-10). In particular, we use one machine to run the HDFS NameNode and the other
-machines to run the HDFS DataNodes.
+above, and an 7200 RPM SATA HDD or above. We use the default erasure coding
+parameters (n, k) = (14, 10). In particular, we use one machine to run the
+HDFS NameNode and the other machines to run the HDFS DataNodes.
 
 ## Testbed Setup
 
-**Time estimation**: ~ 10 human-minutes + ~ 120 compute minutes
+**Time estimation**: ~ 10 human-minutes + ~ 300 compute minutes
 
 **Assumptions**: To simplify the testbed setup, we assume all nodes share the
 same following default configurations:
@@ -89,35 +89,42 @@ password-less SSH connection between all nodes.
 ```
 cd scripts
 bash setup.sh
+source ~/.bashrc
 ```
 
 To verify the installation is successful, please check the following items:
 
 * Check if the terminal outputs any essential error messages.
 * Test SSH password-less login: run ```bash test_login_dist.sh``` should return "success" for all nodes.
-* Redis: run ```redis-cli``` should enter the Redis CLI without any error.
-* Hiredis: run ```find /usr /usr/local -name hiredis.h 2>/dev/null``` should
-  return the path to the hiredis header file, e.g.,
+* Redis: On each node, run ```redis-cli``` should enter the Redis CLI without any error.
+* Hiredis: On each node, run ```find /usr /usr/local -name hiredis.h
+  2>/dev/null``` should return the path to the hiredis header file, e.g.,
   ```/usr/local/include/hiredis/hiredis.h```.
-* GF-Complete: run ```find /usr /usr/local -name gf_complete.h 2>/dev/null``` should
-  return the path to the gf_complete header file, e.g.,
+* GF-Complete: On each node, run ```find /usr /usr/local -name gf_complete.h
+  2>/dev/null``` should return the path to the gf_complete header file, e.g.,
   ```/usr/local/include/gf_complete.h```.
-* ISA-L: run ```find /usr /usr/local -name isa-l.h 2>/dev/null``` should
-  return the path to the isa-l header file, e.g.,
+* ISA-L: On each node, run ```find /usr /usr/local -name isa-l.h
+  2>/dev/null``` should return the path to the isa-l header file, e.g.,
   ```/usr/include/isa-l.h```.
-* JAVA: run ```cd $JAVA_HOME``` should enters the Java home directory
-  ```/usr/lib/jvm/java-8-openjdk-amd64```.
-* Maven: run command ```mvn -v``` should show the Maven version.
-* Hadoop: the building process could take a long while, and it should not
-  report any error. After the installation, run command ```hadoop version```
-  should show the Hadoop version as 3.3.4.
-* OpenEC: the compilation should generate the binaries without any error.
+* JAVA: On each node, run ```cd $JAVA_HOME``` should enters the Java home
+  directory ```/usr/lib/jvm/java-8-openjdk-amd64```.
+* Maven: On each node, run command ```mvn -v``` should show the Maven version.
+* Hadoop: the building process could take a long while (~4 hours), and it
+  should not report any error. On each node, run
+  command ```hadoop version``` should show the Hadoop version as 3.3.4.
+* OpenEC: On each node, the compilation should generate the binaries without
+  any error. After the installation, check whether ```OECCoordinator``` and
+  ```OECAgent``` exists in the project directory.
 
 
 ## Evaluation
 
+Before running any experiment, please make sure that the testbed setup has
+been completed.
+
 The default OpenEC configuration file is in ```conf/sysSetting.xml```.
-It includes configurations for different (n, k) = (14, 10) erasure codes:
+It includes configurations for different (n, k) = (14, 10) erasure codes
+evaluated in our paper:
 
 | Code | ClassName | Parameters *(n,k)* | Sub-packetization (alpha) |
 | ------ | ------ | ------ | ------ |
@@ -128,18 +135,29 @@ It includes configurations for different (n, k) = (14, 10) erasure codes:
 | Elastic Transformation (base code: RS codes) | ETRSConv | (14,10) | 2, 3, 4 |
 | LESS | LESS | (14,10) | 2, 3, 4 |
 
+NOTE: For Chameleon Cloud users, if you are using the CC-* series system
+image, there are [firewall
+settings](https://chameleoncloud.readthedocs.io/en/latest/technical/networks/networks_basic.html#firewall)
+that need to be configured to allow connections between nodes in the cluster.
+In particular, please make sure the ports are open to allow connections for
+HDFS and OpenEC. On each node, please run below command to open the ports:
+
+```
+sudo firewall-cmd --zone=trusted --add-source=192.168.10.0/24
+```
+
 ### Numerical Analysis (for a quick start)
 
 #### Exp#A1 Single-block Repair
 
-**Time estimation**: ~ 1 human-minutes + ~ 10 compute minutes
+**Time estimation**: ~ 1 human-minutes + ~ 2 compute minutes
 
 This experiment evaluates single-block repair performance of different
 erasure codes. The results includes single-block repair I/O and I/O seeks.
 
-Run ```exp_a1.sh``` to generate the results for different codes:
+Run ```exp_a1.py``` to generate the results for different codes:
 ```
-bash exp_a1.sh
+python3 exp_a1.py
 ```
 
 The repair I/O and I/O seeks will be printed on the terminal, which exactly
@@ -153,23 +171,23 @@ I/O seeks: avg: 13.0, min: 13, max: 13
 
 #### Exp#A2 Multi-block Repair
 
-**Time estimation**: ~ 1 human-minutes + ~ 5 compute minutes
+**Time estimation**: ~ 1 human-minutes + ~ 1 compute minutes
 
 This experiment evaluates multi-block repair performance of LESS and RS codes.
 The results includes two-block repair I/O, I/O seeks, and the improved repair
 ratio.  Note that there is no need to run experiment for RS codes, as the
 repair I/O and I/O seeks are both equal to k.
 
-Run ```exp_a2.sh``` to generate the results for LESS:
+Run ```exp_a2.py``` to generate the results for LESS:
 ```
-bash exp_a2.sh
+python3 exp_a2.py
 ```
 
 The repair I/O, I/O seeks, and improved repair ratio will be printed on
 the terminal, which exactly matches the results in Figure 3. See the results
 for LESS (14,10,2) below:
 ```
-LESS(n=14, k=10, alpha=2, 2-blocks repair)
+LESS (14, 10, 2), 2-blocks repair
 Repair I/O (bandwidth): avg: 9.252747252747254
 I/O seeks: avg: 10.571428571428571
 Improved repair (with reduced repair I/O and I/O seeks) ratio: 0.2857142857142857
@@ -179,6 +197,9 @@ LESS reduces the average repair I/O of RS codes by (10 - 9.252747252747254) /
 
 
 ### Testbed Experiments
+
+For a quick start: please refer to [Exp#B3: Encoding
+Throughput](#expb3-encoding-throughput), which runs on a single node.
 
 #### Exp#B1 Single-block Repair
 
@@ -220,7 +241,7 @@ LESS (14, 10, 4), Full-node recovery time (seconds): avg: 2.123456789, lower: 2.
 
 #### Exp#B3 Encoding Throughput
 
-**Time estimation**: ~ 1 human-minutes + ~ 10 compute minutes
+**Time estimation**: ~ 1 human-minutes + ~ 5 compute minutes
 
 This experiment evaluates encoding throughput (MiB/s) of LESS and RS codes. We
 run a standalone program to encode a single (14,10) stripe in memory, with
@@ -238,8 +259,8 @@ LESS (14,10) with 256 KiB packet size below:
 LESS (14, 10, 4), packet size (bytes): 262144, Encoding throughput (MiB/s): avg: 1643.149958, lower: 1611.547963, upper: 1675.171492
 ```
 
-Note that the encoding throughputs depend on the CPUs and could be different
-from the paper's results.
+The encoding throughputs may be different from the paper's results (typically
+they would be higher for both codes), depending on the CPUs.
 
 #### Exp#B4 Impact of Network Bandwidth
 

@@ -50,26 +50,37 @@ sed -i "s/^packet_size_byte = .*/packet_size_byte = ${packet_size_byte}/" $INI_F
 
 # run single-block repair experiment
 python3 run_testbed_single_block.py
-# 
-# # Extract the logs
-# echo "Extracting logs for single-block repair experiment"
-# # fetch the lines from code_test_list.txt
-# for code in $(cat $exp_script_dir/code_test_list.txt); do
-#     # Extract the code name from the line
-#     code_name=$(echo $code | awk '{print $1}')
-#     echo "Extracting logs for code: $code_name"
-# 
-#     ecn=$(echo $code | awk '{print $2}')
-#     eck=$(echo $code | awk '{print $3}')
-#     ecw=$(echo $code | awk '{print $4}')
-#     code_id="${code_name}_${ecn}_${eck}_${ecw}"
-# 
-#     bandwidth_Gbps=$((bandwidth_kbps / 1024 / 1024))
-#     block_size_MiB=$((block_size_byte / 1024 / 1024))
-#     packet_size_KiB=$((packet_size_byte / 1024))
-#     
-#     # Run the log extraction script
-#     python3 extract_testbed_logs_single_block.py -ecn $ecn -r $numRuns -d $proj_dir/eval_results/single/${code_id}/bw${bandwidth_Gbps}Gbps_blk${block_size_MiB}MiB_pkt${packet_size_KiB}KiB
-# 
-#     echo ""
-# done
+
+# Extract the logs
+echo "Extracting logs for single-block repair experiment"
+
+while IFS= read -r line || [[ -n "$line" ]]; do
+    # Skip empty lines and comments
+    [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+    
+    # Read all fields at once using read -a
+    read -r -a fields <<< "$line"
+    
+    code_name="${fields[0]}"
+    ecn="${fields[1]}"
+    eck="${fields[2]}"
+    ecw="${fields[3]}"
+    
+    code_id="${code_name}_${ecn}_${eck}_${ecw}"
+    bandwidth_Gbps=$((bandwidth_kbps / 1024 / 1024))
+    block_size_MiB=$((block_size_byte / 1024 / 1024))
+    packet_size_KiB=$((packet_size_byte / 1024))
+
+    echo "Code: $code_name ($ecn, $eck, $ecw)"
+    echo "Network bandwidth: ${bandwidth_Gbps}Gbps, block size: ${block_s_MiB}MiB, packet size: ${packet_size_KiB}KiB"
+    echo ""
+
+    # Run the log extraction script
+    python3 extract_testbed_logs_single_block.py \
+        -ecn "$ecn" \
+        -r "$numRuns" \
+        -d "$proj_dir/eval_results/single/${code_id}/bw${bandwidth_Gbps}Gbps_blk${block_size_MiB}MiB_pkt${packet_size_KiB}KiB"
+
+    echo ""
+    echo ""
+done < "$exp_script_dir/code_test_list.txt"
