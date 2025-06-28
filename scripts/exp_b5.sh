@@ -1,7 +1,15 @@
 #!/bin/bash
 # usage: Exp#B5: Impact of packet size
 
+set -e
+
+source "./load_eval_settings.sh"
+
 echo "Exp#B5: Impact of packet size"
+
+# install dependencies
+echo $user_passwd | sudo -S apt-get install python3-pip
+pip3 install pathlib numpy scipy
 
 codeList=$(cat <<EOF
 RSCONV 14 10 1

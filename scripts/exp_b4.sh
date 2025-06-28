@@ -1,9 +1,15 @@
 #!/bin/bash
 # usage: Exp#B4: Impact of network bandwidth
 
+set -e
+
 source "./load_eval_settings.sh"
 
 echo "Exp#B4: Impact of network bandwidth"
+
+# install dependencies
+echo $user_passwd | sudo -S apt-get install python3-pip
+pip3 install pathlib numpy scipy
 
 codeList=$(cat <<EOF
 RSCONV 14 10 1
