@@ -20,6 +20,7 @@ for idx in $(seq 0 $((num_nodes-1))); do
     node_ip=${node_ip_list[$idx]}
     
     ssh -n $user_name@$node_ip "bash -c 'cd ${proj_dir}; rm -f agent_output hs_err*'"
+    ssh -n $user_name@$node_ip "echo $user_passwd | sudo -S service redis_6379 restart"
 done
 
 # restart HDFS
