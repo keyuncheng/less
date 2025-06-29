@@ -56,7 +56,7 @@ automatic testbed setup with the scripts later.  For Chameleon cloud users,
 the instances created with CC-* series system image have the default user name
 "cc" and no password (but with SSH keys).
 
-Step 2: Modify ```scripts/settings.sh``` to change the evaluation settings.
+Step 2: Modify ```scripts/settings.ini``` to change the evaluation settings.
 There are a few settings you may need to change:
 
 ```
@@ -73,7 +73,8 @@ ip_prefix = 192.168.10 # the IP prefix of the cluster nodes
 
 Step 3: Modify ```scripts/node_list.txt``` to include the IP addresses of all
 nodes in the cluster. Each line should only contain one IP address, and the
-file should not contain any empty lines or comments.  See the example below:
+file should not contain any empty lines or comments.  The ```ip_prefix```
+should be `192.168.10` in ```settings.ini```. See the example below:
 
 ```
 192.168.10.1
@@ -147,10 +148,11 @@ image, there are [firewall
 settings](https://chameleoncloud.readthedocs.io/en/latest/technical/networks/networks_basic.html#firewall)
 that need to be configured to allow connections for different applications. In
 particular, please make sure the ports are open to allow connections for HDFS
-and OpenEC. On each node, please run below command to open the ports:
+and OpenEC. On each node, please run below command to open the ports for the IPs ```192.168.10.0/24```:
 
 ```
-sudo firewall-cmd --zone=trusted --add-source=192.168.10.0/24
+sudo firewall-cmd --zone=trusted --add-source=192.168.10.0/24 --permanent
+sudo firewall-cmd --reload
 ```
 
 ### Numerical Analysis (for a quick start)
